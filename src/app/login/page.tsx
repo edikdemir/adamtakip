@@ -74,8 +74,8 @@ function LoginForm() {
         </Button>
 
         <p className="text-xs text-zinc-500 text-center">
-          Kurumsal @cemre.com.tr hesabınızla giriş yapınız.
-          <br />Sorun yaşıyorsanız BT departmanıyla iletişime geçin.
+          Kurumsal @cemreshipyard.com hesabınızla giriş yapınız.
+          <br />Sorun yaşıyorsanız Bilgi İşlem Birimiyle iletişime geçin.
         </p>
       </CardContent>
     </Card>
@@ -93,7 +93,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-zinc-900">Adam Takip</h1>
-          <p className="text-zinc-500 text-sm mt-1">Cemre Tersanesi | Dizayncı İş Takip Sistemi</p>
+          <p className="text-zinc-500 text-sm mt-1">Cemre Tersanesi | Dizayn Departmanı İş Takip Sistemi</p>
         </div>
 
         <Suspense fallback={
@@ -107,7 +107,7 @@ export default function LoginPage() {
         </Suspense>
 
         <p className="text-center text-xs text-zinc-400 mt-6">
-          © 2025 Cemre Tersanesi. Tüm hakları saklıdır.
+          © 2025 Cemre Tersanesi Bilgi İşlem Birimi. Tüm hakları saklıdır.
         </p>
       </div>
     </div>
