@@ -17,7 +17,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url))
   }
 
-  const user = await verifySession(token)
+  let user
+  try {
+    user = await verifySession(token)
+  } catch (err) {
+    console.error("Middleware session error:", err)
+    const response = NextResponse.redirect(new URL("/login", req.url))
+    response.cookies.delete(SESSION_COOKIE_NAME)
+    return response
+  }
+
   if (!user) {
     const response = NextResponse.redirect(new URL("/login", req.url))
     response.cookies.delete(SESSION_COOKIE_NAME)
