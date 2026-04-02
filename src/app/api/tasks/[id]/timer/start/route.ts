@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       updated_at: now,
     })
     .eq("id", id)
-    .eq("timer_started_at", null as unknown as string) // Optimistic lock
+    .is("timer_started_at", null) // Optimistic lock: IS NULL
     .select()
     .single()
 

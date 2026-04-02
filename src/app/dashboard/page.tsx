@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useTasks, useUpdateTask } from "@/hooks/use-tasks"
+import { useCurrentUser } from "@/hooks/use-current-user"
 import { Task } from "@/types/task"
 import { TaskRowTimer } from "@/components/tasks/task-row-timer"
 import { WorkerStatusBadge, PriorityBadge, AdminStatusBadge } from "@/components/tasks/task-status-badge"
@@ -20,6 +21,7 @@ import { toast } from "sonner"
 export default function DashboardPage() {
   const { data: tasks = [], isLoading, refetch } = useTasks()
   const updateTask = useUpdateTask()
+  const { user: currentUser } = useCurrentUser()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [completionTask, setCompletionTask] = useState<Task | null>(null)
@@ -163,7 +165,7 @@ export default function DashboardPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {task.worker_status !== WORKER_STATUS.BITTI ? (
+                      {task.worker_status !== WORKER_STATUS.BITTI && task.assigned_to === currentUser?.id ? (
                         <TaskRowTimer
                           task={task}
                           onUpdate={() => refetch()}
