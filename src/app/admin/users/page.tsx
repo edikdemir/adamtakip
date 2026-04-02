@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react"
+import Link from "next/link"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -94,11 +95,13 @@ export default function UsersPage() {
                 <TableRow key={user.id} className="hover:bg-zinc-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-200 text-zinc-600 text-xs font-bold uppercase flex-shrink-0">
+                      <Link href={`/admin/users/${user.id}`} className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold uppercase flex-shrink-0 hover:bg-indigo-200 transition-colors">
                         {user.display_name.charAt(0)}
-                      </div>
+                      </Link>
                       <div>
-                        <p className="font-medium text-zinc-900">{user.display_name}</p>
+                        <Link href={`/admin/users/${user.id}`} className="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-2 transition-colors">
+                          {user.display_name}
+                        </Link>
                         {user.job_title && <p className="text-xs text-zinc-500">{user.job_title}</p>}
                       </div>
                     </div>
