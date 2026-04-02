@@ -8,8 +8,8 @@ import { Toaster } from "sonner"
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
 export const metadata: Metadata = {
-  title: "Adam Takip | Cemre",
-  description: "Cemre Tersanesi Dizayncı İş Takip Sistemi",
+  title: "İş Takip | Cemre",
+  description: "Cemre Tersanesi Dizayn Departmanı İş Takip Sistemi",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
