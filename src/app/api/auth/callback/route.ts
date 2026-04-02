@@ -47,6 +47,21 @@ export async function GET(req: NextRequest) {
     const email = account.username // UPN / email
     const displayName = account.name || email
 
+    // Fetch jobTitle from Microsoft Graph
+    let jobTitle: string | null = null
+    try {
+      const graphRes = await fetch(
+        "https://graph.microsoft.com/v1.0/me?$select=jobTitle",
+        { headers: { Authorization: `Bearer ${tokenResponse.accessToken}` } }
+      )
+      if (graphRes.ok) {
+        const graphUser = await graphRes.json()
+        jobTitle = graphUser.jobTitle || null
+      }
+    } catch {
+      // Non-critical — continue without job title
+    }
+
     // Upsert user in DB
     const supabase = createServerClient()
     const { data: existingUser } = await supabase
@@ -66,16 +81,16 @@ export async function GET(req: NextRequest) {
       userId = existingUser.id
       userRole = existingUser.role
 
-      // Update display name and email in case they changed
+      // Update display name, email and job title in case they changed
       await supabase
         .from("users")
-        .update({ email, display_name: displayName, updated_at: new Date().toISOString() })
+        .update({ email, display_name: displayName, job_title: jobTitle, updated_at: new Date().toISOString() })
         .eq("id", userId)
     } else {
       // First login: create user
       const { data: newUser, error: insertError } = await supabase
         .from("users")
-        .insert({ azure_oid: azureOid, email, display_name: displayName, role: "user" })
+        .insert({ azure_oid: azureOid, email, display_name: displayName, job_title: jobTitle, role: "user" })
         .select("id, role")
         .single()
 
@@ -92,6 +107,7 @@ export async function GET(req: NextRequest) {
       id: userId,
       email,
       display_name: displayName,
+      job_title: jobTitle,
       role: userRole,
     }
 

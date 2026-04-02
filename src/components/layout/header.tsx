@@ -63,6 +63,9 @@ export function Header({ title }: HeaderProps) {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{user?.display_name}</p>
+                {user?.job_title && (
+                  <p className="text-xs leading-none text-zinc-600">{user.job_title}</p>
+                )}
                 <p className="text-xs leading-none text-zinc-500">{user?.email}</p>
                 <p className="text-xs text-zinc-400">{user?.role ? ROLE_LABELS[user.role] : ""}</p>
               </div>

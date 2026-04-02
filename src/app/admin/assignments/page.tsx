@@ -47,7 +47,7 @@ export default function AssignmentsPage() {
   }
 
   // Workload summary per user
-  const workload = users.map((u: { id: string; display_name: string; email: string }) => ({
+  const workload = users.map((u: { id: string; display_name: string; job_title?: string | null; email: string }) => ({
     ...u,
     activeTasks: tasks.filter((t: Task) => t.assigned_to === u.id && t.admin_status !== ADMIN_STATUS.ONAYLANDI).length,
     totalHours: tasks
@@ -69,10 +69,11 @@ export default function AssignmentsPage() {
           </h2>
         </div>
         <div className="divide-y divide-zinc-100">
-          {workload.map((u: { id: string; display_name: string; email: string; activeTasks: number; totalHours: number }) => (
+          {workload.map((u: { id: string; display_name: string; job_title?: string | null; email: string; activeTasks: number; totalHours: number }) => (
             <div key={u.id} className="flex items-center justify-between px-5 py-3">
               <div>
                 <p className="text-sm font-medium text-zinc-900">{u.display_name}</p>
+                {u.job_title && <p className="text-xs text-zinc-500">{u.job_title}</p>}
                 <p className="text-xs text-zinc-400">{u.email}</p>
               </div>
               <div className="flex items-center gap-4 text-sm">
@@ -182,10 +183,13 @@ export default function AssignmentsPage() {
                 <SelectValue placeholder="Çalışan seçin..." />
               </SelectTrigger>
               <SelectContent>
-                {users.map((u: { id: string; display_name: string; email: string }) => (
+                {users.map((u: { id: string; display_name: string; job_title?: string | null; email: string }) => (
                   <SelectItem key={u.id} value={u.id}>
-                    {u.display_name}
-                    <span className="text-xs text-zinc-400 ml-2">{u.email}</span>
+                    <div className="flex flex-col">
+                      <span>{u.display_name}</span>
+                      {u.job_title && <span className="text-xs text-zinc-500">{u.job_title}</span>}
+                      <span className="text-xs text-zinc-400">{u.email}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

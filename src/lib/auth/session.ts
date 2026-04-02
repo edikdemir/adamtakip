@@ -15,6 +15,7 @@ export async function createSession(user: SessionUser): Promise<string> {
     sub: user.id,
     email: user.email,
     display_name: user.display_name,
+    job_title: user.job_title ?? null,
     role: user.role,
   })
     .setProtectedHeader({ alg: "HS256" })
@@ -32,6 +33,7 @@ export async function verifySession(token: string): Promise<SessionUser | null> 
       id: payload.sub as string,
       email: payload.email as string,
       display_name: payload.display_name as string,
+      job_title: (payload.job_title as string) || null,
       role: payload.role as SessionUser["role"],
     }
   } catch {
