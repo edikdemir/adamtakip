@@ -6,7 +6,7 @@ import { notifyTaskAssigned } from "@/lib/notifications/create-notification"
 import { sendTaskAssignedEmail } from "@/lib/email/graph-mailer"
 import { z } from "zod"
 
-const schema = z.object({ assigned_to: z.string().uuid() })
+const schema = z.object({ assigned_to: z.string().guid() })
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireKoordinatorOrAdmin(req)
