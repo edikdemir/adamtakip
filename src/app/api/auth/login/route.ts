@@ -6,7 +6,7 @@ export async function GET() {
   // This endpoint exists for server-side redirect scenarios
   const tenantId = process.env.AZURE_AD_TENANT_ID
   const clientId = process.env.AZURE_AD_CLIENT_ID
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")
   const redirectUri = encodeURIComponent(`${appUrl}/api/auth/callback`)
   const scope = encodeURIComponent("openid profile email User.Read")
 
