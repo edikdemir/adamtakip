@@ -5,10 +5,10 @@ import { Notification } from "@/types/notification"
 import { useCurrentUser } from "@/hooks/use-current-user"
 
 function getSupabaseClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return null
+  return createClient(url, key)
 }
 
 export function useNotifications() {
@@ -40,6 +40,8 @@ export function useNotifications() {
     if (!user) return
 
     const supabase = getSupabaseClient()
+    if (!supabase) return
+
     const channel = supabase
       .channel(`notifications:${user.id}`)
       .on(
