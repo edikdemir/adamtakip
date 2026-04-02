@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useCallback } from "react"
+import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import { useTasks } from "@/hooks/use-tasks"
 import { Task } from "@/types/task"
@@ -161,9 +162,14 @@ export default function AdminDashboardPage() {
                   {activeTimerTasks.map(task => (
                     <TableRow key={task.id} className="bg-indigo-50/30 hover:bg-indigo-50/60">
                       <TableCell>
-                        <p className="text-sm font-medium text-zinc-900">
-                          {task.assigned_user?.display_name || "—"}
-                        </p>
+                        {task.assigned_user ? (
+                          <Link
+                            href={`/admin/users/${task.assigned_user.id}`}
+                            className="text-sm font-bold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-2 transition-colors"
+                          >
+                            {task.assigned_user.display_name}
+                          </Link>
+                        ) : <span className="text-zinc-400">—</span>}
                       </TableCell>
                       <TableCell className="font-medium text-zinc-700">{task.project?.code}</TableCell>
                       <TableCell className="font-mono text-sm">{task.drawing_no}</TableCell>
@@ -215,7 +221,16 @@ export default function AdminDashboardPage() {
                       <TableRow key={task.id} className="hover:bg-orange-50/30">
                         <TableCell className="font-medium">{task.project?.code}</TableCell>
                         <TableCell className="font-mono text-sm">{task.drawing_no}</TableCell>
-                        <TableCell className="text-sm">{task.assigned_user?.display_name || "—"}</TableCell>
+                        <TableCell>
+                          {task.assigned_user ? (
+                            <Link
+                              href={`/admin/users/${task.assigned_user.id}`}
+                              className="text-sm font-semibold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-2 transition-colors"
+                            >
+                              {task.assigned_user.display_name}
+                            </Link>
+                          ) : <span className="text-zinc-400 text-sm">—</span>}
+                        </TableCell>
                         <TableCell>
                           <span className={cn(
                             "text-sm",
@@ -391,8 +406,15 @@ export default function AdminDashboardPage() {
                           {task.description}
                         </p>
                       </TableCell>
-                      <TableCell className="text-sm text-zinc-800">
-                        {task.assigned_user?.display_name || <span className="text-zinc-400">—</span>}
+                      <TableCell>
+                        {task.assigned_user ? (
+                          <Link
+                            href={`/admin/users/${task.assigned_user.id}`}
+                            className="text-sm font-semibold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-2 transition-colors"
+                          >
+                            {task.assigned_user.display_name}
+                          </Link>
+                        ) : <span className="text-zinc-400">—</span>}
                       </TableCell>
                       <TableCell><AdminStatusBadge status={task.admin_status} /></TableCell>
                       <TableCell><PriorityBadge priority={task.priority} /></TableCell>
