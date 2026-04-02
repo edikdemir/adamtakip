@@ -37,8 +37,8 @@ export default function DashboardPage() {
     return matchSearch && matchStatus
   })
 
-  // Tasks with running timers — show banner on load
-  const runningTimers = tasks.filter((t) => t.timer_started_at !== null)
+  // Tasks with running timers — only for current user's own tasks
+  const runningTimers = tasks.filter((t) => t.timer_started_at !== null && t.assigned_to === currentUser?.id)
 
   const handleStatusChange = async (task: Task, newStatus: string) => {
     if (newStatus === WORKER_STATUS.BITTI) {
