@@ -4,6 +4,7 @@ import { Task } from "@/types/task"
 import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
 import { formatDuration } from "@/lib/utils"
 import { TIMER_SYNC_INTERVAL_MS, TIMER_WARNING_HOURS } from "@/lib/constants"
+import { toast } from "sonner"
 
 interface UseTaskTimerReturn {
   elapsedSeconds: number
@@ -71,12 +72,16 @@ export function useTaskTimer(
     setIsLoading(true)
     try {
       const res = await fetch(`/api/tasks/${task.id}/timer/start`, { method: "POST" })
+      const json = await res.json()
       if (res.ok) {
-        const { data } = await res.json()
-        setTimerStartedAt(data.timer_started_at)
-        setTotalElapsed(data.total_elapsed_seconds)
-        onUpdate?.(data)
+        setTimerStartedAt(json.data.timer_started_at)
+        setTotalElapsed(json.data.total_elapsed_seconds)
+        onUpdate?.(json.data)
+      } else {
+        toast.error(json.error || "Timer başlatılamadı")
       }
+    } catch {
+      toast.error("Timer başlatılamadı")
     } finally {
       setIsLoading(false)
     }
@@ -86,13 +91,17 @@ export function useTaskTimer(
     setIsLoading(true)
     try {
       const res = await fetch(`/api/tasks/${task.id}/timer/stop`, { method: "POST" })
+      const json = await res.json()
       if (res.ok) {
-        const { data } = await res.json()
         setTimerStartedAt(null)
-        setTotalElapsed(data.total_elapsed_seconds)
-        setElapsedSeconds(data.total_elapsed_seconds)
-        onUpdate?.(data)
+        setTotalElapsed(json.data.total_elapsed_seconds)
+        setElapsedSeconds(json.data.total_elapsed_seconds)
+        onUpdate?.(json.data)
+      } else {
+        toast.error(json.error || "Timer durdurulamadı")
       }
+    } catch {
+      toast.error("Timer durdurulamadı")
     } finally {
       setIsLoading(false)
     }
