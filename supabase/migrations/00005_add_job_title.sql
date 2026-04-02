@@ -1,0 +1,2 @@
+-- Add job_title column to users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS job_title VARCHAR(255);

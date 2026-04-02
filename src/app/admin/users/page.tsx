@@ -15,6 +15,7 @@ interface User {
   id: string
   email: string
   display_name: string
+  job_title?: string | null
   role: UserRole
   is_active: boolean
   created_at: string
@@ -93,10 +94,13 @@ export default function UsersPage() {
                 <TableRow key={user.id} className="hover:bg-zinc-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-200 text-zinc-600 text-xs font-bold uppercase">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-200 text-zinc-600 text-xs font-bold uppercase flex-shrink-0">
                         {user.display_name.charAt(0)}
                       </div>
-                      <span className="font-medium text-zinc-900">{user.display_name}</span>
+                      <div>
+                        <p className="font-medium text-zinc-900">{user.display_name}</p>
+                        {user.job_title && <p className="text-xs text-zinc-500">{user.job_title}</p>}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-zinc-500">{user.email}</TableCell>

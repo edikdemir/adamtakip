@@ -255,8 +255,14 @@ export default function JobPoolPage() {
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
               <SelectTrigger><SelectValue placeholder="Kullanıcı seç" /></SelectTrigger>
               <SelectContent>
-                {users.map((u: { id: string; display_name: string; email: string }) => (
-                  <SelectItem key={u.id} value={u.id}>{u.display_name} ({u.email})</SelectItem>
+                {users.map((u: { id: string; display_name: string; job_title?: string | null; email: string }) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    <div className="flex flex-col">
+                      <span>{u.display_name}</span>
+                      {u.job_title && <span className="text-xs text-zinc-500">{u.job_title}</span>}
+                      <span className="text-xs text-zinc-400">{u.email}</span>
+                    </div>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

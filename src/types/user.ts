@@ -5,6 +5,7 @@ export interface User {
   azure_oid: string
   email: string
   display_name: string
+  job_title?: string | null
   role: UserRole
   is_active: boolean
   created_at: string
@@ -15,5 +16,6 @@ export interface SessionUser {
   id: string
   email: string
   display_name: string
+  job_title?: string | null
   role: UserRole
 }
