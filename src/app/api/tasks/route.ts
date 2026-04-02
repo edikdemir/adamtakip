@@ -5,10 +5,10 @@ import { USER_ROLES } from "@/lib/constants"
 import { z } from "zod"
 
 const createTaskSchema = z.object({
-  project_id: z.string().uuid(),
-  job_type_id: z.string().uuid(),
-  job_sub_type_id: z.string().uuid(),
-  zone_id: z.string().uuid().optional(),
+  project_id: z.string().guid(),
+  job_type_id: z.string().guid(),
+  job_sub_type_id: z.string().guid(),
+  zone_id: z.string().guid().optional(),
   location: z.string().optional(),
   drawing_no: z.string().min(1),
   description: z.string().min(1),

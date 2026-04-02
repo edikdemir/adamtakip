@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json()
   const parsed = z.object({
-    job_type_id: z.string().uuid(),
+    job_type_id: z.string().guid(),
     name: z.string().min(1),
     sort_order: z.number().optional(),
   }).safeParse(body)
