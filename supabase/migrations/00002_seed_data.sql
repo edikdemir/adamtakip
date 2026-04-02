@@ -1,0 +1,27 @@
+-- Seed: İş Tipleri ve Alt Tipleri
+INSERT INTO job_types (id, name, sort_order) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'Çelik', 1),
+  ('22222222-2222-2222-2222-222222222222', 'Techiz', 2),
+  ('33333333-3333-3333-3333-333333333333', 'Boru', 3),
+  ('44444444-4444-4444-4444-444444444444', 'Elektrik', 4),
+  ('55555555-5555-5555-5555-555555555555', 'Yüzey İşlem', 5)
+ON CONFLICT (name) DO NOTHING;
+
+INSERT INTO job_sub_types (job_type_id, name, sort_order) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'Blok Model', 1),
+  ('11111111-1111-1111-1111-111111111111', 'Blok Kontrol', 2),
+  ('11111111-1111-1111-1111-111111111111', 'Blok Assembly', 3),
+  ('11111111-1111-1111-1111-111111111111', 'Grand Assembly', 4),
+  ('11111111-1111-1111-1111-111111111111', 'Pre-Outfitting', 5),
+  ('22222222-2222-2222-2222-222222222222', 'Genel Techiz', 1),
+  ('22222222-2222-2222-2222-222222222222', 'Makine Dairesi', 2),
+  ('33333333-3333-3333-3333-333333333333', 'Sistem Dizayn', 1),
+  ('33333333-3333-3333-3333-333333333333', 'İzometrik', 2),
+  ('44444444-4444-4444-4444-444444444444', 'Kablo Güzergahı', 1),
+  ('44444444-4444-4444-4444-444444444444', 'Pano Dizayn', 2)
+ON CONFLICT (job_type_id, name) DO NOTHING;
+
+-- Seed: NB42 Projesi
+INSERT INTO projects (code, name) VALUES
+  ('NB42', 'NB42 - Bulk Carrier')
+ON CONFLICT (code) DO NOTHING;
