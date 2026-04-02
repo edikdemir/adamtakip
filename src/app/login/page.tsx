@@ -107,7 +107,7 @@ export default function LoginPage() {
         </Suspense>
 
         <p className="text-center text-xs text-zinc-400 mt-6">
-          © 2025 Cemre Tersanesi Bilgi İşlem Birimi. Tüm hakları saklıdır.
+          © 2026 Cemre Tersanesi Bilgi İşlem Birimi. Tüm hakları saklıdır.
         </p>
       </div>
     </div>
