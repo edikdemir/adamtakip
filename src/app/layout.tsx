@@ -5,7 +5,7 @@ import { AuthProvider } from "@/components/providers/auth-provider"
 import { QueryProvider } from "@/components/providers/query-provider"
 import { Toaster } from "sonner"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], display: "swap" })
 
 export const metadata: Metadata = {
   title: "Adam Takip | Cemre",
