@@ -25,6 +25,13 @@ function useJobTypes() {
 function useUsers() {
   return useQuery({ queryKey: ["users"], queryFn: () => fetch("/api/users").then(r => r.json()).then(r => r.data || []) })
 }
+function useZones(projectId: string) {
+  return useQuery({
+    queryKey: ["zones", projectId],
+    queryFn: () => fetch(`/api/zones?project_id=${projectId}`).then(r => r.json()).then(r => r.data || []),
+    enabled: !!projectId,
+  })
+}
 
 export default function JobPoolPage() {
   const [activeTab, setActiveTab] = useState("all")
@@ -46,10 +53,12 @@ export default function JobPoolPage() {
   const { data: users = [] } = useUsers()
 
   const [form, setForm] = useState({
-    project_id: "", job_type_id: "", job_sub_type_id: "", drawing_no: "",
-    description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "",
+    project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "",
+    drawing_no: "", description: "", planned_start: "", planned_end: "",
+    priority: "medium", location: "", admin_notes: "",
   })
 
+  const { data: zones = [] } = useZones(form.project_id)
   const selectedJobType = jobTypes.find((jt: { id: string }) => jt.id === form.job_type_id)
   const subTypes = selectedJobType?.job_sub_types || []
 
@@ -66,7 +75,7 @@ export default function JobPoolPage() {
   const handleCreate = async () => {
     await createTask.mutateAsync(form as Parameters<typeof createTask.mutateAsync>[0])
     setCreateOpen(false)
-    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", drawing_no: "", description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "" })
+    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "", drawing_no: "", description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "" })
   }
 
   const handleAssign = async () => {
@@ -222,13 +231,33 @@ export default function JobPoolPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
+                <Label>Zone</Label>
+                <Select
+                  value={form.zone_id}
+                  onValueChange={(v) => setForm((f) => ({ ...f, zone_id: v }))}
+                  disabled={!form.project_id}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder={form.project_id ? "Zone seç (opsiyonel)" : "Önce proje seçin"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {zones.map((z: { id: string; name: string }) => (
+                      <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                    ))}
+                    {zones.length === 0 && (
+                      <div className="px-2 py-1.5 text-xs text-zinc-400">Bu projede zone tanımlı değil</div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
                 <Label>Mahal</Label>
                 <Input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Örn: Makine Dairesi" className="h-9" />
               </div>
-              <div className="space-y-1.5">
-                <Label>Resim No</Label>
-                <Input value={form.drawing_no} onChange={(e) => setForm((f) => ({ ...f, drawing_no: e.target.value }))} placeholder="Örn: R-202" className="h-9" />
-              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Resim No</Label>
+              <Input value={form.drawing_no} onChange={(e) => setForm((f) => ({ ...f, drawing_no: e.target.value }))} placeholder="Örn: R-202" className="h-9" />
             </div>
             <div className="space-y-1.5">
               <Label>Yapılacak İş</Label>
