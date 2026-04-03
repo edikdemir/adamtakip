@@ -109,34 +109,44 @@ export default function AssignmentsPage() {
           <span className="text-sm text-zinc-500">{assignable.length} atanabilir görev</span>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
+        <div className="rounded-xl border border-zinc-200 bg-white overflow-x-auto shadow-sm">
           <Table>
             <TableHeader>
               <TableRow className="bg-zinc-50/80">
-                <TableHead className="w-24">Proje</TableHead>
-                <TableHead>Çizim No</TableHead>
-                <TableHead>Açıklama</TableHead>
-                <TableHead>Bitiş</TableHead>
-                <TableHead>Öncelik</TableHead>
-                <TableHead>Durum</TableHead>
-                <TableHead>Atanan</TableHead>
+                <TableHead className="w-16">ID</TableHead>
+                <TableHead className="w-20">Proje</TableHead>
+                <TableHead className="w-28">İş Tipi</TableHead>
+                <TableHead className="w-28">İş Alt Tipi</TableHead>
+                <TableHead className="w-24">Zone</TableHead>
+                <TableHead className="w-24">Mahal</TableHead>
+                <TableHead className="w-28">Resim No</TableHead>
+                <TableHead>Yapılacak İş</TableHead>
+                <TableHead className="w-24">Bitiş</TableHead>
+                <TableHead className="w-20">Öncelik</TableHead>
+                <TableHead className="w-28">Durum</TableHead>
+                <TableHead className="w-32">Atanan</TableHead>
                 <TableHead className="w-24"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-zinc-400">Yükleniyor...</TableCell>
+                  <TableCell colSpan={13} className="text-center py-10 text-zinc-400">Yükleniyor...</TableCell>
                 </TableRow>
               ) : assignable.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-zinc-400">Atanabilir görev yok</TableCell>
+                  <TableCell colSpan={13} className="text-center py-10 text-zinc-400">Atanabilir görev yok</TableCell>
                 </TableRow>
               ) : assignable.map((task: Task) => (
                 <TableRow key={task.id} className="hover:bg-zinc-50/50">
-                  <TableCell className="font-medium">{task.project?.code}</TableCell>
-                  <TableCell className="font-mono text-sm">{task.drawing_no}</TableCell>
-                  <TableCell className="max-w-[180px]">
+                  <TableCell className="font-mono text-xs text-zinc-400">#{task.id}</TableCell>
+                  <TableCell className="font-medium text-zinc-800">{task.project?.code}</TableCell>
+                  <TableCell className="text-sm text-zinc-700">{task.job_type?.name}</TableCell>
+                  <TableCell className="text-sm text-zinc-500">{task.job_sub_type?.name}</TableCell>
+                  <TableCell className="text-sm text-zinc-600">{task.zone?.name || <span className="text-zinc-300">—</span>}</TableCell>
+                  <TableCell className="text-sm text-zinc-600">{task.location || <span className="text-zinc-300">—</span>}</TableCell>
+                  <TableCell className="font-mono text-sm font-medium">{task.drawing_no}</TableCell>
+                  <TableCell className="max-w-[160px]">
                     <p className="text-sm truncate" title={task.description}>{task.description}</p>
                   </TableCell>
                   <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_end)}</TableCell>

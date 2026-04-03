@@ -47,7 +47,7 @@ export default function JobPoolPage() {
 
   const [form, setForm] = useState({
     project_id: "", job_type_id: "", job_sub_type_id: "", drawing_no: "",
-    description: "", planned_start: "", planned_end: "", priority: "medium", location: "NA", admin_notes: "",
+    description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "",
   })
 
   const selectedJobType = jobTypes.find((jt: { id: string }) => jt.id === form.job_type_id)
@@ -58,13 +58,15 @@ export default function JobPoolPage() {
       t.drawing_no.toLowerCase().includes(search.toLowerCase()) ||
       t.description.toLowerCase().includes(search.toLowerCase()) ||
       t.project?.code?.toLowerCase().includes(search.toLowerCase()) ||
+      (t.zone?.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (t.location ?? "").toLowerCase().includes(search.toLowerCase()) ||
       t.assigned_user?.display_name?.toLowerCase().includes(search.toLowerCase())
   })
 
   const handleCreate = async () => {
     await createTask.mutateAsync(form as Parameters<typeof createTask.mutateAsync>[0])
     setCreateOpen(false)
-    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", drawing_no: "", description: "", planned_start: "", planned_end: "", priority: "medium", location: "NA", admin_notes: "" })
+    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", drawing_no: "", description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "" })
   }
 
   const handleAssign = async () => {
@@ -80,6 +82,8 @@ export default function JobPoolPage() {
     setRejectTask(null)
     setRejectReason("")
   }
+
+  const colSpan = 15
 
   return (
     <div className="space-y-4">
@@ -105,40 +109,45 @@ export default function JobPoolPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-zinc-200 bg-white overflow-x-auto shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-zinc-50/80">
-              <TableHead>Proje</TableHead>
-              <TableHead>İş Tipi</TableHead>
-              <TableHead>Çizim No</TableHead>
-              <TableHead>Açıklama</TableHead>
-              <TableHead>Bitiş</TableHead>
-              <TableHead>Atanan</TableHead>
-              <TableHead>Süre (sa)</TableHead>
-              <TableHead>Durum</TableHead>
-              <TableHead>Öncelik</TableHead>
-              <TableHead className="text-right">İşlem</TableHead>
+              <TableHead className="w-16">ID</TableHead>
+              <TableHead className="w-20">Proje</TableHead>
+              <TableHead className="w-28">İş Tipi</TableHead>
+              <TableHead className="w-28">İş Alt Tipi</TableHead>
+              <TableHead className="w-24">Zone</TableHead>
+              <TableHead className="w-24">Mahal</TableHead>
+              <TableHead className="w-28">Resim No</TableHead>
+              <TableHead>Yapılacak İş</TableHead>
+              <TableHead className="w-24">Başlama</TableHead>
+              <TableHead className="w-24">Bitiş</TableHead>
+              <TableHead className="w-32">Atanan</TableHead>
+              <TableHead className="w-20">Süre (sa)</TableHead>
+              <TableHead className="w-28">Durum</TableHead>
+              <TableHead className="w-20">Öncelik</TableHead>
+              <TableHead className="w-28 text-right">İşlem</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-12 text-zinc-400">Yükleniyor...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={colSpan} className="text-center py-12 text-zinc-400">Yükleniyor...</TableCell></TableRow>
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-12 text-zinc-400">Görev bulunamadı</TableCell></TableRow>
+              <TableRow><TableCell colSpan={colSpan} className="text-center py-12 text-zinc-400">Görev bulunamadı</TableCell></TableRow>
             ) : filtered.map((task: Task) => (
-              <TableRow key={task.id}>
-                <TableCell className="font-medium">{task.project?.code}</TableCell>
-                <TableCell>
-                  <div className="text-xs">
-                    <p className="font-medium">{task.job_type?.name}</p>
-                    <p className="text-zinc-400">{task.job_sub_type?.name}</p>
-                  </div>
-                </TableCell>
+              <TableRow key={task.id} className="hover:bg-zinc-50/50">
+                <TableCell className="font-mono text-xs text-zinc-400">#{task.id}</TableCell>
+                <TableCell className="font-medium text-zinc-800">{task.project?.code}</TableCell>
+                <TableCell className="text-sm text-zinc-700">{task.job_type?.name}</TableCell>
+                <TableCell className="text-sm text-zinc-500">{task.job_sub_type?.name}</TableCell>
+                <TableCell className="text-sm text-zinc-600">{task.zone?.name || <span className="text-zinc-300">—</span>}</TableCell>
+                <TableCell className="text-sm text-zinc-600">{task.location || <span className="text-zinc-300">—</span>}</TableCell>
                 <TableCell className="font-mono text-sm font-medium">{task.drawing_no}</TableCell>
                 <TableCell className="max-w-[180px]">
                   <p className="text-sm truncate" title={task.description}>{task.description}</p>
                 </TableCell>
+                <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_start)}</TableCell>
                 <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_end)}</TableCell>
                 <TableCell className="text-sm">{task.assigned_user?.display_name || <span className="text-zinc-400">—</span>}</TableCell>
                 <TableCell className="text-sm font-medium">{formatHours(task.total_elapsed_seconds)}</TableCell>
@@ -146,11 +155,11 @@ export default function JobPoolPage() {
                 <TableCell><PriorityBadge priority={task.priority} /></TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
-                    {task.admin_status === "havuzda" || task.admin_status === "atandi" ? (
+                    {(task.admin_status === "havuzda" || task.admin_status === "atandi") && (
                       <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => { setAssignTask(task); setSelectedUserId(task.assigned_to || "") }}>
                         <UserPlus className="h-3.5 w-3.5" /> Ata
                       </Button>
-                    ) : null}
+                    )}
                     {task.admin_status === "tamamlandi" && (
                       <>
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-green-600 hover:text-green-700 gap-1" onClick={() => approveTask.mutate(task.id)}>
@@ -192,7 +201,7 @@ export default function JobPoolPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Alt Tip</Label>
+                <Label>İş Alt Tipi</Label>
                 <Select value={form.job_sub_type_id} onValueChange={(v) => setForm((f) => ({ ...f, job_sub_type_id: v }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Alt tip seç" /></SelectTrigger>
                   <SelectContent>{subTypes.map((st: { id: string; name: string }) => <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>)}</SelectContent>
@@ -211,13 +220,19 @@ export default function JobPoolPage() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Çizim No</Label>
-              <Input value={form.drawing_no} onChange={(e) => setForm((f) => ({ ...f, drawing_no: e.target.value }))} placeholder="Blok 202" className="h-9" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Mahal</Label>
+                <Input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Örn: Makine Dairesi" className="h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Resim No</Label>
+                <Input value={form.drawing_no} onChange={(e) => setForm((f) => ({ ...f, drawing_no: e.target.value }))} placeholder="Örn: R-202" className="h-9" />
+              </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Açıklama</Label>
-              <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Yapılacak iş" className="h-9" />
+              <Label>Yapılacak İş</Label>
+              <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Yapılacak işi açıklayın" className="h-9" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -225,7 +240,7 @@ export default function JobPoolPage() {
                 <Input type="date" value={form.planned_start} onChange={(e) => setForm((f) => ({ ...f, planned_start: e.target.value }))} className="h-9" />
               </div>
               <div className="space-y-1.5">
-                <Label>Bitiş Tarihi</Label>
+                <Label>Hedef Bitiş Tarihi</Label>
                 <Input type="date" value={form.planned_end} onChange={(e) => setForm((f) => ({ ...f, planned_end: e.target.value }))} className="h-9" />
               </div>
             </div>
@@ -248,7 +263,7 @@ export default function JobPoolPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Görev Ata</DialogTitle>
-            <DialogDescription>{assignTask?.drawing_no} — {assignTask?.description}</DialogDescription>
+            <DialogDescription>#{assignTask?.id} — {assignTask?.drawing_no} — {assignTask?.description}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <Label>Kullanıcı Seç</Label>
@@ -260,7 +275,6 @@ export default function JobPoolPage() {
                     <div className="flex flex-col">
                       <span>{u.display_name}</span>
                       {u.job_title && <span className="text-xs text-zinc-500">{u.job_title}</span>}
-                      <span className="text-xs text-zinc-400">{u.email}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -279,7 +293,7 @@ export default function JobPoolPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Görevi İade Et</DialogTitle>
-            <DialogDescription>{rejectTask?.drawing_no} görevi kullanıcıya iade edilecek.</DialogDescription>
+            <DialogDescription>#{rejectTask?.id} — {rejectTask?.drawing_no} görevi kullanıcıya iade edilecek.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
             <Label>İade Sebebi <span className="text-zinc-400">(opsiyonel)</span></Label>

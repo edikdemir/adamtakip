@@ -152,7 +152,7 @@ export default function AdminDashboardPage() {
                   <TableRow className="bg-zinc-50/80">
                     <TableHead>Kullanıcı</TableHead>
                     <TableHead className="w-24">Proje</TableHead>
-                    <TableHead className="w-28">Çizim No</TableHead>
+                    <TableHead className="w-28">Resim No</TableHead>
                     <TableHead>Açıklama</TableHead>
                     <TableHead className="w-20">Öncelik</TableHead>
                     <TableHead className="w-32 text-right">Geçen Süre</TableHead>
@@ -207,7 +207,7 @@ export default function AdminDashboardPage() {
                 <TableHeader>
                   <TableRow className="bg-orange-50/60">
                     <TableHead>Proje</TableHead>
-                    <TableHead>Çizim No</TableHead>
+                    <TableHead>Resim No</TableHead>
                     <TableHead>Kullanıcı</TableHead>
                     <TableHead>Bitiş Tarihi</TableHead>
                     <TableHead className="text-right">Süre (sa)</TableHead>
@@ -356,32 +356,37 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Table */}
-          <div className="rounded-lg border border-zinc-100 overflow-hidden">
+          <div className="rounded-lg border border-zinc-100 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-zinc-50/80">
-                  <TableHead className="w-24">Proje</TableHead>
-                  <TableHead>İş Tipi</TableHead>
-                  <TableHead className="w-28">Çizim No</TableHead>
-                  <TableHead>Açıklama</TableHead>
-                  <TableHead className="w-36">Kullanıcı</TableHead>
+                  <TableHead className="w-14">ID</TableHead>
+                  <TableHead className="w-20">Proje</TableHead>
+                  <TableHead className="w-24">İş Tipi</TableHead>
+                  <TableHead className="w-24">İş Alt Tipi</TableHead>
+                  <TableHead className="w-20">Zone</TableHead>
+                  <TableHead className="w-20">Mahal</TableHead>
+                  <TableHead className="w-24">Resim No</TableHead>
+                  <TableHead>Yapılacak İş</TableHead>
+                  <TableHead className="w-32">Kullanıcı</TableHead>
                   <TableHead className="w-28">Durum</TableHead>
                   <TableHead className="w-20">Öncelik</TableHead>
                   <TableHead className="w-20 text-right">Süre (sa)</TableHead>
-                  <TableHead className="w-24">Bitiş</TableHead>
-                  <TableHead className="w-12 text-center">⏱</TableHead>
+                  <TableHead className="w-24">Hedef Bitiş</TableHead>
+                  <TableHead className="w-24">Tamamlanma</TableHead>
+                  <TableHead className="w-10 text-center">⏱</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-zinc-400">
+                    <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
                       Yükleniyor...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-zinc-400">
+                    <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
                       {hasActiveFilters ? "Filtreyle eşleşen görev yok." : "Henüz görev oluşturulmadı."}
                     </TableCell>
                   </TableRow>
@@ -393,15 +398,14 @@ export default function AdminDashboardPage() {
                       key={task.id}
                       className={cn("hover:bg-zinc-50/50", isRunning && "bg-indigo-50/20")}
                     >
+                      <TableCell className="font-mono text-xs text-zinc-400">#{task.id}</TableCell>
                       <TableCell className="font-medium text-zinc-800">{task.project?.code}</TableCell>
-                      <TableCell>
-                        <div className="text-xs">
-                          <p className="font-medium text-zinc-700">{task.job_type?.name}</p>
-                          <p className="text-zinc-400">{task.job_sub_type?.name}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm font-medium">{task.drawing_no}</TableCell>
-                      <TableCell className="max-w-[160px]">
+                      <TableCell className="text-xs text-zinc-700">{task.job_type?.name}</TableCell>
+                      <TableCell className="text-xs text-zinc-500">{task.job_sub_type?.name}</TableCell>
+                      <TableCell className="text-xs text-zinc-600">{task.zone?.name || <span className="text-zinc-300">—</span>}</TableCell>
+                      <TableCell className="text-xs text-zinc-600">{task.location || <span className="text-zinc-300">—</span>}</TableCell>
+                      <TableCell className="font-mono text-xs font-medium">{task.drawing_no}</TableCell>
+                      <TableCell className="max-w-[140px]">
                         <p className="text-sm truncate text-zinc-600" title={task.description}>
                           {task.description}
                         </p>
@@ -423,7 +427,7 @@ export default function AdminDashboardPage() {
                       </TableCell>
                       <TableCell>
                         <span className={cn(
-                          "text-sm",
+                          "text-xs",
                           dl === "overdue" && "text-red-600 font-medium",
                           dl === "warning" && "text-yellow-600 font-medium",
                           dl === "ok" && "text-zinc-500",
@@ -432,6 +436,9 @@ export default function AdminDashboardPage() {
                           {formatDate(task.planned_end)}
                           {dl === "overdue" && <AlertTriangle className="inline ml-1 h-3 w-3" />}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-zinc-500">
+                        {formatDate(task.completion_date)}
                       </TableCell>
                       <TableCell className="text-center">
                         {isRunning ? (
