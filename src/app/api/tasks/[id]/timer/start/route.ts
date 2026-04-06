@@ -36,6 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .from("tasks")
     .update({
       timer_started_at: now,
+      last_heartbeat_at: now,
       admin_status: newAdminStatus,
       updated_at: now,
     })
