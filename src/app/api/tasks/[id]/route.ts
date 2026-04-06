@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getSessionFromRequest, requireKoordinatorOrAdmin } from "@/lib/auth/middleware-auth"
+import { getSessionFromRequest, requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS, USER_ROLES, WORKER_STATUS } from "@/lib/constants"
 import { notifyTaskCompleted } from "@/lib/notifications/create-notification"
 import { sendTaskCompletedEmail } from "@/lib/email/graph-mailer"
@@ -88,11 +88,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.timer_started_at = null
     }
 
-    // Notify admins/koordinators
+    // Notify all super_admins
     const { data: admins } = await supabase
       .from("users")
       .select("id, email, display_name")
-      .in("role", ["super_admin", "koordinator"])
+      .eq("role", USER_ROLES.SUPER_ADMIN)
+      .eq("is_active", true)
 
     const assignerName = user.display_name
     if (admins) {
@@ -116,7 +117,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const result = await requireKoordinatorOrAdmin(req)
+  const result = await requireAdmin(req)
   if (result instanceof NextResponse) return result
 
   const { id } = await params

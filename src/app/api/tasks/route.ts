@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getSessionFromRequest, requireKoordinatorOrAdmin } from "@/lib/auth/middleware-auth"
+import { getSessionFromRequest, requireAdmin } from "@/lib/auth/middleware-auth"
 import { USER_ROLES } from "@/lib/constants"
 import { z } from "zod"
 
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const result = await requireKoordinatorOrAdmin(req)
+  const result = await requireAdmin(req)
   if (result instanceof NextResponse) return result
 
   const body = await req.json()

@@ -1,6 +1,5 @@
 export const USER_ROLES = {
   USER: "user",
-  KOORDINATOR: "koordinator",
   SUPER_ADMIN: "super_admin",
 } as const
 
@@ -67,7 +66,6 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   user: "Kullanıcı",
-  koordinator: "Koordinatör",
   super_admin: "Süper Admin",
 }
 

@@ -107,12 +107,10 @@ function useUserDetail(id: string) {
 
 const ROLE_LABELS: Record<string, string> = {
   user: "Kullanıcı",
-  koordinator: "Koordinatör",
   super_admin: "Süper Admin",
 }
 const ROLE_COLORS: Record<string, string> = {
   user: "bg-zinc-100 text-zinc-600",
-  koordinator: "bg-blue-100 text-blue-700",
   super_admin: "bg-purple-100 text-purple-700",
 }
 

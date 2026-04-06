@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { requireKoordinatorOrAdmin } from "@/lib/auth/middleware-auth"
+import { requireAdmin } from "@/lib/auth/middleware-auth"
 
 export async function GET(req: NextRequest) {
-  const result = await requireKoordinatorOrAdmin(req)
+  const result = await requireAdmin(req)
   if (result instanceof NextResponse) return result
 
   const { searchParams } = new URL(req.url)

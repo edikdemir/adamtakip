@@ -51,7 +51,6 @@ function useUpdateUser() {
 
 const ROLE_COLORS: Record<UserRole, string> = {
   super_admin: "bg-purple-100 text-purple-700 border-purple-200",
-  koordinator: "bg-blue-100 text-blue-700 border-blue-200",
   user: "bg-zinc-100 text-zinc-600 border-zinc-200",
 }
 

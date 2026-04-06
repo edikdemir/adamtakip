@@ -35,7 +35,7 @@ const adminNavItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { user, isSuperAdmin, canAssign } = useCurrentUser()
+  const { user, canAssign } = useCurrentUser()
 
   const isAdminArea = pathname.startsWith("/admin")
   const navItems = isAdminArea ? adminNavItems : userNavItems
@@ -81,7 +81,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Switch view for koordinator/super_admin */}
+      {/* Switch view for super_admin */}
       {canAssign && (
         <div className="px-3 py-3 border-t border-zinc-100">
           {isAdminArea ? (
