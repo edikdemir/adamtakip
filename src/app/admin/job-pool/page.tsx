@@ -4,6 +4,7 @@ import { useTasks, useCreateTask, useApproveTask, useRejectTask, useAssignTask }
 import { useQuery } from "@tanstack/react-query"
 import { Task } from "@/types/task"
 import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
+import { TimeDurationCell } from "@/components/tasks/time-duration-cell"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { formatDate, formatHours } from "@/lib/utils"
+import { formatDate } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
 import { Plus, Check, RotateCcw, UserPlus, Search } from "lucide-react"
 
@@ -73,7 +74,15 @@ export default function JobPoolPage() {
   })
 
   const handleCreate = async () => {
-    await createTask.mutateAsync(form as Parameters<typeof createTask.mutateAsync>[0])
+    const payload = {
+      ...form,
+      zone_id:       form.zone_id       || undefined,
+      planned_start: form.planned_start || undefined,
+      planned_end:   form.planned_end   || undefined,
+      location:      form.location      || undefined,
+      admin_notes:   form.admin_notes   || undefined,
+    }
+    await createTask.mutateAsync(payload as Parameters<typeof createTask.mutateAsync>[0])
     setCreateOpen(false)
     setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "", drawing_no: "", description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "" })
   }
@@ -159,7 +168,7 @@ export default function JobPoolPage() {
                 <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_start)}</TableCell>
                 <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_end)}</TableCell>
                 <TableCell className="text-sm">{task.assigned_user?.display_name || <span className="text-zinc-400">—</span>}</TableCell>
-                <TableCell className="text-sm font-medium">{formatHours(task.total_elapsed_seconds)}</TableCell>
+                <TableCell><TimeDurationCell task={task} /></TableCell>
                 <TableCell><AdminStatusBadge status={task.admin_status} /></TableCell>
                 <TableCell><PriorityBadge priority={task.priority} /></TableCell>
                 <TableCell>

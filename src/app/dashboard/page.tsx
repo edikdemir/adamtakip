@@ -4,6 +4,7 @@ import { useTasks, useUpdateTask } from "@/hooks/use-tasks"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { Task } from "@/types/task"
 import { TaskRowTimer } from "@/components/tasks/task-row-timer"
+import { TimeDurationCell } from "@/components/tasks/time-duration-cell"
 import { WorkerStatusBadge, PriorityBadge, AdminStatusBadge } from "@/components/tasks/task-status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -185,13 +186,11 @@ export default function DashboardPage() {
                           onUpdate={() => refetch()}
                         />
                       ) : (
-                        <span className="font-mono text-sm text-zinc-500">
-                          {formatHours(task.total_elapsed_seconds)} sa
-                        </span>
+                        <TimeDurationCell task={task} />
                       )}
                     </TableCell>
-                    <TableCell className="text-sm font-medium text-zinc-700">
-                      {formatHours(task.total_elapsed_seconds)}
+                    <TableCell>
+                      <TimeDurationCell task={task} />
                     </TableCell>
                     <TableCell>
                       <Select
