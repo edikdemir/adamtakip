@@ -14,8 +14,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDate, formatHours } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
-import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2 } from "lucide-react"
+import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2, FileSpreadsheet } from "lucide-react"
 import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
+import { ImportTasksDialog } from "@/components/tasks/import-tasks-dialog"
 
 function useProjects() {
   return useQuery({ queryKey: ["projects"], queryFn: () => fetch("/api/projects").then(r => r.json()).then(r => r.data || []) })
@@ -38,6 +39,7 @@ export default function JobPoolPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [search, setSearch] = useState("")
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [assignTask, setAssignTask] = useState<Task | null>(null)
   const [rejectTask, setRejectTask] = useState<Task | null>(null)
   const [rejectReason, setRejectReason] = useState("")
@@ -110,9 +112,14 @@ export default function JobPoolPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-zinc-900">İş Havuzu</h1>
-        <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> Yeni Görev
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" /> Excel İçe Aktar
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> Yeni Görev
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -343,6 +350,8 @@ export default function JobPoolPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
 
       {/* Cancel Dialog */}
       <Dialog open={!!cancelTask} onOpenChange={(open) => !open && setCancelTask(null)}>
