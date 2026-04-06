@@ -85,3 +85,13 @@ export interface CreateTaskInput {
 export interface AssignTaskInput {
   assigned_to: string
 }
+
+export interface ManualTimeEntry {
+  id: number
+  task_id: number
+  user_id: string
+  hours: number
+  reason: string
+  created_at: string
+  user?: { display_name: string; email: string }
+}

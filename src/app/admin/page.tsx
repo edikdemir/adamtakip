@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
+import { TimeDurationCell } from "@/components/tasks/time-duration-cell"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS, PRIORITY_LABELS } from "@/lib/constants"
 import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
 import { formatDuration, formatDate, formatHours, getDeadlineStatus, cn } from "@/lib/utils"
@@ -243,8 +244,8 @@ export default function AdminDashboardPage() {
                             {dl === "overdue" && <AlertTriangle className="inline ml-1 h-3 w-3" />}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right text-sm font-medium">
-                          {formatHours(task.total_elapsed_seconds)}
+                        <TableCell className="text-right">
+                          <TimeDurationCell task={task} />
                         </TableCell>
                         <TableCell><PriorityBadge priority={task.priority} /></TableCell>
                       </TableRow>
@@ -422,8 +423,8 @@ export default function AdminDashboardPage() {
                       </TableCell>
                       <TableCell><AdminStatusBadge status={task.admin_status} /></TableCell>
                       <TableCell><PriorityBadge priority={task.priority} /></TableCell>
-                      <TableCell className="text-right text-sm font-medium text-zinc-700">
-                        {formatHours(task.total_elapsed_seconds)}
+                      <TableCell className="text-right">
+                        <TimeDurationCell task={task} />
                       </TableCell>
                       <TableCell>
                         <span className={cn(

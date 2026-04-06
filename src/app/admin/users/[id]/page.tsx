@@ -14,8 +14,9 @@ import {
 } from "recharts"
 import {
   ArrowLeft, Clock, CheckCircle, Layers, Timer, AlertTriangle,
-  Play, Square, User, Mail, Briefcase,
+  Play, Square, User, Mail, Briefcase, Pencil,
 } from "lucide-react"
+import { ManualHoursBadge } from "@/components/tasks/manual-time-button"
 
 interface TimerLog {
   id: number
@@ -155,6 +156,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   ).length
   const completedTasks = tasks.filter(t => t.admin_status === "onaylandi").length
   const runningTimers = tasks.filter(t => t.timer_started_at !== null).length
+  const totalManualHours = tasks.reduce((s, t) => s + (t.manual_hours ?? 0), 0)
 
   // Last 30 days chart data
   const last30 = dailyStats.slice(-30)
@@ -208,12 +210,13 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { label: "Toplam Görev", value: tasks.length, icon: Layers, color: "text-zinc-600 bg-zinc-100" },
           { label: "Aktif Görev", value: activeTasks, icon: Clock, color: "text-blue-600 bg-blue-100" },
           { label: "Onaylandı", value: completedTasks, icon: CheckCircle, color: "text-green-600 bg-green-100" },
           { label: "Toplam Süre", value: formatDuration(Math.floor(totalSeconds)), icon: Timer, color: "text-indigo-600 bg-indigo-100" },
+          { label: "Manuel Süre", value: `${totalManualHours.toFixed(1)} sa`, icon: Pencil, color: "text-amber-600 bg-amber-100" },
         ].map(card => {
           const Icon = card.icon
           return (
@@ -425,10 +428,17 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                         <TableCell><AdminStatusBadge status={task.admin_status as never} /></TableCell>
                         <TableCell><PriorityBadge priority={task.priority} /></TableCell>
                         <TableCell className="text-right">
-                          <span className={cn("font-mono text-xs font-semibold", isRunning && "text-indigo-600")}>
-                            {formatDuration(Math.floor(seconds))}
-                            {isRunning && <span className="ml-1 animate-pulse">●</span>}
-                          </span>
+                          <div className="space-y-0.5">
+                            <span className={cn("font-mono text-xs font-semibold", isRunning && "text-indigo-600")}>
+                              {formatDuration(Math.floor(seconds))}
+                              {isRunning && <span className="ml-1 animate-pulse">●</span>}
+                            </span>
+                            {(task.manual_hours ?? 0) > 0 && (
+                              <div>
+                                <ManualHoursBadge taskId={task.id} manualHours={task.manual_hours!} />
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <span className={cn(
