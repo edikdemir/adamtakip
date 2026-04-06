@@ -34,7 +34,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       job_sub_type:job_sub_types(id, name),
       zone:zones(id, name),
       assigned_user:users!assigned_to(id, display_name, email),
-      assigned_by_user:users!assigned_by(id, display_name, email)
+      assigned_by_user:users!assigned_by(id, display_name, email),
+      linked_to_task:tasks!linked_to_task_id(id, drawing_no, description, admin_status)
     `)
     .eq("id", id)
     .single()
@@ -45,7 +46,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Yetkisiz" }, { status: 403 })
   }
 
-  return NextResponse.json({ data: task })
+  // Bu task primary ise bağımlı görevleri de getir
+  const { data: linkedTasks } = await supabase
+    .from("tasks")
+    .select("id, drawing_no, description, admin_status, assigned_to")
+    .eq("linked_to_task_id", id)
+    .order("id")
+
+  return NextResponse.json({ data: { ...task, linked_tasks: linkedTasks || [] } })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

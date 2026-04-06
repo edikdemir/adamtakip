@@ -102,6 +102,29 @@ export function useRejectTask() {
   })
 }
 
+export function useLinkTasks() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ primaryId, dependentIds }: { primaryId: number; dependentIds: number[] }) => {
+      const res = await fetch(`/api/tasks/${primaryId}/link`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dependent_task_ids: dependentIds }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error)
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      toast.success("Bağlı görevler güncellendi")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
 export function useUpdateTask() {
   const queryClient = useQueryClient()
   return useMutation({

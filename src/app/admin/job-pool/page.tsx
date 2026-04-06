@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatDate, formatHours } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
 import { Plus, Check, RotateCcw, UserPlus, Search } from "lucide-react"
+import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 
 function useProjects() {
   return useQuery({ queryKey: ["projects"], queryFn: () => fetch("/api/projects").then(r => r.json()).then(r => r.data || []) })
@@ -152,7 +153,12 @@ export default function JobPoolPage() {
                 <TableCell className="text-sm text-zinc-500">{task.job_sub_type?.name}</TableCell>
                 <TableCell className="text-sm text-zinc-600">{task.zone?.name || <span className="text-zinc-300">—</span>}</TableCell>
                 <TableCell className="text-sm text-zinc-600">{task.location || <span className="text-zinc-300">—</span>}</TableCell>
-                <TableCell className="font-mono text-sm font-medium">{task.drawing_no}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
+                    <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
+                  </div>
+                </TableCell>
                 <TableCell className="max-w-[180px]">
                   <p className="text-sm truncate" title={task.description}>{task.description}</p>
                 </TableCell>
