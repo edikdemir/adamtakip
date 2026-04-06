@@ -8,6 +8,7 @@ const adminStatusColors: Record<AdminStatus, string> = {
   devam_ediyor: "bg-indigo-50 text-indigo-700 border-indigo-200",
   tamamlandi: "bg-orange-50 text-orange-700 border-orange-200",
   onaylandi: "bg-green-50 text-green-700 border-green-200",
+  iptal: "bg-zinc-200 text-zinc-700 border-zinc-300",
 }
 
 const workerStatusColors: Record<WorkerStatus, string> = {

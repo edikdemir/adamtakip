@@ -65,7 +65,7 @@ export default function ApprovalsPage() {
                 <TableHead>Açıklama</TableHead>
                 <TableHead>Çalışan</TableHead>
                 <TableHead>Atayan</TableHead>
-                <TableHead>Tamamlanma</TableHead>
+                <TableHead>Kesin Bitiş Tarihi</TableHead>
                 <TableHead>Süre (sa)</TableHead>
                 <TableHead className="w-32">İşlemler</TableHead>
               </TableRow>

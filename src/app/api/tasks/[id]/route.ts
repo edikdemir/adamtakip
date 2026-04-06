@@ -81,6 +81,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Yetkisiz" }, { status: 403 })
   }
 
+  if (user.role === USER_ROLES.USER && task.admin_status === ADMIN_STATUS.IPTAL) {
+    return NextResponse.json({ error: "İptal edilmiş görevde değişiklik yapılamaz" }, { status: 403 })
+  }
+
   const updates: Record<string, unknown> = { ...parsed.data, updated_at: new Date().toISOString() }
 
   // When user marks task as done

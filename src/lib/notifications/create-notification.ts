@@ -50,6 +50,31 @@ export async function notifyTaskRejected(userId: string, taskId: number, drawing
   })
 }
 
+export async function notifyTaskCancelled(userId: string, taskId: number, drawingNo: string, reason?: string): Promise<void> {
+  await createNotification({
+    user_id: userId,
+    type: NOTIFICATION_TYPES.TASK_REJECTED,
+    title: "Görev İptal Edildi",
+    body: reason ? `${drawingNo} görevi iptal edildi: ${reason}` : `${drawingNo} görevi iptal edildi.`,
+    task_id: taskId,
+  })
+}
+
+export async function notifyDeadlineWarning(
+  userId: string,
+  taskId: number,
+  drawingNo: string,
+  daysOverdue: number
+): Promise<void> {
+  await createNotification({
+    user_id: userId,
+    type: NOTIFICATION_TYPES.DEADLINE_WARNING,
+    title: "Görev Süresi Geçti",
+    body: `${drawingNo} görevinin hedef bitiş tarihi ${daysOverdue} gün önce geçti.`,
+    task_id: taskId,
+  })
+}
+
 export async function notifyTaskCompleted(adminId: string, taskId: number, drawingNo: string, workerName: string): Promise<void> {
   await createNotification({
     user_id: adminId,

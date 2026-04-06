@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { useTasks, useCreateTask, useApproveTask, useRejectTask, useAssignTask } from "@/hooks/use-tasks"
+import { useTasks, useCreateTask, useApproveTask, useRejectTask, useAssignTask, useCancelTask, useReopenTask } from "@/hooks/use-tasks"
 import { useQuery } from "@tanstack/react-query"
 import { Task } from "@/types/task"
 import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDate, formatHours } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
-import { Plus, Check, RotateCcw, UserPlus, Search } from "lucide-react"
+import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2 } from "lucide-react"
 import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 
 function useProjects() {
@@ -41,6 +41,8 @@ export default function JobPoolPage() {
   const [assignTask, setAssignTask] = useState<Task | null>(null)
   const [rejectTask, setRejectTask] = useState<Task | null>(null)
   const [rejectReason, setRejectReason] = useState("")
+  const [cancelTask, setCancelTask] = useState<Task | null>(null)
+  const [cancelReason, setCancelReason] = useState("")
   const [selectedUserId, setSelectedUserId] = useState("")
 
   const { data: tasks = [], isLoading } = useTasks(activeTab !== "all" ? { status: activeTab } : undefined)
@@ -48,6 +50,8 @@ export default function JobPoolPage() {
   const approveTask = useApproveTask()
   const rejectTaskMutation = useRejectTask()
   const assignTaskMutation = useAssignTask()
+  const cancelTaskMutation = useCancelTask()
+  const reopenTaskMutation = useReopenTask()
 
   const { data: projects = [] } = useProjects()
   const { data: jobTypes = [] } = useJobTypes()
@@ -93,6 +97,13 @@ export default function JobPoolPage() {
     setRejectReason("")
   }
 
+  const handleCancel = async () => {
+    if (!cancelTask) return
+    await cancelTaskMutation.mutateAsync({ taskId: cancelTask.id, reason: cancelReason })
+    setCancelTask(null)
+    setCancelReason("")
+  }
+
   const colSpan = 15
 
   return (
@@ -132,7 +143,7 @@ export default function JobPoolPage() {
               <TableHead className="w-28">Resim No</TableHead>
               <TableHead>Yapılacak İş</TableHead>
               <TableHead className="w-24">Başlama</TableHead>
-              <TableHead className="w-24">Bitiş</TableHead>
+              <TableHead className="w-24">Hedef Bitiş</TableHead>
               <TableHead className="w-32">Atanan</TableHead>
               <TableHead className="w-20">Süre (sa)</TableHead>
               <TableHead className="w-28">Durum</TableHead>
@@ -184,6 +195,16 @@ export default function JobPoolPage() {
                           <RotateCcw className="h-3.5 w-3.5" /> İade
                         </Button>
                       </>
+                    )}
+                    {task.admin_status !== "iptal" && task.admin_status !== "onaylandi" && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-zinc-500 hover:text-red-600 gap-1" onClick={() => setCancelTask(task)}>
+                        <Ban className="h-3.5 w-3.5" /> İptal
+                      </Button>
+                    )}
+                    {task.admin_status === "iptal" && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600 hover:text-blue-700 gap-1" onClick={() => reopenTaskMutation.mutate(task.id)} disabled={reopenTaskMutation.isPending}>
+                        <Undo2 className="h-3.5 w-3.5" /> Tekrar Aç
+                      </Button>
                     )}
                   </div>
                 </TableCell>
@@ -319,6 +340,24 @@ export default function JobPoolPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignTask(null)}>İptal</Button>
             <Button onClick={handleAssign} disabled={!selectedUserId || assignTaskMutation.isPending}>Ata</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Dialog */}
+      <Dialog open={!!cancelTask} onOpenChange={(open) => !open && setCancelTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Görevi İptal Et</DialogTitle>
+            <DialogDescription>#{cancelTask?.id} — {cancelTask?.drawing_no} görevi iptal edilecek. Timer çalışıyorsa durdurulur. Daha sonra tekrar açılabilir.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>İptal Sebebi <span className="text-zinc-400">(opsiyonel)</span></Label>
+            <Textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="İptal gerekçesi..." className="resize-none" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelTask(null)}>Vazgeç</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={cancelTaskMutation.isPending}>İptal Et</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

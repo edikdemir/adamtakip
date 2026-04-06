@@ -19,6 +19,7 @@ export const ADMIN_STATUS = {
   DEVAM_EDIYOR: "devam_ediyor",
   TAMAMLANDI: "tamamlandi",
   ONAYLANDI: "onaylandi",
+  IPTAL: "iptal",
 } as const
 
 export type AdminStatus = (typeof ADMIN_STATUS)[keyof typeof ADMIN_STATUS]
@@ -55,6 +56,7 @@ export const ADMIN_STATUS_LABELS: Record<AdminStatus, string> = {
   devam_ediyor: "Devam Ediyor",
   tamamlandi: "Tamamlandı",
   onaylandi: "Onaylandı",
+  iptal: "İptal",
 }
 
 export const PRIORITY_LABELS: Record<Priority, string> = {

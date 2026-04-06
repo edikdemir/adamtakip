@@ -102,6 +102,48 @@ export function useRejectTask() {
   })
 }
 
+export function useCancelTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ taskId, reason }: { taskId: number; reason?: string }) => {
+      const res = await fetch(`/api/tasks/${taskId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || "İptal başarısız")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      toast.success("Görev iptal edildi")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useReopenTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (taskId: number) => {
+      const res = await fetch(`/api/tasks/${taskId}/reopen`, { method: "POST" })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || "Tekrar açma başarısız")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      toast.success("Görev tekrar açıldı")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
 export function useLinkTasks() {
   const queryClient = useQueryClient()
   return useMutation({

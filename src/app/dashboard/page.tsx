@@ -117,7 +117,7 @@ export default function DashboardPage() {
               <TableHead>Çizim No</TableHead>
               <TableHead className="max-w-[200px]">Açıklama</TableHead>
               <TableHead className="w-24">Başlama</TableHead>
-              <TableHead className="w-24">Bitiş</TableHead>
+              <TableHead className="w-24">Hedef Bitiş</TableHead>
               <TableHead className="w-36">Kronometre</TableHead>
               <TableHead className="w-20">Süre (sa)</TableHead>
               <TableHead className="w-28">Durum</TableHead>
@@ -146,6 +146,7 @@ export default function DashboardPage() {
                     key={task.id}
                     className={cn(
                       "hover:bg-zinc-50/50",
+                      task.admin_status === "iptal" && "bg-zinc-50 opacity-60",
                       task.timer_started_at && task.assigned_to === currentUser?.id
                         ? "bg-emerald-50/60"
                         : ""
@@ -183,7 +184,7 @@ export default function DashboardPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {task.worker_status !== WORKER_STATUS.BITTI && task.assigned_to === currentUser?.id ? (
+                      {task.worker_status !== WORKER_STATUS.BITTI && task.admin_status !== "iptal" && task.admin_status !== "onaylandi" && task.assigned_to === currentUser?.id ? (
                         <TaskRowTimer
                           task={task}
                           onUpdate={() => refetch()}
@@ -201,7 +202,7 @@ export default function DashboardPage() {
                       <Select
                         value={task.worker_status}
                         onValueChange={(val) => handleStatusChange(task, val)}
-                        disabled={task.admin_status === "onaylandi"}
+                        disabled={task.admin_status === "onaylandi" || task.admin_status === "iptal"}
                       >
                         <SelectTrigger className="h-7 text-xs border-0 bg-transparent p-0 shadow-none hover:bg-zinc-100 rounded px-2">
                           <SelectValue>

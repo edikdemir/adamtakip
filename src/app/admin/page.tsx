@@ -209,7 +209,7 @@ export default function AdminDashboardPage() {
                     <TableHead>Proje</TableHead>
                     <TableHead>Resim No</TableHead>
                     <TableHead>Kullanıcı</TableHead>
-                    <TableHead>Bitiş Tarihi</TableHead>
+                    <TableHead>Hedef Bitiş Tarihi</TableHead>
                     <TableHead className="text-right">Süre (sa)</TableHead>
                     <TableHead>Öncelik</TableHead>
                   </TableRow>
