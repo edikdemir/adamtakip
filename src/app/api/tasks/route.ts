@@ -4,18 +4,20 @@ import { getSessionFromRequest, requireKoordinatorOrAdmin } from "@/lib/auth/mid
 import { USER_ROLES } from "@/lib/constants"
 import { z } from "zod"
 
+const emptyToUndefined = z.literal("").transform(() => undefined)
+
 const createTaskSchema = z.object({
   project_id: z.string().guid(),
   job_type_id: z.string().guid(),
   job_sub_type_id: z.string().guid(),
-  zone_id: z.string().guid().optional(),
-  location: z.string().optional(),
+  zone_id: z.union([emptyToUndefined, z.string().guid()]).optional(),
+  location: z.union([emptyToUndefined, z.string()]).optional(),
   drawing_no: z.string().min(1),
   description: z.string().min(1),
-  planned_start: z.string().optional(),
-  planned_end: z.string().optional(),
+  planned_start: z.union([emptyToUndefined, z.string()]).optional(),
+  planned_end: z.union([emptyToUndefined, z.string()]).optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-  admin_notes: z.string().optional(),
+  admin_notes: z.union([emptyToUndefined, z.string()]).optional(),
 })
 
 export async function GET(req: NextRequest) {
