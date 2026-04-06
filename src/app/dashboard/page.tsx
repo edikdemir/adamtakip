@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/dialog"
 import { formatDate, formatHours, getDeadlineStatus, cn } from "@/lib/utils"
 import { WORKER_STATUS, WORKER_STATUS_LABELS } from "@/lib/constants"
-import { Search, AlertTriangle, Clock } from "lucide-react"
+import { Search, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
+import { useTimerGuard } from "@/hooks/use-timer-guard"
 
 export default function DashboardPage() {
   const { data: tasks = [], isLoading, refetch } = useTasks()
@@ -40,6 +41,8 @@ export default function DashboardPage() {
   // Tasks with running timers — only for current user's own tasks
   const runningTimers = tasks.filter((t) => t.timer_started_at !== null && t.assigned_to === currentUser?.id)
 
+  useTimerGuard(runningTimers.length > 0)
+
   const handleStatusChange = async (task: Task, newStatus: string) => {
     if (newStatus === WORKER_STATUS.BITTI) {
       setCompletionTask(task)
@@ -61,14 +64,17 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      {/* Running timer warning */}
+      {/* Running timer banner */}
       {runningTimers.length > 0 && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-sm text-indigo-700">
-          <Clock className="h-4 w-4 flex-shrink-0" />
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-300 text-sm text-emerald-800 font-medium">
+          <span className="relative flex h-3 w-3 flex-shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+          </span>
           <span>
             {runningTimers.length === 1
-              ? `"${runningTimers[0].drawing_no}" görevinizde timer çalışıyor.`
-              : `${runningTimers.length} görevinizde timer çalışıyor.`}
+              ? `Aktif kronometre: "${runningTimers[0].drawing_no}"`
+              : `${runningTimers.length} aktif kronometre çalışıyor`}
           </span>
         </div>
       )}
@@ -132,7 +138,15 @@ export default function DashboardPage() {
               filtered.map((task) => {
                 const deadlineStatus = getDeadlineStatus(task.planned_end)
                 return (
-                  <TableRow key={task.id} className="hover:bg-zinc-50/50">
+                  <TableRow
+                    key={task.id}
+                    className={cn(
+                      "hover:bg-zinc-50/50",
+                      task.timer_started_at && task.assigned_to === currentUser?.id
+                        ? "bg-emerald-50/60"
+                        : ""
+                    )}
+                  >
                     <TableCell>
                       <span className="font-medium text-zinc-900">{task.project?.code}</span>
                     </TableCell>

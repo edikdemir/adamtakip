@@ -61,6 +61,19 @@ export function useTaskTimer(
     }
   }, [isRunning, task.id])
 
+  // Heartbeat every 5 minutes while running — server uses this to detect stale timers
+  useEffect(() => {
+    if (!isRunning) return
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await fetch(`/api/tasks/${task.id}/timer/heartbeat`, { method: "POST" })
+      } catch {
+        // Silently ignore — pg_cron will auto-stop after 30 min without heartbeat
+      }
+    }, 5 * 60 * 1000)
+    return () => clearInterval(heartbeatInterval)
+  }, [isRunning, task.id])
+
   // Sync state when task prop changes
   useEffect(() => {
     setTimerStartedAt(task.timer_started_at)

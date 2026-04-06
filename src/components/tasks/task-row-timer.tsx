@@ -15,14 +15,23 @@ export function TaskRowTimer({ task, onUpdate }: TaskRowTimerProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <span
-        className={cn(
-          "font-mono text-sm font-medium tabular-nums min-w-[6rem]",
-          isRunning ? "text-indigo-600" : "text-zinc-700",
-          isWarning && "text-orange-600"
+      <span className="flex items-center gap-1.5">
+        {isRunning && (
+          <span className="relative flex h-2 w-2 flex-shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
         )}
-      >
-        {formattedTime}
+        <span
+          className={cn(
+            "font-mono text-sm tabular-nums min-w-[6rem]",
+            isWarning ? "text-orange-600 font-semibold"
+              : isRunning ? "text-emerald-700 font-semibold"
+              : "text-zinc-700 font-medium"
+          )}
+        >
+          {formattedTime}
+        </span>
       </span>
       <Button
         variant="ghost"
