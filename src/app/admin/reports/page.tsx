@@ -393,8 +393,8 @@ export default function ReportsPage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={80}
-                        label={({ name, percent }) =>
-                          percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ""
+                        label={({ percent }: { percent?: number }) =>
+                          (percent ?? 0) > 0.05 ? `${((percent ?? 0) * 100).toFixed(0)}%` : ""
                         }
                         labelLine={false}
                       >
