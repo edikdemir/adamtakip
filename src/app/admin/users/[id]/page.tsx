@@ -40,6 +40,7 @@ interface TaskData {
   planned_start: string | null
   planned_end: string | null
   completion_date: string | null
+  approved_at: string | null
   created_at: string
   project: { id: string; code: string; name: string | null } | null
   job_type: { id: string; name: string } | null

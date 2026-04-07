@@ -426,7 +426,7 @@ export default function ReportsPage() {
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#52525b" }} tickLine={false} axisLine={false} width={120} />
                       <Tooltip {...tooltipStyle} formatter={(val) => [`${val} sa`, "AdamxSaat"]} />
                       <Bar dataKey="hours" name="AdamxSaat" fill="#10b981" radius={[0, 4, 4, 0]} maxBarSize={20}
-                        label={{ position: "right", fontSize: 10, fill: "#52525b", formatter: (v: number) => `${v}` }}
+                        label={{ position: "right", fontSize: 10, fill: "#52525b", formatter: (v: unknown) => v != null ? String(v) : "" }}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -450,7 +450,7 @@ export default function ReportsPage() {
                       <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: "#52525b" }} tickLine={false} axisLine={false} width={140} />
                       <Tooltip {...tooltipStyle} formatter={(val) => [`${val} sa`, "AdamxSaat"]} />
                       <Bar dataKey="hours" name="AdamxSaat" fill="#f59e0b" radius={[0, 4, 4, 0]} maxBarSize={20}
-                        label={{ position: "right", fontSize: 10, fill: "#52525b", formatter: (v: number) => `${v}` }}
+                        label={{ position: "right", fontSize: 10, fill: "#52525b", formatter: (v: unknown) => v != null ? String(v) : "" }}
                       />
                     </BarChart>
                   </ResponsiveContainer>

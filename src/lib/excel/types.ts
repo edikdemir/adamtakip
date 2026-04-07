@@ -37,7 +37,7 @@ export interface Lookups {
   existing: ExistingTaskKey[]
 }
 
-export interface ParsedRowFields {
+export interface ParsedRowFields extends Record<string, unknown> {
   project_id?: string
   job_type_id?: string
   job_sub_type_id?: string
