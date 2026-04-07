@@ -16,7 +16,7 @@ export function TaskLinkBadge({
   dependents?: LinkedTaskRef[]
 }) {
   // Bu görev bir ana göreve BAĞIMLI → amber
-  if (parent) {
+  if (parent?.id) {
     return (
       <TooltipProvider delayDuration={150}>
         <Tooltip>

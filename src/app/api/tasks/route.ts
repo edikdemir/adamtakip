@@ -69,7 +69,13 @@ export async function GET(req: NextRequest) {
       arr.push(c)
       grouped.set(c.linked_to_task_id!, arr)
     }
-    withLinks = data.map((t) => ({ ...t, linked_tasks: grouped.get(t.id) || [] }))
+    withLinks = data.map((t) => ({
+      ...t,
+      linked_to_task: Array.isArray(t.linked_to_task)
+        ? (t.linked_to_task[0] ?? null)
+        : (t.linked_to_task ?? null),
+      linked_tasks: grouped.get(t.id) || [],
+    }))
   }
 
   return NextResponse.json({ data: withLinks })
