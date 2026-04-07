@@ -115,7 +115,7 @@ export default function JobPoolPage() {
     setCancelReason("")
   }
 
-  const colSpan = 15
+  const colSpan = 16
 
   return (
     <div className="space-y-4">
@@ -164,6 +164,7 @@ export default function JobPoolPage() {
               <TableHead className="w-20">Süre (sa)</TableHead>
               <TableHead className="w-28">Durum</TableHead>
               <TableHead className="w-20">Öncelik</TableHead>
+              <TableHead className="w-28">Bağlı Görevler</TableHead>
               <TableHead className="w-28 text-right">İşlem</TableHead>
             </TableRow>
           </TableHeader>
@@ -181,10 +182,7 @@ export default function JobPoolPage() {
                 <TableCell className="text-sm text-zinc-600">{task.zone?.name || <span className="text-zinc-300">—</span>}</TableCell>
                 <TableCell className="text-sm text-zinc-600">{task.location || <span className="text-zinc-300">—</span>}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
-                    <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
-                  </div>
+                  <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
                 </TableCell>
                 <TableCell className="max-w-[180px]">
                   <p className="text-sm truncate" title={task.description}>{task.description}</p>
@@ -195,6 +193,9 @@ export default function JobPoolPage() {
                 <TableCell><TimeDurationCell task={task} /></TableCell>
                 <TableCell><AdminStatusBadge status={task.admin_status} /></TableCell>
                 <TableCell><PriorityBadge priority={task.priority} /></TableCell>
+                <TableCell>
+                  <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
                     {(task.admin_status === "havuzda" || task.admin_status === "atandi") && (

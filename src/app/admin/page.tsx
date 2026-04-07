@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
+import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 import { TimeDurationCell } from "@/components/tasks/time-duration-cell"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS, PRIORITY_LABELS } from "@/lib/constants"
 import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
@@ -161,6 +162,7 @@ export default function AdminDashboardPage() {
                     <TableHead className="w-28">Resim No</TableHead>
                     <TableHead>Yapılacak İş</TableHead>
                     <TableHead className="w-20">Öncelik</TableHead>
+                    <TableHead className="w-28">Bağlı Görevler</TableHead>
                     <TableHead className="w-32 text-right">Geçen Süre</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -190,6 +192,9 @@ export default function AdminDashboardPage() {
                         </p>
                       </TableCell>
                       <TableCell><PriorityBadge priority={task.priority} /></TableCell>
+                      <TableCell>
+                        <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
+                      </TableCell>
                       <TableCell className="text-right">
                         <LiveElapsed task={task} />
                       </TableCell>
@@ -229,6 +234,7 @@ export default function AdminDashboardPage() {
                     <TableHead className="w-28">Hedef Bitiş</TableHead>
                     <TableHead className="w-20 text-right">Süre (sa)</TableHead>
                     <TableHead className="w-20">Öncelik</TableHead>
+                    <TableHead className="w-28">Bağlı Görevler</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -274,6 +280,9 @@ export default function AdminDashboardPage() {
                           <TimeDurationCell task={task} />
                         </TableCell>
                         <TableCell><PriorityBadge priority={task.priority} /></TableCell>
+                        <TableCell>
+                          <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
+                        </TableCell>
                       </TableRow>
                     )
                   })}
@@ -401,19 +410,20 @@ export default function AdminDashboardPage() {
                   <TableHead className="w-20 text-right">Süre (sa)</TableHead>
                   <TableHead className="w-24">Hedef Bitiş</TableHead>
                   <TableHead className="w-24">Tamamlanma</TableHead>
+                  <TableHead className="w-28">Bağlı Görevler</TableHead>
                   <TableHead className="w-10 text-center">⏱</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
+                    <TableCell colSpan={16} className="text-center py-12 text-zinc-400">
                       Yükleniyor...
                     </TableCell>
                   </TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
+                    <TableCell colSpan={16} className="text-center py-12 text-zinc-400">
                       {hasActiveFilters ? "Filtreyle eşleşen görev yok." : "Henüz görev oluşturulmadı."}
                     </TableCell>
                   </TableRow>
@@ -466,6 +476,9 @@ export default function AdminDashboardPage() {
                       </TableCell>
                       <TableCell className="text-xs text-zinc-500">
                         {formatDate(task.completion_date)}
+                      </TableCell>
+                      <TableCell>
+                        <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
                       </TableCell>
                       <TableCell className="text-center">
                         {isRunning ? (
