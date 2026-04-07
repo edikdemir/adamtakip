@@ -38,8 +38,7 @@ export async function GET(req: NextRequest) {
       job_sub_type:job_sub_types(id, name),
       zone:zones(id, name),
       assigned_user:users!assigned_to(id, display_name, email),
-      assigned_by_user:users!assigned_by(id, display_name, email),
-      linked_to_task:tasks!linked_to_task_id(id, drawing_no, description, admin_status)
+      assigned_by_user:users!assigned_by(id, display_name, email)
     `)
     .order("created_at", { ascending: false })
 
@@ -54,27 +53,43 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Her primary için bağımlı task listesini ekle (tek ekstra query)
-  let withLinks = data
+  // linked_to_task ve linked_tasks ayrı query ile çek (self-referential join yön sorunu)
+  let withLinks: typeof data = data ?? []
   if (data && data.length > 0) {
     const ids = data.map((t) => t.id)
+
+    // 1) Bağımlı görevler: linked_to_task_id bu id listesinde olanlar
     const { data: children } = await supabase
       .from("tasks")
       .select("id, drawing_no, description, admin_status, assigned_to, linked_to_task_id")
       .in("linked_to_task_id", ids)
 
-    const grouped = new Map<number, typeof children>()
+    // 2) Parent görevler: bu listedeki linked_to_task_id değerleri
+    const parentIds = [...new Set(
+      data.filter((t) => t.linked_to_task_id != null).map((t) => t.linked_to_task_id as number)
+    )]
+    const { data: parents } = parentIds.length > 0
+      ? await supabase
+          .from("tasks")
+          .select("id, drawing_no, description, admin_status")
+          .in("id", parentIds)
+      : { data: [] }
+
+    const parentMap = new Map((parents || []).map((p) => [p.id, p]))
+
+    const childrenByParent = new Map<number, typeof children>()
     for (const c of children || []) {
-      const arr = grouped.get(c.linked_to_task_id!) || []
+      const arr = childrenByParent.get(c.linked_to_task_id!) || []
       arr.push(c)
-      grouped.set(c.linked_to_task_id!, arr)
+      childrenByParent.set(c.linked_to_task_id!, arr)
     }
+
     withLinks = data.map((t) => ({
       ...t,
-      linked_to_task: Array.isArray(t.linked_to_task)
-        ? (t.linked_to_task[0] ?? null)
-        : (t.linked_to_task ?? null),
-      linked_tasks: grouped.get(t.id) || [],
+      linked_to_task: t.linked_to_task_id != null
+        ? (parentMap.get(t.linked_to_task_id) ?? null)
+        : null,
+      linked_tasks: childrenByParent.get(t.id) || [],
     }))
   }
 
