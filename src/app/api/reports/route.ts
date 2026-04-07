@@ -7,38 +7,36 @@ export async function GET(req: NextRequest) {
   if (result instanceof NextResponse) return result
 
   const { searchParams } = new URL(req.url)
-  const from = searchParams.get("from")
-  const to = searchParams.get("to")
+  const from         = searchParams.get("from")
+  const to           = searchParams.get("to")
+  const projectId    = searchParams.get("project_id")
+  const userId       = searchParams.get("user_id")
+  const jobTypeId    = searchParams.get("job_type_id")
+  const adminStatus  = searchParams.get("admin_status") ?? "onaylandi"
 
   const supabase = createServerClient()
 
   let query = supabase
     .from("tasks")
     .select(`
-      id, drawing_no, total_elapsed_seconds, timer_started_at,
-      admin_status, worker_status, completion_date, planned_end,
+      id, drawing_no, total_elapsed_seconds, manual_hours,
+      admin_status, worker_status, completion_date, planned_end, planned_start,
       assigned_user:users!assigned_to(id, display_name, email),
-      project:projects(code, name),
-      job_sub_type:job_sub_types(name)
+      project:projects(id, code, name),
+      job_type:job_types(id, name),
+      job_sub_type:job_sub_types(id, name)
     `)
     .not("assigned_to", "is", null)
 
-  if (from) query = query.gte("planned_start", from)
-  if (to) query = query.lte("planned_end", to)
+  if (from)         query = query.gte("planned_start", from)
+  if (to)           query = query.lte("planned_end", to)
+  if (projectId)    query = query.eq("project_id", projectId)
+  if (userId)       query = query.eq("assigned_to", userId)
+  if (jobTypeId)    query = query.eq("job_type_id", jobTypeId)
+  if (adminStatus !== "all") query = query.eq("admin_status", adminStatus)
 
-  const { data, error } = await query
+  const { data, error } = await query.order("completion_date", { ascending: true, nullsFirst: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Aggregate by user
-  const byUser: Record<string, { user: { id: string; display_name: string; email: string }; tasks: typeof data; totalHours: number }> = {}
-
-  for (const task of data || []) {
-    const u = (Array.isArray(task.assigned_user) ? task.assigned_user[0] : task.assigned_user) as { id: string; display_name: string; email: string } | null
-    if (!u) continue
-    if (!byUser[u.id]) byUser[u.id] = { user: u, tasks: [], totalHours: 0 }
-    byUser[u.id].tasks.push(task)
-    byUser[u.id].totalHours += task.total_elapsed_seconds / 3600
-  }
-
-  return NextResponse.json({ data: Object.values(byUser) })
+  return NextResponse.json({ data: data ?? [] })
 }
