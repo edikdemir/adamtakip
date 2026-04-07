@@ -142,9 +142,9 @@ function useReports(f: Filters) {
   const params = new URLSearchParams()
   if (f.from)         params.set("from", f.from)
   if (f.to)           params.set("to", f.to)
-  if (f.project_id)   params.set("project_id", f.project_id)
-  if (f.user_id)      params.set("user_id", f.user_id)
-  if (f.job_type_id)  params.set("job_type_id", f.job_type_id)
+  if (f.project_id   && f.project_id   !== "all") params.set("project_id",  f.project_id)
+  if (f.user_id      && f.user_id      !== "all") params.set("user_id",     f.user_id)
+  if (f.job_type_id  && f.job_type_id  !== "all") params.set("job_type_id", f.job_type_id)
   if (f.admin_status && f.admin_status !== "all") params.set("admin_status", f.admin_status)
 
   return useQuery<ReportTask[]>({
@@ -212,7 +212,7 @@ export default function ReportsPage() {
 
   const [filters, setFilters] = useState<Filters>({
     from: firstDay, to: today,
-    project_id: "", user_id: "", job_type_id: "", admin_status: "onaylandi",
+    project_id: "all", user_id: "all", job_type_id: "all", admin_status: "onaylandi",
   })
   const [applied, setApplied] = useState<Filters>(filters)
 
@@ -265,7 +265,7 @@ export default function ReportsPage() {
           <Select value={filters.project_id} onValueChange={set("project_id")}>
             <SelectTrigger className="h-8 w-40 text-sm"><SelectValue placeholder="Tümü" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tüm Projeler</SelectItem>
+              <SelectItem value="all">Tüm Projeler</SelectItem>
               {projects.map((p: { id: string; code: string; name: string }) => (
                 <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>
               ))}
@@ -277,7 +277,7 @@ export default function ReportsPage() {
           <Select value={filters.user_id} onValueChange={set("user_id")}>
             <SelectTrigger className="h-8 w-44 text-sm"><SelectValue placeholder="Tümü" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tüm Çalışanlar</SelectItem>
+              <SelectItem value="all">Tüm Çalışanlar</SelectItem>
               {users.map((u: { id: string; display_name: string }) => (
                 <SelectItem key={u.id} value={u.id}>{u.display_name}</SelectItem>
               ))}
@@ -289,7 +289,7 @@ export default function ReportsPage() {
           <Select value={filters.job_type_id} onValueChange={set("job_type_id")}>
             <SelectTrigger className="h-8 w-40 text-sm"><SelectValue placeholder="Tümü" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Tüm İş Tipleri</SelectItem>
+              <SelectItem value="all">Tüm İş Tipleri</SelectItem>
               {jobTypes.map((jt: { id: string; name: string }) => (
                 <SelectItem key={jt.id} value={jt.id}>{jt.name}</SelectItem>
               ))}
