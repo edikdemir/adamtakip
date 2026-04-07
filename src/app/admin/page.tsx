@@ -151,10 +151,15 @@ export default function AdminDashboardPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-zinc-50/80">
+                    <TableHead className="w-14">#</TableHead>
                     <TableHead>Kullanıcı</TableHead>
-                    <TableHead className="w-24">Proje</TableHead>
+                    <TableHead className="w-20">Proje</TableHead>
+                    <TableHead className="w-24">İş Tipi</TableHead>
+                    <TableHead className="w-24">İş Alt Tipi</TableHead>
+                    <TableHead className="w-20">Zone</TableHead>
+                    <TableHead className="w-20">Mahal</TableHead>
                     <TableHead className="w-28">Resim No</TableHead>
-                    <TableHead>Açıklama</TableHead>
+                    <TableHead>Yapılacak İş</TableHead>
                     <TableHead className="w-20">Öncelik</TableHead>
                     <TableHead className="w-32 text-right">Geçen Süre</TableHead>
                   </TableRow>
@@ -162,6 +167,7 @@ export default function AdminDashboardPage() {
                 <TableBody>
                   {activeTimerTasks.map(task => (
                     <TableRow key={task.id} className="bg-indigo-50/30 hover:bg-indigo-50/60">
+                      <TableCell className="font-mono text-xs text-zinc-400">#{task.id}</TableCell>
                       <TableCell>
                         {task.assigned_user ? (
                           <Link
@@ -173,8 +179,12 @@ export default function AdminDashboardPage() {
                         ) : <span className="text-zinc-400">—</span>}
                       </TableCell>
                       <TableCell className="font-medium text-zinc-700">{task.project?.code}</TableCell>
+                      <TableCell className="text-xs text-zinc-600">{task.job_type?.name || "—"}</TableCell>
+                      <TableCell className="text-xs text-zinc-500">{task.job_sub_type?.name || "—"}</TableCell>
+                      <TableCell className="text-xs text-zinc-500">{task.zone?.name || "—"}</TableCell>
+                      <TableCell className="text-xs text-zinc-500">{task.location || "—"}</TableCell>
                       <TableCell className="font-mono text-sm">{task.drawing_no}</TableCell>
-                      <TableCell className="max-w-[200px]">
+                      <TableCell className="max-w-[180px]">
                         <p className="text-sm truncate text-zinc-600" title={task.description}>
                           {task.description}
                         </p>
@@ -207,12 +217,18 @@ export default function AdminDashboardPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-orange-50/60">
-                    <TableHead>Proje</TableHead>
-                    <TableHead>Resim No</TableHead>
+                    <TableHead className="w-14">#</TableHead>
+                    <TableHead className="w-20">Proje</TableHead>
+                    <TableHead className="w-24">İş Tipi</TableHead>
+                    <TableHead className="w-24">İş Alt Tipi</TableHead>
+                    <TableHead className="w-20">Zone</TableHead>
+                    <TableHead className="w-20">Mahal</TableHead>
+                    <TableHead className="w-28">Resim No</TableHead>
+                    <TableHead>Yapılacak İş</TableHead>
                     <TableHead>Kullanıcı</TableHead>
-                    <TableHead>Hedef Bitiş Tarihi</TableHead>
-                    <TableHead className="text-right">Süre (sa)</TableHead>
-                    <TableHead>Öncelik</TableHead>
+                    <TableHead className="w-28">Hedef Bitiş</TableHead>
+                    <TableHead className="w-20 text-right">Süre (sa)</TableHead>
+                    <TableHead className="w-20">Öncelik</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -220,8 +236,18 @@ export default function AdminDashboardPage() {
                     const dl = getDeadlineStatus(task.planned_end)
                     return (
                       <TableRow key={task.id} className="hover:bg-orange-50/30">
+                        <TableCell className="font-mono text-xs text-zinc-400">#{task.id}</TableCell>
                         <TableCell className="font-medium">{task.project?.code}</TableCell>
+                        <TableCell className="text-xs text-zinc-600">{task.job_type?.name || "—"}</TableCell>
+                        <TableCell className="text-xs text-zinc-500">{task.job_sub_type?.name || "—"}</TableCell>
+                        <TableCell className="text-xs text-zinc-500">{task.zone?.name || "—"}</TableCell>
+                        <TableCell className="text-xs text-zinc-500">{task.location || "—"}</TableCell>
                         <TableCell className="font-mono text-sm">{task.drawing_no}</TableCell>
+                        <TableCell className="max-w-[160px]">
+                          <p className="text-sm truncate text-zinc-600" title={task.description}>
+                            {task.description}
+                          </p>
+                        </TableCell>
                         <TableCell>
                           {task.assigned_user ? (
                             <Link
