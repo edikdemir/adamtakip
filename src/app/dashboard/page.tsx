@@ -113,10 +113,14 @@ export default function DashboardPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-zinc-50/80">
-              <TableHead className="w-24">Proje</TableHead>
-              <TableHead>İş Tipi</TableHead>
-              <TableHead>Çizim No</TableHead>
-              <TableHead className="max-w-[200px]">Açıklama</TableHead>
+              <TableHead className="w-16">#</TableHead>
+              <TableHead className="w-20">Proje</TableHead>
+              <TableHead className="w-28">İş Tipi</TableHead>
+              <TableHead className="w-28">İş Alt Tipi</TableHead>
+              <TableHead className="w-24">Zone</TableHead>
+              <TableHead className="w-24">Mahal</TableHead>
+              <TableHead className="w-28">Resim No</TableHead>
+              <TableHead className="max-w-[180px]">Yapılacak İş</TableHead>
               <TableHead className="w-24">Başlama</TableHead>
               <TableHead className="w-24">Hedef Bitiş</TableHead>
               <TableHead className="w-36">Kronometre</TableHead>
@@ -129,13 +133,13 @@ export default function DashboardPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center py-12 text-zinc-400">
+                <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
                   Yükleniyor...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="text-center py-12 text-zinc-400">
+                <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
                   Görev bulunamadı
                 </TableCell>
               </TableRow>
@@ -154,18 +158,27 @@ export default function DashboardPage() {
                     )}
                   >
                     <TableCell>
+                      <span className="font-mono text-xs text-zinc-400">#{task.id}</span>
+                    </TableCell>
+                    <TableCell>
                       <span className="font-medium text-zinc-900">{task.project?.code}</span>
                     </TableCell>
                     <TableCell>
-                      <div className="text-xs text-zinc-600">
-                        <p className="font-medium">{task.job_type?.name}</p>
-                        <p className="text-zinc-400">{task.job_sub_type?.name}</p>
-                      </div>
+                      <span className="text-xs text-zinc-600 font-medium">{task.job_type?.name || "—"}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs text-zinc-500">{task.job_sub_type?.name || "—"}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-zinc-500">{task.zone?.name || "—"}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-zinc-500">{task.location || "—"}</span>
                     </TableCell>
                     <TableCell>
                       <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
                     </TableCell>
-                    <TableCell className="max-w-[200px]">
+                    <TableCell className="max-w-[180px]">
                       <p className="text-sm text-zinc-700 truncate" title={task.description}>
                         {task.description}
                       </p>
