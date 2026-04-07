@@ -44,8 +44,8 @@ export async function notifyTaskRejected(userId: string, taskId: number, drawing
   await createNotification({
     user_id: userId,
     type: NOTIFICATION_TYPES.TASK_REJECTED,
-    title: "Görev İade Edildi",
-    body: reason ? `${drawingNo}: ${reason}` : `${drawingNo} görevi iade edildi.`,
+    title: "Görev Revizeye Gönderildi",
+    body: reason ? `${drawingNo}: ${reason}` : `${drawingNo} görevi revizeye gönderildi.`,
     task_id: taskId,
   })
 }

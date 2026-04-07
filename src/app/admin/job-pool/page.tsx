@@ -209,7 +209,7 @@ export default function JobPoolPage() {
                           <Check className="h-3.5 w-3.5" /> Onayla
                         </Button>
                         <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500 hover:text-red-600 gap-1" onClick={() => setRejectTask(task)}>
-                          <RotateCcw className="h-3.5 w-3.5" /> İade
+                          <RotateCcw className="h-3.5 w-3.5" /> Revizeye Gönder
                         </Button>
                       </>
                     )}
@@ -282,7 +282,7 @@ export default function JobPoolPage() {
                   disabled={!form.project_id}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder={form.project_id ? "Zone seç (opsiyonel)" : "Önce proje seçin"} />
+                    <SelectValue placeholder={form.project_id ? "Zone seç ((opsiyonel))" : "Önce proje seçin"} />
                   </SelectTrigger>
                   <SelectContent>
                     {zones.map((z: { id: string; name: string }) => (
@@ -371,7 +371,7 @@ export default function JobPoolPage() {
             <DialogDescription>#{cancelTask?.id} — {cancelTask?.drawing_no} görevi iptal edilecek. Timer çalışıyorsa durdurulur. Daha sonra tekrar açılabilir.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label>İptal Sebebi <span className="text-zinc-400">(opsiyonel)</span></Label>
+            <Label>İptal Sebebi <span className="text-zinc-400">((opsiyonel))</span></Label>
             <Textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="İptal gerekçesi..." className="resize-none" />
           </div>
           <DialogFooter>
@@ -385,16 +385,16 @@ export default function JobPoolPage() {
       <Dialog open={!!rejectTask} onOpenChange={(open) => !open && setRejectTask(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Görevi İade Et</DialogTitle>
-            <DialogDescription>#{rejectTask?.id} — {rejectTask?.drawing_no} görevi kullanıcıya iade edilecek.</DialogDescription>
+            <DialogTitle>Revizeye Gönder</DialogTitle>
+            <DialogDescription>#{rejectTask?.id} — {rejectTask?.drawing_no} görevi revizeye gönderilecek. Çalışana e-posta bildirimi gönderilecektir.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label>İade Sebebi <span className="text-zinc-400">(opsiyonel)</span></Label>
+            <Label>Revize Sebebi <span className="text-zinc-400">(opsiyonel)</span></Label>
             <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Düzeltilmesi gereken..." className="resize-none" />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRejectTask(null)}>İptal</Button>
-            <Button variant="destructive" onClick={handleReject} disabled={rejectTaskMutation.isPending}>İade Et</Button>
+            <Button variant="destructive" onClick={handleReject} disabled={rejectTaskMutation.isPending}>Revizeye Gönder</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

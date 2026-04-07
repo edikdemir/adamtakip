@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await supabase.from("task_comments").insert({
       task_id: parseInt(id),
       user_id: user.id,
-      body: `❌ İade Sebebi: ${reason}`,
+      body: `🔄 Revize Sebebi: ${reason}`,
     })
   }
 

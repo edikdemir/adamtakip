@@ -91,12 +91,12 @@ export function useRejectTask() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),
       })
-      if (!res.ok) throw new Error("İade başarısız")
+      if (!res.ok) throw new Error("Revizeye gönderme başarısız")
       return res.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      toast.success("Görev iade edildi")
+      toast.success("Görev revizeye gönderildi")
     },
     onError: (err: Error) => toast.error(err.message),
   })

@@ -137,8 +137,8 @@ export async function sendTaskRejectedEmail(user: User, task: Task, reason?: str
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_reject) return
 
-  const body = `Merhaba ${user.display_name},<br><br><strong>${task.drawing_no}</strong> çizim numaralı göreviniz iade edildi.${reason ? `<br><br><strong>Sebep:</strong> ${reason}` : ""}`
-  await sendEmail(user.email, `Görev İade Edildi: ${task.drawing_no}`, emailTemplate("Görev İade Edildi", body, "/dashboard"))
+  const body = `Merhaba ${user.display_name},<br><br><strong>${task.drawing_no}</strong> çizim numaralı göreviniz revizeye gönderildi.${reason ? `<br><br><strong>Revize Sebebi:</strong> ${reason}` : ""}<br><br>Lütfen gerekli düzeltmeleri yaparak görevi tekrar tamamlayın.`
+  await sendEmail(user.email, `Revize: ${task.drawing_no}`, emailTemplate("Görev Revizeye Gönderildi", body, "/dashboard"))
 }
 
 export async function sendOverdueEmail(

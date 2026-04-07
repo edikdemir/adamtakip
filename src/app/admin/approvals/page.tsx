@@ -119,7 +119,7 @@ export default function ApprovalsPage() {
                           className="h-7 text-xs gap-1 border-red-200 text-red-600 hover:bg-red-50"
                           onClick={() => { setRejectTask(task); setRejectReason("") }}
                         >
-                          <RotateCcw className="h-3 w-3" /> İade
+                          <RotateCcw className="h-3 w-3" /> Revizeye Gönder
                         </Button>
                       </div>
                     </TableCell>
@@ -135,17 +135,17 @@ export default function ApprovalsPage() {
       <Dialog open={!!rejectTask} onOpenChange={(open) => !open && setRejectTask(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Görevi İade Et</DialogTitle>
+            <DialogTitle>Revizeye Gönder</DialogTitle>
             <DialogDescription>
-              <strong>{rejectTask?.drawing_no}</strong> görevi tekrar işleme alınmak üzere iade edilecek.
+              <strong>{rejectTask?.drawing_no}</strong> görevi revizeye gönderilecek. Çalışana e-posta bildirimi iletilecektir.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <label className="text-sm font-medium text-zinc-700">İade Sebebi (zorunlu)</label>
+            <label className="text-sm font-medium text-zinc-700">Revize Sebebi (zorunlu)</label>
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="İade gerekçesini belirtin..."
+              placeholder="Düzeltilmesi gereken noktaları belirtin..."
               rows={3}
             />
           </div>
@@ -156,7 +156,7 @@ export default function ApprovalsPage() {
               onClick={handleReject}
               disabled={!rejectReason.trim() || rejectTaskMutation.isPending}
             >
-              {rejectTaskMutation.isPending ? "İade ediliyor..." : "İade Et"}
+              {rejectTaskMutation.isPending ? "Gönderiliyor..." : "Revizeye Gönder"}
             </Button>
           </DialogFooter>
         </DialogContent>
