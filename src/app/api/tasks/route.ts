@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getSessionFromRequest, requireKoordinatorOrAdmin } from "@/lib/auth/middleware-auth"
+import { getSessionFromRequest, requireAdmin } from "@/lib/auth/middleware-auth"
 import { USER_ROLES } from "@/lib/constants"
 import { z } from "zod"
 
@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
       job_sub_type:job_sub_types(id, name),
       zone:zones(id, name),
       assigned_user:users!assigned_to(id, display_name, email),
-      assigned_by_user:users!assigned_by(id, display_name, email)
+      assigned_by_user:users!assigned_by(id, display_name, email),
+      linked_to_task:tasks!linked_to_task_id(id, drawing_no, description, admin_status)
     `)
     .order("created_at", { ascending: false })
 
@@ -53,11 +54,29 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ data })
+  // Her primary için bağımlı task listesini ekle (tek ekstra query)
+  let withLinks = data
+  if (data && data.length > 0) {
+    const ids = data.map((t) => t.id)
+    const { data: children } = await supabase
+      .from("tasks")
+      .select("id, drawing_no, description, admin_status, assigned_to, linked_to_task_id")
+      .in("linked_to_task_id", ids)
+
+    const grouped = new Map<number, typeof children>()
+    for (const c of children || []) {
+      const arr = grouped.get(c.linked_to_task_id!) || []
+      arr.push(c)
+      grouped.set(c.linked_to_task_id!, arr)
+    }
+    withLinks = data.map((t) => ({ ...t, linked_tasks: grouped.get(t.id) || [] }))
+  }
+
+  return NextResponse.json({ data: withLinks })
 }
 
 export async function POST(req: NextRequest) {
-  const result = await requireKoordinatorOrAdmin(req)
+  const result = await requireAdmin(req)
   if (result instanceof NextResponse) return result
 
   const body = await req.json()

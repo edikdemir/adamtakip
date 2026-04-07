@@ -16,9 +16,11 @@ import {
 } from "@/components/ui/dialog"
 import { formatDate, formatHours, getDeadlineStatus, cn } from "@/lib/utils"
 import { WORKER_STATUS, WORKER_STATUS_LABELS } from "@/lib/constants"
-import { Search, AlertTriangle } from "lucide-react"
+import { Search, AlertTriangle, Link2 } from "lucide-react"
 import { toast } from "sonner"
 import { useTimerGuard } from "@/hooks/use-timer-guard"
+import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
+import { LinkTasksDialog } from "@/components/tasks/link-tasks-dialog"
 
 export default function DashboardPage() {
   const { data: tasks = [], isLoading, refetch } = useTasks()
@@ -27,6 +29,7 @@ export default function DashboardPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [completionTask, setCompletionTask] = useState<Task | null>(null)
+  const [linkPrimary, setLinkPrimary] = useState<Task | null>(null)
 
   const filtered = tasks.filter((t) => {
     const matchSearch =
@@ -115,23 +118,24 @@ export default function DashboardPage() {
               <TableHead>Çizim No</TableHead>
               <TableHead className="max-w-[200px]">Açıklama</TableHead>
               <TableHead className="w-24">Başlama</TableHead>
-              <TableHead className="w-24">Bitiş</TableHead>
+              <TableHead className="w-24">Hedef Bitiş</TableHead>
               <TableHead className="w-36">Kronometre</TableHead>
               <TableHead className="w-20">Süre (sa)</TableHead>
               <TableHead className="w-28">Durum</TableHead>
               <TableHead className="w-24">Öncelik</TableHead>
+              <TableHead className="w-32">Bağlı Görevler</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-12 text-zinc-400">
+                <TableCell colSpan={11} className="text-center py-12 text-zinc-400">
                   Yükleniyor...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-12 text-zinc-400">
+                <TableCell colSpan={11} className="text-center py-12 text-zinc-400">
                   Görev bulunamadı
                 </TableCell>
               </TableRow>
@@ -143,6 +147,7 @@ export default function DashboardPage() {
                     key={task.id}
                     className={cn(
                       "hover:bg-zinc-50/50",
+                      task.admin_status === "iptal" && "bg-zinc-50 opacity-60",
                       task.timer_started_at && task.assigned_to === currentUser?.id
                         ? "bg-emerald-50/60"
                         : ""
@@ -180,7 +185,7 @@ export default function DashboardPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {task.worker_status !== WORKER_STATUS.BITTI && task.assigned_to === currentUser?.id ? (
+                      {task.worker_status !== WORKER_STATUS.BITTI && task.admin_status !== "iptal" && task.admin_status !== "onaylandi" && task.assigned_to === currentUser?.id ? (
                         <TaskRowTimer
                           task={task}
                           onUpdate={() => refetch()}
@@ -196,7 +201,7 @@ export default function DashboardPage() {
                       <Select
                         value={task.worker_status}
                         onValueChange={(val) => handleStatusChange(task, val)}
-                        disabled={task.admin_status === "onaylandi"}
+                        disabled={task.admin_status === "onaylandi" || task.admin_status === "iptal"}
                       >
                         <SelectTrigger className="h-7 text-xs border-0 bg-transparent p-0 shadow-none hover:bg-zinc-100 rounded px-2">
                           <SelectValue>
@@ -212,6 +217,25 @@ export default function DashboardPage() {
                     </TableCell>
                     <TableCell>
                       <PriorityBadge priority={task.priority} />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <TaskLinkBadge
+                          parent={task.linked_to_task}
+                          dependents={task.linked_tasks}
+                        />
+                        {task.linked_to_task_id == null && task.assigned_to === currentUser?.id && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs gap-1"
+                            onClick={() => setLinkPrimary(task)}
+                          >
+                            <Link2 className="h-3.5 w-3.5" />
+                            {task.linked_tasks && task.linked_tasks.length > 0 ? "Düzenle" : "Linkle"}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 )
@@ -229,7 +253,7 @@ export default function DashboardPage() {
             <DialogDescription>
               <strong>{completionTask?.drawing_no}</strong> görevini tamamlandı olarak işaretlemek istiyor musunuz?
               <br /><br />
-              Timer otomatik olarak durdurulacak ve koordinatörünüze bildirim gönderilecek.
+              Timer otomatik olarak durdurulacak ve yöneticinize bildirim gönderilecek.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -240,6 +264,13 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <LinkTasksDialog
+        open={!!linkPrimary}
+        onOpenChange={(open) => !open && setLinkPrimary(null)}
+        primary={linkPrimary}
+        allUserTasks={tasks.filter((t) => t.assigned_to === currentUser?.id)}
+      />
     </div>
   )
 }

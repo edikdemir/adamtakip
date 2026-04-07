@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth/middleware-auth"
 import { z } from "zod"
 
 const updateSchema = z.object({
-  role: z.enum(["user", "koordinator", "super_admin"]).optional(),
+  role: z.enum(["user", "super_admin"]).optional(),
   is_active: z.boolean().optional(),
   display_name: z.string().optional(),
 })

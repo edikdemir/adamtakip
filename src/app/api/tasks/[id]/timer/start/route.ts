@@ -24,6 +24,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Bu göreve erişim yetkiniz yok" }, { status: 403 })
   }
 
+  if (task.admin_status === ADMIN_STATUS.IPTAL) {
+    return NextResponse.json({ error: "İptal edilmiş görevde timer başlatılamaz" }, { status: 400 })
+  }
+
+  if (task.admin_status === ADMIN_STATUS.ONAYLANDI) {
+    return NextResponse.json({ error: "Onaylanmış görevde timer başlatılamaz" }, { status: 400 })
+  }
+
   if (task.timer_started_at !== null) {
     return NextResponse.json({ error: "Timer zaten çalışıyor" }, { status: 400 })
   }

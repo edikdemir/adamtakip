@@ -48,6 +48,10 @@ export interface Task {
   completion_date: string | null
   admin_notes: string | null
   priority: Priority
+  linked_to_task_id: number | null
+  approved_at: string | null
+  approved_by: string | null
+  overdue_notified_at: string | null
   created_at: string
   updated_at: string
   // Joins
@@ -57,6 +61,8 @@ export interface Task {
   zone?: Zone
   assigned_user?: { id: string; display_name: string; email: string }
   assigned_by_user?: { id: string; display_name: string; email: string }
+  linked_to_task?: { id: number; drawing_no: string; description: string; admin_status: AdminStatus } | null
+  linked_tasks?: Array<{ id: number; drawing_no: string; description: string; admin_status: AdminStatus; assigned_to: string | null }>
 }
 
 export interface TaskComment {

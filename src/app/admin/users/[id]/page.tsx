@@ -108,12 +108,10 @@ function useUserDetail(id: string) {
 
 const ROLE_LABELS: Record<string, string> = {
   user: "Kullanıcı",
-  koordinator: "Koordinatör",
   super_admin: "Süper Admin",
 }
 const ROLE_COLORS: Record<string, string> = {
   user: "bg-zinc-100 text-zinc-600",
-  koordinator: "bg-blue-100 text-blue-700",
   super_admin: "bg-purple-100 text-purple-700",
 }
 
@@ -395,14 +393,15 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                     <TableHead className="w-28">Durum</TableHead>
                     <TableHead className="w-20">Öncelik</TableHead>
                     <TableHead className="w-24 text-right">Süre</TableHead>
-                    <TableHead className="w-24">Planlanan Bitiş</TableHead>
-                    <TableHead className="w-24">Tamamlanma</TableHead>
+                    <TableHead className="w-24">Hedef Bitiş</TableHead>
+                    <TableHead className="w-24">Kesin Bitiş</TableHead>
+                    <TableHead className="w-24">Onay Tarihi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTasks.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-10 text-zinc-400">
+                      <TableCell colSpan={10} className="text-center py-10 text-zinc-400">
                         Bu filtrede görev yok.
                       </TableCell>
                     </TableRow>
@@ -454,6 +453,9 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                         </TableCell>
                         <TableCell className="text-sm text-zinc-500">
                           {formatDate(task.completion_date)}
+                        </TableCell>
+                        <TableCell className="text-sm text-zinc-500">
+                          {formatDate(task.approved_at)}
                         </TableCell>
                       </TableRow>
                     )

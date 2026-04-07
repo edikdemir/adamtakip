@@ -17,6 +17,8 @@ interface EmailSettings {
   send_on_reject: boolean
   send_on_complete: boolean
   deadline_warning_days: number
+  overdue_notify_user: boolean
+  overdue_notify_admin: boolean
 }
 
 interface SystemSettings {
@@ -63,6 +65,8 @@ export default function SettingsPage() {
     send_on_reject: true,
     send_on_complete: true,
     deadline_warning_days: 2,
+    overdue_notify_user: true,
+    overdue_notify_admin: true,
   })
   const [workingHours, setWorkingHours] = useState({ start: "08:00", end: "17:00" })
 
@@ -122,7 +126,9 @@ export default function SettingsPage() {
               { key: "send_on_assign" as const, label: "Görev Atandığında", desc: "Kullanıcıya yeni görev bildir" },
               { key: "send_on_approve" as const, label: "Görev Onaylandığında", desc: "Kullanıcıya onay bildir" },
               { key: "send_on_reject" as const, label: "Görev İade Edildiğinde", desc: "Kullanıcıya iade bildir" },
-              { key: "send_on_complete" as const, label: "Görev Tamamlandığında", desc: "Koordinatör ve admin'e bildir" },
+              { key: "send_on_complete" as const, label: "Görev Tamamlandığında", desc: "Adminlere bildir" },
+              { key: "overdue_notify_user" as const, label: "Gecikmiş Görev — Kullanıcıya", desc: "Hedef bitiş tarihi geçen görev için kullanıcıya mail gönder" },
+              { key: "overdue_notify_admin" as const, label: "Gecikmiş Görev — Adminlere", desc: "Hedef bitiş tarihi geçen görev için adminlere mail gönder" },
             ].map(item => (
               <div key={item.key} className="flex items-center justify-between">
                 <div>

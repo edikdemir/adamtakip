@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getSessionFromRequest, requireKoordinatorOrAdmin } from "@/lib/auth/middleware-auth"
+import { getSessionFromRequest, requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS, USER_ROLES, WORKER_STATUS } from "@/lib/constants"
 import { notifyTaskCompleted } from "@/lib/notifications/create-notification"
 import { sendTaskCompletedEmail } from "@/lib/email/graph-mailer"
@@ -34,7 +34,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       job_sub_type:job_sub_types(id, name),
       zone:zones(id, name),
       assigned_user:users!assigned_to(id, display_name, email),
-      assigned_by_user:users!assigned_by(id, display_name, email)
+      assigned_by_user:users!assigned_by(id, display_name, email),
+      linked_to_task:tasks!linked_to_task_id(id, drawing_no, description, admin_status)
     `)
     .eq("id", id)
     .single()
@@ -45,7 +46,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Yetkisiz" }, { status: 403 })
   }
 
-  return NextResponse.json({ data: task })
+  // Bu task primary ise bağımlı görevleri de getir
+  const { data: linkedTasks } = await supabase
+    .from("tasks")
+    .select("id, drawing_no, description, admin_status, assigned_to")
+    .eq("linked_to_task_id", id)
+    .order("id")
+
+  return NextResponse.json({ data: { ...task, linked_tasks: linkedTasks || [] } })
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -73,6 +81,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Yetkisiz" }, { status: 403 })
   }
 
+  if (user.role === USER_ROLES.USER && task.admin_status === ADMIN_STATUS.IPTAL) {
+    return NextResponse.json({ error: "İptal edilmiş görevde değişiklik yapılamaz" }, { status: 403 })
+  }
+
   const updates: Record<string, unknown> = { ...parsed.data, updated_at: new Date().toISOString() }
 
   // When user marks task as done
@@ -88,11 +100,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.timer_started_at = null
     }
 
-    // Notify admins/koordinators
+    // Notify all super_admins
     const { data: admins } = await supabase
       .from("users")
       .select("id, email, display_name")
-      .in("role", ["super_admin", "koordinator"])
+      .eq("role", USER_ROLES.SUPER_ADMIN)
+      .eq("is_active", true)
 
     const assignerName = user.display_name
     if (admins) {
@@ -116,7 +129,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const result = await requireKoordinatorOrAdmin(req)
+  const result = await requireAdmin(req)
   if (result instanceof NextResponse) return result
 
   const { id } = await params

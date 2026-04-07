@@ -35,12 +35,7 @@ export async function middleware(req: NextRequest) {
 
   // Protect /admin/* routes — only super_admin
   if (pathname.startsWith("/admin") && user.role !== USER_ROLES.SUPER_ADMIN) {
-    // Koordinator can access assignments and approvals
-    const koordinatorPaths = ["/admin/assignments", "/admin/approvals"]
-    const isKoordinatorPath = koordinatorPaths.some((p) => pathname.startsWith(p))
-    if (!(isKoordinatorPath && user.role === USER_ROLES.KOORDINATOR)) {
-      return NextResponse.redirect(new URL("/dashboard", req.url))
-    }
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
   // Sliding session: refresh cookie on every request

@@ -24,14 +24,6 @@ export async function requireAdmin(req: NextRequest): Promise<SessionUser | Next
   return result
 }
 
-export async function requireKoordinatorOrAdmin(req: NextRequest): Promise<SessionUser | NextResponse> {
-  const result = await requireAuth(req)
-  if (result instanceof NextResponse) return result
-  if (result.role === USER_ROLES.USER) {
-    return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 403 })
-  }
-  return result
-}
 
 export function getSessionFromRequest(req: NextRequest): Promise<SessionUser | null> {
   const token = req.cookies.get(SESSION_COOKIE_NAME)?.value

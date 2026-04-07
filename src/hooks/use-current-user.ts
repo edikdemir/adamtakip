@@ -8,8 +8,7 @@ export function useCurrentUser() {
     user,
     isLoading,
     isSuperAdmin: user?.role === USER_ROLES.SUPER_ADMIN,
-    isKoordinator: user?.role === USER_ROLES.KOORDINATOR,
     isUser: user?.role === USER_ROLES.USER,
-    canAssign: user?.role === USER_ROLES.SUPER_ADMIN || user?.role === USER_ROLES.KOORDINATOR,
+    canAssign: user?.role === USER_ROLES.SUPER_ADMIN,
   }
 }

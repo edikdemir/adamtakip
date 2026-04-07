@@ -102,6 +102,110 @@ export function useRejectTask() {
   })
 }
 
+export function useCancelTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ taskId, reason }: { taskId: number; reason?: string }) => {
+      const res = await fetch(`/api/tasks/${taskId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || "İptal başarısız")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      toast.success("Görev iptal edildi")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useReopenTask() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (taskId: number) => {
+      const res = await fetch(`/api/tasks/${taskId}/reopen`, { method: "POST" })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || "Tekrar açma başarısız")
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      toast.success("Görev tekrar açıldı")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useLinkTasks() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ primaryId, dependentIds }: { primaryId: number; dependentIds: number[] }) => {
+      const res = await fetch(`/api/tasks/${primaryId}/link`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dependent_task_ids: dependentIds }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error)
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      toast.success("Bağlı görevler güncellendi")
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+interface BulkImportInput {
+  tasks: Array<Record<string, unknown>>
+}
+
+interface BulkImportResult {
+  inserted: number
+  skipped_duplicates: number
+  errors: Array<{ index: number; message: string }>
+}
+
+export function useBulkImportTasks() {
+  const queryClient = useQueryClient()
+  return useMutation<BulkImportResult, Error, BulkImportInput>({
+    mutationFn: async (input) => {
+      const res = await fetch("/api/tasks/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || "İçe aktarma başarısız")
+      }
+      return res.json()
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+      if (result.inserted > 0 && result.skipped_duplicates > 0) {
+        toast.success(`${result.inserted} görev içe aktarıldı, ${result.skipped_duplicates} duplicate atlandı`)
+      } else if (result.inserted > 0) {
+        toast.success(`${result.inserted} görev içe aktarıldı`)
+      } else if (result.skipped_duplicates > 0) {
+        toast.info(`Hiçbir görev eklenmedi (${result.skipped_duplicates} duplicate atlandı)`)
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  })
+}
+
 export function useUpdateTask() {
   const queryClient = useQueryClient()
   return useMutation({

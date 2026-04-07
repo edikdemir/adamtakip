@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { useTasks, useCreateTask, useApproveTask, useRejectTask, useAssignTask } from "@/hooks/use-tasks"
+import { useTasks, useCreateTask, useApproveTask, useRejectTask, useAssignTask, useCancelTask, useReopenTask } from "@/hooks/use-tasks"
 import { useQuery } from "@tanstack/react-query"
 import { Task } from "@/types/task"
 import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
@@ -15,7 +15,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDate } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
-import { Plus, Check, RotateCcw, UserPlus, Search } from "lucide-react"
+import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2, FileSpreadsheet } from "lucide-react"
+import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
+import { ImportTasksDialog } from "@/components/tasks/import-tasks-dialog"
 
 function useProjects() {
   return useQuery({ queryKey: ["projects"], queryFn: () => fetch("/api/projects").then(r => r.json()).then(r => r.data || []) })
@@ -38,9 +40,12 @@ export default function JobPoolPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [search, setSearch] = useState("")
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [assignTask, setAssignTask] = useState<Task | null>(null)
   const [rejectTask, setRejectTask] = useState<Task | null>(null)
   const [rejectReason, setRejectReason] = useState("")
+  const [cancelTask, setCancelTask] = useState<Task | null>(null)
+  const [cancelReason, setCancelReason] = useState("")
   const [selectedUserId, setSelectedUserId] = useState("")
 
   const { data: tasks = [], isLoading } = useTasks(activeTab !== "all" ? { status: activeTab } : undefined)
@@ -48,6 +53,8 @@ export default function JobPoolPage() {
   const approveTask = useApproveTask()
   const rejectTaskMutation = useRejectTask()
   const assignTaskMutation = useAssignTask()
+  const cancelTaskMutation = useCancelTask()
+  const reopenTaskMutation = useReopenTask()
 
   const { data: projects = [] } = useProjects()
   const { data: jobTypes = [] } = useJobTypes()
@@ -101,15 +108,27 @@ export default function JobPoolPage() {
     setRejectReason("")
   }
 
+  const handleCancel = async () => {
+    if (!cancelTask) return
+    await cancelTaskMutation.mutateAsync({ taskId: cancelTask.id, reason: cancelReason })
+    setCancelTask(null)
+    setCancelReason("")
+  }
+
   const colSpan = 15
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-zinc-900">İş Havuzu</h1>
-        <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> Yeni Görev
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <FileSpreadsheet className="h-4 w-4" /> Excel İçe Aktar
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> Yeni Görev
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -140,7 +159,7 @@ export default function JobPoolPage() {
               <TableHead className="w-28">Resim No</TableHead>
               <TableHead>Yapılacak İş</TableHead>
               <TableHead className="w-24">Başlama</TableHead>
-              <TableHead className="w-24">Bitiş</TableHead>
+              <TableHead className="w-24">Hedef Bitiş</TableHead>
               <TableHead className="w-32">Atanan</TableHead>
               <TableHead className="w-20">Süre (sa)</TableHead>
               <TableHead className="w-28">Durum</TableHead>
@@ -161,7 +180,12 @@ export default function JobPoolPage() {
                 <TableCell className="text-sm text-zinc-500">{task.job_sub_type?.name}</TableCell>
                 <TableCell className="text-sm text-zinc-600">{task.zone?.name || <span className="text-zinc-300">—</span>}</TableCell>
                 <TableCell className="text-sm text-zinc-600">{task.location || <span className="text-zinc-300">—</span>}</TableCell>
-                <TableCell className="font-mono text-sm font-medium">{task.drawing_no}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
+                    <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
+                  </div>
+                </TableCell>
                 <TableCell className="max-w-[180px]">
                   <p className="text-sm truncate" title={task.description}>{task.description}</p>
                 </TableCell>
@@ -187,6 +211,16 @@ export default function JobPoolPage() {
                           <RotateCcw className="h-3.5 w-3.5" /> İade
                         </Button>
                       </>
+                    )}
+                    {task.admin_status !== "iptal" && task.admin_status !== "onaylandi" && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-zinc-500 hover:text-red-600 gap-1" onClick={() => setCancelTask(task)}>
+                        <Ban className="h-3.5 w-3.5" /> İptal
+                      </Button>
+                    )}
+                    {task.admin_status === "iptal" && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-600 hover:text-blue-700 gap-1" onClick={() => reopenTaskMutation.mutate(task.id)} disabled={reopenTaskMutation.isPending}>
+                        <Undo2 className="h-3.5 w-3.5" /> Tekrar Aç
+                      </Button>
                     )}
                   </div>
                 </TableCell>
@@ -322,6 +356,26 @@ export default function JobPoolPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignTask(null)}>İptal</Button>
             <Button onClick={handleAssign} disabled={!selectedUserId || assignTaskMutation.isPending}>Ata</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ImportTasksDialog open={importOpen} onOpenChange={setImportOpen} />
+
+      {/* Cancel Dialog */}
+      <Dialog open={!!cancelTask} onOpenChange={(open) => !open && setCancelTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Görevi İptal Et</DialogTitle>
+            <DialogDescription>#{cancelTask?.id} — {cancelTask?.drawing_no} görevi iptal edilecek. Timer çalışıyorsa durdurulur. Daha sonra tekrar açılabilir.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>İptal Sebebi <span className="text-zinc-400">(opsiyonel)</span></Label>
+            <Textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} placeholder="İptal gerekçesi..." className="resize-none" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelTask(null)}>Vazgeç</Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={cancelTaskMutation.isPending}>İptal Et</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

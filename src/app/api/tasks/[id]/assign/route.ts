@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { requireKoordinatorOrAdmin } from "@/lib/auth/middleware-auth"
+import { requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { notifyTaskAssigned } from "@/lib/notifications/create-notification"
 import { sendTaskAssignedEmail } from "@/lib/email/graph-mailer"
@@ -9,7 +9,7 @@ import { z } from "zod"
 const schema = z.object({ assigned_to: z.string().guid() })
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await requireKoordinatorOrAdmin(req)
+  const user = await requireAdmin(req)
   if (user instanceof NextResponse) return user
 
   const { id } = await params

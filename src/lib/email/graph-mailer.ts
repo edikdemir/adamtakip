@@ -38,7 +38,13 @@ async function getEmailSettings() {
     send_on_approve: boolean
     send_on_reject: boolean
     send_on_complete: boolean
+    overdue_notify_user?: boolean
+    overdue_notify_admin?: boolean
   } | null
+}
+
+export async function getEmailNotificationSettings() {
+  return getEmailSettings()
 }
 
 async function sendEmail(to: string, subject: string, htmlBody: string): Promise<void> {
@@ -113,7 +119,7 @@ export async function sendTaskAssignedEmail(user: User, task: Task): Promise<voi
     <strong>Çizim No:</strong> ${task.drawing_no}<br>
     <strong>Açıklama:</strong> ${task.description}<br>
     <strong>İş Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
-    ${task.planned_end ? `<strong>Bitiş Tarihi:</strong> ${new Date(task.planned_end).toLocaleDateString("tr-TR")}<br>` : ""}
+    ${task.planned_end ? `<strong>Hedef Bitiş Tarihi:</strong> ${new Date(task.planned_end).toLocaleDateString("tr-TR")}<br>` : ""}
     <br>Detaylar için uygulamaya gidiniz.
   `
   await sendEmail(user.email, subject, emailTemplate("Yeni Görev Atandı", body, "/dashboard"))
@@ -133,6 +139,42 @@ export async function sendTaskRejectedEmail(user: User, task: Task, reason?: str
 
   const body = `Merhaba ${user.display_name},<br><br><strong>${task.drawing_no}</strong> çizim numaralı göreviniz iade edildi.${reason ? `<br><br><strong>Sebep:</strong> ${reason}` : ""}`
   await sendEmail(user.email, `Görev İade Edildi: ${task.drawing_no}`, emailTemplate("Görev İade Edildi", body, "/dashboard"))
+}
+
+export async function sendOverdueEmail(
+  recipientEmail: string,
+  recipientName: string,
+  task: Task,
+  daysOverdue: number,
+  recipientRole: "user" | "admin"
+): Promise<void> {
+  const settings = await getEmailSettings()
+  if (!settings?.enabled) return
+  if (recipientRole === "user" && settings.overdue_notify_user === false) return
+  if (recipientRole === "admin" && settings.overdue_notify_admin === false) return
+
+  const dueDate = task.planned_end ? new Date(task.planned_end).toLocaleDateString("tr-TR") : "-"
+  const actionLine =
+    recipientRole === "admin" && task.admin_status === "tamamlandi"
+      ? "Lütfen onaylayın veya iade edin."
+      : recipientRole === "admin"
+        ? "Görev hâlâ tamamlanmadı."
+        : "Lütfen görevi en kısa sürede tamamlayın."
+
+  const body = `
+    Merhaba ${recipientName},<br><br>
+    <strong>${task.drawing_no}</strong> görevinin hedef bitiş tarihi ${daysOverdue} gün önce geçti.<br><br>
+    <strong>Proje:</strong> ${task.project?.code || "-"}<br>
+    <strong>Hedef Bitiş Tarihi:</strong> ${dueDate}<br>
+    <strong>Açıklama:</strong> ${task.description}<br><br>
+    ${actionLine}
+  `
+  const cta = recipientRole === "admin" ? "/admin/job-pool" : "/dashboard"
+  await sendEmail(
+    recipientEmail,
+    `[Adam Takip] Hedef Bitiş Tarihi Geçti — ${task.drawing_no}`,
+    emailTemplate("Hedef Bitiş Tarihi Geçti", body, cta)
+  )
 }
 
 export async function sendTaskCompletedEmail(adminEmail: string, adminName: string, task: Task, workerName: string): Promise<void> {

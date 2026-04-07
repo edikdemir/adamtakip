@@ -1,6 +1,5 @@
 export const USER_ROLES = {
   USER: "user",
-  KOORDINATOR: "koordinator",
   SUPER_ADMIN: "super_admin",
 } as const
 
@@ -20,6 +19,7 @@ export const ADMIN_STATUS = {
   DEVAM_EDIYOR: "devam_ediyor",
   TAMAMLANDI: "tamamlandi",
   ONAYLANDI: "onaylandi",
+  IPTAL: "iptal",
 } as const
 
 export type AdminStatus = (typeof ADMIN_STATUS)[keyof typeof ADMIN_STATUS]
@@ -56,6 +56,7 @@ export const ADMIN_STATUS_LABELS: Record<AdminStatus, string> = {
   devam_ediyor: "Devam Ediyor",
   tamamlandi: "Tamamlandı",
   onaylandi: "Onaylandı",
+  iptal: "İptal",
 }
 
 export const PRIORITY_LABELS: Record<Priority, string> = {
@@ -67,7 +68,6 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   user: "Kullanıcı",
-  koordinator: "Koordinatör",
   super_admin: "Süper Admin",
 }
 

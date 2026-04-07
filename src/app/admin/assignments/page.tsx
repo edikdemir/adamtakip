@@ -121,7 +121,7 @@ export default function AssignmentsPage() {
                 <TableHead className="w-24">Mahal</TableHead>
                 <TableHead className="w-28">Resim No</TableHead>
                 <TableHead>Yapılacak İş</TableHead>
-                <TableHead className="w-24">Bitiş</TableHead>
+                <TableHead className="w-24">Hedef Bitiş</TableHead>
                 <TableHead className="w-20">Öncelik</TableHead>
                 <TableHead className="w-28">Durum</TableHead>
                 <TableHead className="w-32">Atanan</TableHead>

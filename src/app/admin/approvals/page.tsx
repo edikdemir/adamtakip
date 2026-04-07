@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatDate, formatHours } from "@/lib/utils"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { Check, RotateCcw, Clock, CheckCircle2 } from "lucide-react"
+import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 
 export default function ApprovalsPage() {
   const [rejectTask, setRejectTask] = useState<Task | null>(null)
@@ -64,7 +65,7 @@ export default function ApprovalsPage() {
                 <TableHead>Açıklama</TableHead>
                 <TableHead>Çalışan</TableHead>
                 <TableHead>Atayan</TableHead>
-                <TableHead>Tamamlanma</TableHead>
+                <TableHead>Kesin Bitiş Tarihi</TableHead>
                 <TableHead>Süre (sa)</TableHead>
                 <TableHead className="w-32">İşlemler</TableHead>
               </TableRow>
@@ -78,7 +79,12 @@ export default function ApprovalsPage() {
                 tasks.map((task: Task) => (
                   <TableRow key={task.id} className="hover:bg-zinc-50/50">
                     <TableCell className="font-medium">{task.project?.code}</TableCell>
-                    <TableCell className="font-mono text-sm font-medium">{task.drawing_no}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
+                        <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
+                      </div>
+                    </TableCell>
                     <TableCell className="max-w-[200px]">
                       <div>
                         <p className="text-sm text-zinc-700 truncate" title={task.description}>{task.description}</p>
