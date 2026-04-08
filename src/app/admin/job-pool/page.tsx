@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { Combobox } from "@/components/ui/combobox"
 import { formatDate } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
 import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2, FileSpreadsheet } from "lucide-react"
@@ -69,6 +70,10 @@ export default function JobPoolPage() {
   const { data: zones = [] } = useZones(form.project_id)
   const selectedJobType = jobTypes.find((jt: { id: string }) => jt.id === form.job_type_id)
   const subTypes = selectedJobType?.job_sub_types || []
+  const selectedSubType = subTypes.find((st: { id: string }) => st.id === form.job_sub_type_id)
+  const workItemOptions = (selectedSubType?.job_work_items || [])
+    .slice().sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
+    .map((wi: { name: string }) => wi.name)
 
   const filtered = tasks.filter((t: Task) => {
     return !search ||
@@ -246,7 +251,7 @@ export default function JobPoolPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>İş Tipi</Label>
-                <Select value={form.job_type_id} onValueChange={(v) => setForm((f) => ({ ...f, job_type_id: v, job_sub_type_id: "" }))}>
+                <Select value={form.job_type_id} onValueChange={(v) => setForm((f) => ({ ...f, job_type_id: v, job_sub_type_id: "", description: "" }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="İş tipi seç" /></SelectTrigger>
                   <SelectContent>{jobTypes.map((jt: { id: string; name: string }) => <SelectItem key={jt.id} value={jt.id}>{jt.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -255,7 +260,7 @@ export default function JobPoolPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>İş Alt Tipi</Label>
-                <Select value={form.job_sub_type_id} onValueChange={(v) => setForm((f) => ({ ...f, job_sub_type_id: v }))}>
+                <Select value={form.job_sub_type_id} onValueChange={(v) => setForm((f) => ({ ...f, job_sub_type_id: v, description: "" }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Alt tip seç" /></SelectTrigger>
                   <SelectContent>{subTypes.map((st: { id: string; name: string }) => <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -305,7 +310,16 @@ export default function JobPoolPage() {
             </div>
             <div className="space-y-1.5">
               <Label>Yapılacak İş</Label>
-              <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Yapılacak işi açıklayın" className="h-9" />
+              {workItemOptions.length > 0 ? (
+                <Combobox
+                  value={form.description}
+                  onChange={(v) => setForm((f) => ({ ...f, description: v }))}
+                  options={workItemOptions}
+                  placeholder="Seç veya yaz..."
+                />
+              ) : (
+                <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Yapılacak işi açıklayın" className="h-9" />
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
