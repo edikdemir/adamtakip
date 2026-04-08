@@ -32,7 +32,36 @@ function useUsers() {
 function useZones(projectId: string) {
   return useQuery({
     queryKey: ["zones", projectId],
-    queryFn: () => fetch(`/api/zones?project_id=${projectId}`).then(r => r.json()).then(r => r.data || []),
+    queryFn: () =>
+      fetch(`/api/zones?project_id=${projectId}`)
+        .then(r => r.json())
+        .then(r => {
+          const data: { id: string; name: string }[] = r.data || []
+          // Numerik sıralama: "Zone 1" < "Zone 2" < "Zone 10"
+          return [...data].sort((a, b) => {
+            const numA = parseInt(a.name.replace(/\D+/g, "") || "0", 10)
+            const numB = parseInt(b.name.replace(/\D+/g, "") || "0", 10)
+            if (numA !== numB) return numA - numB
+            return a.name.localeCompare(b.name, "tr")
+          })
+        }),
+    enabled: !!projectId,
+  })
+}
+function useLocations(projectId: string, zoneId: string) {
+  return useQuery({
+    queryKey: ["locations", projectId, zoneId],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (projectId) params.set("project_id", projectId)
+      if (zoneId) params.set("zone_id", zoneId)
+      return fetch(`/api/locations?${params}`)
+        .then(r => r.json())
+        .then(r => {
+          const data: { id: string; name: string }[] = r.data || []
+          return [...data].sort((a, b) => a.name.localeCompare(b.name, "tr"))
+        })
+    },
     enabled: !!projectId,
   })
 }
@@ -68,6 +97,7 @@ export default function JobPoolPage() {
   })
 
   const { data: zones = [] } = useZones(form.project_id)
+  const { data: locations = [] } = useLocations(form.project_id, form.zone_id)
   const selectedJobType = jobTypes.find((jt: { id: string }) => jt.id === form.job_type_id)
   const subTypes = selectedJobType?.job_sub_types || []
   const selectedSubType = subTypes.find((st: { id: string }) => st.id === form.job_sub_type_id)
@@ -244,7 +274,7 @@ export default function JobPoolPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Proje</Label>
-                <Select value={form.project_id} onValueChange={(v) => setForm((f) => ({ ...f, project_id: v }))}>
+                <Select value={form.project_id} onValueChange={(v) => setForm((f) => ({ ...f, project_id: v, zone_id: "", location: "" }))}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="Proje seç" /></SelectTrigger>
                   <SelectContent>{projects.map((p: { id: string; code: string; name: string }) => <SelectItem key={p.id} value={p.id}>{p.code} — {p.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -283,7 +313,7 @@ export default function JobPoolPage() {
                 <Label>Zone</Label>
                 <Select
                   value={form.zone_id}
-                  onValueChange={(v) => setForm((f) => ({ ...f, zone_id: v }))}
+                  onValueChange={(v) => setForm((f) => ({ ...f, zone_id: v, location: "" }))}
                   disabled={!form.project_id}
                 >
                   <SelectTrigger className="h-9">
@@ -301,7 +331,24 @@ export default function JobPoolPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Mahal</Label>
-                <Input value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} placeholder="Örn: Makine Dairesi" className="h-9" />
+                <Select
+                  value={form.location || "none"}
+                  onValueChange={(v) => setForm((f) => ({ ...f, location: v === "none" ? "" : v }))}
+                  disabled={!form.project_id}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder={form.project_id ? "Mahal seç (opsiyonel)" : "Önce proje seçin"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Seçilmedi —</SelectItem>
+                    {locations.map((loc: { id: string; name: string }) => (
+                      <SelectItem key={loc.id} value={loc.name}>{loc.name}</SelectItem>
+                    ))}
+                    {locations.length === 0 && (
+                      <div className="px-2 py-1.5 text-xs text-zinc-400">Bu projede mahal tanımlı değil</div>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-1.5">
