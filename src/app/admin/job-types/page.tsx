@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { JobType, JobSubType } from "@/types/task"
+import { JobType, JobWorkItem } from "@/types/task"
 import { toast } from "sonner"
-import { Plus, ChevronRight, Wrench, Tag } from "lucide-react"
+import { Plus, ChevronRight, ChevronDown, Wrench, Tag, List, X } from "lucide-react"
 
 function useJobTypes() {
   return useQuery<JobType[]>({
@@ -26,16 +26,10 @@ function useCreateJobType() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-      if (!res.ok) {
-        const { error } = await res.json()
-        throw new Error(error)
-      }
+      if (!res.ok) { const { error } = await res.json(); throw new Error(error) }
       return res.json()
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["job-types"] })
-      toast.success("İş tipi oluşturuldu")
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["job-types"] }); toast.success("İş tipi oluşturuldu") },
     onError: (err: Error) => toast.error(err.message || "Oluşturulamadı"),
   })
 }
@@ -49,29 +43,56 @@ function useCreateSubType() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-      if (!res.ok) {
-        const { error } = await res.json()
-        throw new Error(error)
-      }
+      if (!res.ok) { const { error } = await res.json(); throw new Error(error) }
       return res.json()
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["job-types"] })
-      toast.success("Alt tip oluşturuldu")
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["job-types"] }); toast.success("Alt tip oluşturuldu") },
     onError: (err: Error) => toast.error(err.message || "Oluşturulamadı"),
+  })
+}
+
+function useCreateWorkItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { job_sub_type_id: string; name: string }) => {
+      const res = await fetch("/api/job-work-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) { const { error } = await res.json(); throw new Error(error) }
+      return res.json()
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["job-types"] }); toast.success("İş kalemi eklendi") },
+    onError: (err: Error) => toast.error(err.message || "Eklenemedi"),
+  })
+}
+
+function useDeleteWorkItem() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/job-work-items/${id}`, { method: "DELETE" })
+      if (!res.ok) throw new Error("Silinemedi")
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["job-types"] }); toast.success("İş kalemi silindi") },
+    onError: () => toast.error("Silinemedi"),
   })
 }
 
 export default function JobTypesPage() {
   const [createTypeOpen, setCreateTypeOpen] = useState(false)
-  const [createSubOpen, setCreateSubOpen] = useState<string | null>(null) // job_type_id
+  const [createSubOpen, setCreateSubOpen] = useState<string | null>(null)
   const [typeForm, setTypeForm] = useState({ name: "" })
   const [subForm, setSubForm] = useState({ name: "" })
+  const [expandedSubType, setExpandedSubType] = useState<string | null>(null)
+  const [workItemInputs, setWorkItemInputs] = useState<Record<string, string>>({})
 
   const { data: jobTypes = [], isLoading } = useJobTypes()
   const createJobType = useCreateJobType()
   const createSubType = useCreateSubType()
+  const createWorkItem = useCreateWorkItem()
+  const deleteWorkItem = useDeleteWorkItem()
 
   const handleCreateType = async () => {
     if (!typeForm.name.trim()) return
@@ -85,6 +106,13 @@ export default function JobTypesPage() {
     await createSubType.mutateAsync({ job_type_id: createSubOpen, name: subForm.name.trim() })
     setCreateSubOpen(null)
     setSubForm({ name: "" })
+  }
+
+  const handleAddWorkItem = async (subTypeId: string) => {
+    const name = (workItemInputs[subTypeId] || "").trim()
+    if (!name) return
+    await createWorkItem.mutateAsync({ job_sub_type_id: subTypeId, name })
+    setWorkItemInputs(prev => ({ ...prev, [subTypeId]: "" }))
   }
 
   return (
@@ -135,13 +163,84 @@ export default function JobTypesPage() {
                 {(jt.job_sub_types || []).length === 0 ? (
                   <p className="px-5 py-3 text-xs text-zinc-400">Henüz alt tip yok</p>
                 ) : (
-                  (jt.job_sub_types || []).map((st) => (
-                    <div key={st.id} className="flex items-center gap-3 px-5 py-2.5">
-                      <ChevronRight className="h-3.5 w-3.5 text-zinc-300 flex-shrink-0" />
-                      <Tag className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
-                      <span className="text-sm text-zinc-700">{st.name}</span>
-                    </div>
-                  ))
+                  (jt.job_sub_types || []).map((st) => {
+                    const isExpanded = expandedSubType === st.id
+                    const workItems = st.job_work_items || []
+                    const inputVal = workItemInputs[st.id] || ""
+
+                    return (
+                      <div key={st.id}>
+                        {/* Sub type row */}
+                        <div className="flex items-center gap-2 px-5 py-2.5 hover:bg-zinc-50/60">
+                          <ChevronRight className="h-3.5 w-3.5 text-zinc-300 flex-shrink-0" />
+                          <Tag className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
+                          <span className="text-sm text-zinc-700 flex-1">{st.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs gap-1 text-zinc-500 hover:text-zinc-900"
+                            onClick={() => setExpandedSubType(isExpanded ? null : st.id)}
+                          >
+                            <List className="h-3 w-3" />
+                            İş Kalemleri
+                            {workItems.length > 0 && (
+                              <Badge variant="secondary" className="text-xs h-4 px-1 ml-0.5">
+                                {workItems.length}
+                              </Badge>
+                            )}
+                            {isExpanded
+                              ? <ChevronDown className="h-3 w-3" />
+                              : <ChevronRight className="h-3 w-3" />}
+                          </Button>
+                        </div>
+
+                        {/* Work items panel (inline expand) */}
+                        {isExpanded && (
+                          <div className="px-12 pb-3 pt-1 bg-zinc-50/40 border-t border-zinc-100 space-y-1">
+                            {workItems.length === 0 ? (
+                              <p className="text-xs text-zinc-400 py-1">Henüz iş kalemi yok</p>
+                            ) : (
+                              workItems
+                                .slice()
+                                .sort((a, b) => a.sort_order - b.sort_order)
+                                .map((wi: JobWorkItem) => (
+                                  <div key={wi.id} className="flex items-center gap-2 group py-0.5">
+                                    <span className="text-xs text-zinc-300">•</span>
+                                    <span className="text-xs text-zinc-600 flex-1">{wi.name}</span>
+                                    <button
+                                      onClick={() => deleteWorkItem.mutate(wi.id)}
+                                      className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-opacity"
+                                      title="Sil"
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                ))
+                            )}
+                            {/* Add work item */}
+                            <div className="flex items-center gap-2 pt-1.5">
+                              <Input
+                                value={inputVal}
+                                onChange={(e) => setWorkItemInputs(prev => ({ ...prev, [st.id]: e.target.value }))}
+                                onKeyDown={(e) => e.key === "Enter" && handleAddWorkItem(st.id)}
+                                placeholder="Yeni iş kalemi..."
+                                className="h-7 text-xs"
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-xs gap-1 flex-shrink-0"
+                                onClick={() => handleAddWorkItem(st.id)}
+                                disabled={!inputVal.trim() || createWorkItem.isPending}
+                              >
+                                <Plus className="h-3 w-3" /> Ekle
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
                 )}
               </div>
             </div>
@@ -152,13 +251,11 @@ export default function JobTypesPage() {
       {/* Create job type dialog */}
       <Dialog open={createTypeOpen} onOpenChange={setCreateTypeOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Yeni İş Tipi</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Yeni İş Tipi</DialogTitle></DialogHeader>
           <div className="space-y-1.5 py-2">
             <Label>İş Tipi Adı *</Label>
             <Input
-              placeholder="Örn: Çelik, Techiz, Boru, Elektrik..."
+              placeholder="Örn: Steel, Outfitting..."
               value={typeForm.name}
               onChange={(e) => setTypeForm({ name: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && handleCreateType()}
@@ -176,13 +273,11 @@ export default function JobTypesPage() {
       {/* Create sub type dialog */}
       <Dialog open={!!createSubOpen} onOpenChange={(open) => !open && setCreateSubOpen(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Yeni Alt Tip</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Yeni Alt Tip</DialogTitle></DialogHeader>
           <div className="space-y-1.5 py-2">
             <Label>Alt Tip Adı *</Label>
             <Input
-              placeholder="Örn: Blok Model, Blok Kontrol..."
+              placeholder="Örn: 3D Model, Arr, Axo..."
               value={subForm.name}
               onChange={(e) => setSubForm({ name: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && handleCreateSub()}

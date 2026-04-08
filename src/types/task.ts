@@ -14,11 +14,19 @@ export interface JobType {
   job_sub_types?: JobSubType[]
 }
 
+export interface JobWorkItem {
+  id: string
+  job_sub_type_id: string
+  name: string
+  sort_order: number
+}
+
 export interface JobSubType {
   id: string
   job_type_id: string
   name: string
   job_type?: JobType
+  job_work_items?: JobWorkItem[]
 }
 
 export interface Zone {
