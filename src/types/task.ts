@@ -27,6 +27,12 @@ export interface Zone {
   name: string
 }
 
+export interface Location {
+  id: string
+  project_id: string
+  name: string
+}
+
 export interface Task {
   id: number
   project_id: string

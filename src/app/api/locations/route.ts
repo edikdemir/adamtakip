@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const projectId = searchParams.get("project_id")
 
   const supabase = createServerClient()
-  let query = supabase.from("zones").select("id, project_id, name").order("name")
+  let query = supabase.from("locations").select("id, project_id, name").order("name")
   if (projectId) query = query.eq("project_id", projectId)
 
   const { data, error } = await query
@@ -34,13 +34,13 @@ export async function POST(req: NextRequest) {
 
   const supabase = createServerClient()
   const { data, error } = await supabase
-    .from("zones")
+    .from("locations")
     .insert(parsed.data)
     .select("id, project_id, name")
     .single()
 
   if (error) {
-    if (error.code === "23505") return NextResponse.json({ error: "Bu zone zaten var" }, { status: 409 })
+    if (error.code === "23505") return NextResponse.json({ error: "Bu mahal zaten var" }, { status: 409 })
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
   return NextResponse.json({ data }, { status: 201 })
