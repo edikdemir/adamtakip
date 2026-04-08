@@ -102,7 +102,7 @@ export default function SettingsPage() {
             <Mail className="h-4 w-4" /> Email Bildirimleri
           </CardTitle>
           <CardDescription>
-            Informations@cemreshipyard.com üzerinden mail bildirimleri.
+            dizaynistakip@cemreshipyard.com üzerinden mail bildirimleri.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
