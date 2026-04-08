@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils"
 interface TaskRowTimerProps {
   task: Task
   onUpdate?: (updatedTask: Partial<Task>) => void
+  hasOtherActiveTimer?: boolean
 }
 
-export function TaskRowTimer({ task, onUpdate }: TaskRowTimerProps) {
+export function TaskRowTimer({ task, onUpdate, hasOtherActiveTimer }: TaskRowTimerProps) {
   const { formattedTime, isRunning, isWarning, toggle, isLoading } = useTaskTimer(task, onUpdate)
   const manualHours = task.manual_hours ?? 0
 
@@ -48,8 +49,12 @@ export function TaskRowTimer({ task, onUpdate }: TaskRowTimerProps) {
               : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
           )}
           onClick={(e) => { e.stopPropagation(); toggle() }}
-          disabled={isLoading}
-          title={isRunning ? "Durdur" : "Başlat"}
+          disabled={isLoading || (!isRunning && !!hasOtherActiveTimer)}
+          title={
+            isRunning ? "Durdur"
+            : hasOtherActiveTimer ? "Önce aktif kronometreyi durdurun"
+            : "Başlat"
+          }
         >
           {isRunning
             ? <Square className="h-3.5 w-3.5 fill-current" />

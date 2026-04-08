@@ -77,8 +77,8 @@ export default function DashboardPage() {
           </span>
           <span>
             {runningTimers.length === 1
-              ? `Aktif kronometre: "${runningTimers[0].drawing_no}"`
-              : `${runningTimers.length} aktif kronometre çalışıyor`}
+              ? `Kronometre çalışıyor: "${runningTimers[0].drawing_no}" — Sayfayı kapatmadan önce durdurun.`
+              : `${runningTimers.length} aktif kronometre çalışıyor — Sayfayı kapatmadan önce durdurun.`}
           </span>
         </div>
       )}
@@ -202,6 +202,7 @@ export default function DashboardPage() {
                         <TaskRowTimer
                           task={task}
                           onUpdate={() => refetch()}
+                          hasOtherActiveTimer={runningTimers.length > 0 && task.timer_started_at === null}
                         />
                       ) : (
                         <TimeDurationCell task={task} />

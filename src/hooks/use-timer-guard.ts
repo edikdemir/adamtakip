@@ -1,22 +1,27 @@
 "use client"
 import { useEffect } from "react"
 
-// Registers a beforeunload handler when a timer is running.
-// - Shows the browser's standard "Leave site?" confirmation dialog.
-// - Sends a best-effort beacon to stop the timer on the server.
+// beforeunload → sadece diyalog göster (sendBeacon YOK — kullanıcı henüz karar vermedi)
+// pagehide    → sendBeacon (sayfa gerçekten kapandığında tetiklenir;
+//               "Sayfada Kal" seçilirse tetiklenmez → UI desenkronizasyonu yok)
 export function useTimerGuard(hasRunningTimer: boolean) {
   useEffect(() => {
     if (!hasRunningTimer) return
 
-    const handler = (e: BeforeUnloadEvent) => {
-      // Stop the active timer on the server (fire-and-forget via sendBeacon)
-      navigator.sendBeacon("/api/tasks/timer/stop-active")
-      // Trigger browser's built-in leave confirmation dialog
+    const beforeUnloadHandler = (e: BeforeUnloadEvent) => {
       e.preventDefault()
       e.returnValue = ""
     }
 
-    window.addEventListener("beforeunload", handler)
-    return () => window.removeEventListener("beforeunload", handler)
+    const pageHideHandler = () => {
+      navigator.sendBeacon("/api/tasks/timer/stop-active")
+    }
+
+    window.addEventListener("beforeunload", beforeUnloadHandler)
+    window.addEventListener("pagehide", pageHideHandler)
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnloadHandler)
+      window.removeEventListener("pagehide", pageHideHandler)
+    }
   }, [hasRunningTimer])
 }

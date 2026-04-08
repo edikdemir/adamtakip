@@ -32,6 +32,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Onaylanmış görevde timer başlatılamaz" }, { status: 400 })
   }
 
+  // Kullanıcının başka bir görevde aktif timer'ı var mı?
+  const { data: existingTimer } = await supabase
+    .from("tasks")
+    .select("id, drawing_no")
+    .eq("assigned_to", user.id)
+    .not("timer_started_at", "is", null)
+    .neq("id", parseInt(id))
+    .maybeSingle()
+
+  if (existingTimer) {
+    return NextResponse.json(
+      { error: `Zaten aktif bir kronometre var (#${existingTimer.id} — ${existingTimer.drawing_no}). Önce onu durdurun.` },
+      { status: 400 }
+    )
+  }
+
   if (task.timer_started_at !== null) {
     return NextResponse.json({ error: "Timer zaten çalışıyor" }, { status: 400 })
   }
