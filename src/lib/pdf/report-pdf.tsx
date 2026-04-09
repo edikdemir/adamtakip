@@ -1,7 +1,16 @@
 "use client"
 import {
-  Document, Page, Text, View, StyleSheet, Image,
+  Document, Page, Text, View, StyleSheet, Image, Font,
+  Svg, Rect, Line, Path, G,
 } from "@react-pdf/renderer"
+
+Font.register({
+  family: "Inter",
+  fonts: [
+    { src: "/fonts/inter-regular.woff2", fontWeight: 400 },
+    { src: "/fonts/inter-bold.woff2", fontWeight: 700 },
+  ],
+})
 
 // ─── Colors ──────────────────────────────────────────────────────────────────
 const C = {
@@ -23,7 +32,7 @@ const C = {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   page: {
-    fontFamily: "Helvetica",
+    fontFamily: "Inter",
     fontSize: 9,
     color: C.text,
     backgroundColor: C.surface,
@@ -66,7 +75,7 @@ const s = StyleSheet.create({
   },
   companyName: {
     fontSize: 16,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: "#ffffff",
     letterSpacing: 0.5,
   },
@@ -96,7 +105,7 @@ const s = StyleSheet.create({
   },
   reportTitle: {
     fontSize: 18,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.primary,
   },
   reportSubtitle: {
@@ -122,7 +131,7 @@ const s = StyleSheet.create({
   // Section
   sectionTitle: {
     fontSize: 11,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.primary,
     marginBottom: 8,
     marginTop: 16,
@@ -148,7 +157,7 @@ const s = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 18,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.primary,
   },
   summaryLabel: {
@@ -174,7 +183,7 @@ const s = StyleSheet.create({
   },
   th: {
     fontSize: 8,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: "#ffffff",
   },
   tbody: {},
@@ -195,14 +204,65 @@ const s = StyleSheet.create({
     fontSize: 8,
     color: C.text,
   },
+  tdMono: {
+    fontSize: 8,
+    fontFamily: "Inter",
+    color: C.text,
+  },
   tdMuted: {
     fontSize: 8,
     color: C.muted,
   },
   tdBold: {
     fontSize: 8,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.text,
+  },
+  tdRight: {
+    textAlign: "right",
+  },
+  statusOnaylandi: {
+    fontSize: 7,
+    color: C.success,
+    fontFamily: "Inter", fontWeight: 700,
+  },
+  statusPending: {
+    fontSize: 7,
+    color: C.warning,
+    fontFamily: "Inter", fontWeight: 700,
+  },
+  statusOther: {
+    fontSize: 7,
+    color: C.muted,
+  },
+
+  // Worker section header
+  workerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: C.bg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginBottom: 4,
+    marginTop: 8,
+  },
+  workerName: {
+    fontSize: 10,
+    fontFamily: "Inter", fontWeight: 700,
+    color: C.secondary,
+  },
+  workerMeta: {
+    fontSize: 8,
+    color: C.muted,
+  },
+  workerHours: {
+    fontSize: 10,
+    fontFamily: "Inter", fontWeight: 700,
+    color: C.primary,
   },
 
   // Footer

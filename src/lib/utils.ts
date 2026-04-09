@@ -22,6 +22,13 @@ export function formatDate(date: string | Date | null | undefined): string {
   return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })
 }
 
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return "-"
+  const d = new Date(date)
+  return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" }) +
+    " " + d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+}
+
 export function getDeadlineStatus(plannedEnd: string | null | undefined): "ok" | "warning" | "overdue" | "none" {
   if (!plannedEnd) return "none"
   const end = new Date(plannedEnd)

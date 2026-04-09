@@ -17,7 +17,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("*, assigned_user:users!assigned_to(id, email, display_name)")
+    .select(`
+      *,
+      project:projects(id, code, name),
+      job_type:job_types(id, name),
+      job_sub_type:job_sub_types(id, name),
+      assigned_user:users!assigned_to(id, email, display_name)
+    `)
     .eq("id", id)
     .single()
 
@@ -35,12 +41,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .select()
     .single()
 
-  // Add rejection reason as comment
+  // Add rejection reason as task note (visible in notes panel)
   if (reason) {
-    await supabase.from("task_comments").insert({
+    await supabase.from("task_notes").insert({
       task_id: parseInt(id),
       user_id: user.id,
-      body: `🔄 Revize Sebebi: ${reason}`,
+      content: `🔄 Revize Sebebi: ${reason}`,
     })
   }
 
@@ -48,9 +54,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const assignedUser = task.assigned_user as { id: string; email: string; display_name: string } | null
     if (assignedUser) {
       notifyTaskRejected(assignedUser.id, parseInt(id), task.drawing_no, reason).catch(console.error)
-      sendTaskRejectedEmail(assignedUser as Parameters<typeof sendTaskRejectedEmail>[0], updatedTask || task, reason).catch(console.error)
+      sendTaskRejectedEmail(assignedUser as Parameters<typeof sendTaskRejectedEmail>[0], task as unknown as import("@/types/task").Task, reason).catch(console.error)
     }
   }
 
   return NextResponse.json({ data: updatedTask })
 }
+

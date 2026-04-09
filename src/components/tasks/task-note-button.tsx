@@ -17,7 +17,7 @@ export function TaskNoteButton({ taskId, drawingNo, noteCount = 0 }: TaskNoteBut
   const [text, setText] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const { data: notes = [], isLoading } = useTaskNotes(taskId, open)
+  const { data: notes = [], isLoading } = useTaskNotes(taskId, true)
   const addNote = useAddTaskNote(taskId, () => setText(""))
 
   // Auto-scroll to bottom when notes load or new note added
@@ -47,14 +47,14 @@ export function TaskNoteButton({ taskId, drawingNo, noteCount = 0 }: TaskNoteBut
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative flex items-center gap-1 text-xs text-zinc-500 hover:text-indigo-600 font-medium transition-colors"
+          className={`relative flex items-center gap-1 text-xs font-medium transition-colors ${notes.length > 0 ? "text-indigo-600 hover:text-indigo-800" : "text-zinc-400 hover:text-indigo-600"}`}
           title={`${drawingNo} — Notlar`}
           onClick={(e) => e.stopPropagation()}
         >
-          <MessageSquare className="h-3.5 w-3.5" />
-          {noteCount > 0 && (
+          <MessageSquare className={`h-3.5 w-3.5 ${notes.length > 0 ? "fill-indigo-100" : ""}`} />
+          {notes.length > 0 && (
             <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-indigo-600 text-[9px] text-white font-bold leading-none">
-              {noteCount > 9 ? "9+" : noteCount}
+              {notes.length > 9 ? "9+" : notes.length}
             </span>
           )}
         </button>

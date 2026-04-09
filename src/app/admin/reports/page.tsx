@@ -193,15 +193,14 @@ async function downloadPdf(
   tasks: ReportTask[],
   applied: Filters,
   labels: { adminStatusLabel: string; projectLabel?: string; userLabel?: string; jobTypeLabel?: string },
-  monthlyData: { month: string; label: string; hours: number }[]
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { pdf } = await import("@react-pdf/renderer") as any
   const doc = (
     <ReportPdf
       tasks={tasks}
-      filters={{ ...applied, ...labels }}
-      monthlyData={monthlyData}
+      filters={{ from: applied.from, to: applied.to, ...labels }}
+      logoUrl={typeof window !== "undefined" ? window.location.origin + "/logo_cemre.png" : undefined}
     />
   )
   const blob = await pdf(doc).toBlob()
@@ -213,12 +212,13 @@ async function downloadPdf(
   URL.revokeObjectURL(url)
 }
 
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PIE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#f97316", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"]
 
 const ONAY_OPTIONS = [
-  { value: "onaylandi",    label: "Onaylandı" },
+  { value: "onaylandi",    label: "Hazır" },
   { value: "tamamlandi",   label: "Onay Bekliyor" },
   { value: "devam_ediyor", label: "Devam Ediyor" },
   { value: "atandi",       label: "Atandı" },
@@ -275,20 +275,13 @@ export default function ReportsPage() {
             <Button variant="outline" size="sm" className="gap-2" onClick={() => downloadCSV(tasks)}>
               <Download className="h-4 w-4" /> CSV İndir
             </Button>
-            <Button variant="outline" size="sm" className="gap-2" onClick={() =>
-              downloadPdf(tasks, applied, {
-                adminStatusLabel: ONAY_OPTIONS.find(o => o.value === applied.admin_status)?.label ?? "—",
-                projectLabel: applied.project_id !== "all"
-                  ? projects.find((p: { id: string; code: string }) => p.id === applied.project_id)?.code
-                  : undefined,
-                userLabel: applied.user_id !== "all"
-                  ? users.find((u: { id: string; display_name: string }) => u.id === applied.user_id)?.display_name
-                  : undefined,
-                jobTypeLabel: applied.job_type_id !== "all"
-                  ? jobTypes.find((jt: { id: string; name: string }) => jt.id === applied.job_type_id)?.name
-                  : undefined,
-              }, monthlyData)
-            }>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+              const adminStatusLabel = ONAY_OPTIONS.find(o => o.value === applied.admin_status)?.label ?? applied.admin_status
+              const projectLabel = applied.project_id !== "all" ? (projects as {id:string;code:string}[]).find(p => p.id === applied.project_id)?.code : undefined
+              const userLabel = applied.user_id !== "all" ? (users as {id:string;display_name:string}[]).find(u => u.id === applied.user_id)?.display_name : undefined
+              const jobTypeLabel = applied.job_type_id !== "all" ? (jobTypes as {id:string;name:string}[]).find(jt => jt.id === applied.job_type_id)?.name : undefined
+              downloadPdf(tasks, applied, { adminStatusLabel, projectLabel, userLabel, jobTypeLabel })
+            }}>
               <FileDown className="h-4 w-4" /> PDF İndir
             </Button>
           </div>

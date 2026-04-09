@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useNotifications } from "@/hooks/use-notifications"
 import { cn } from "@/lib/utils"
-import { formatDate } from "@/lib/utils"
+import { formatDateTime } from "@/lib/utils"
 import { NOTIFICATION_TYPES } from "@/lib/constants"
 
 const notificationIcons: Record<string, string> = {
@@ -19,6 +19,7 @@ const notificationIcons: Record<string, string> = {
   [NOTIFICATION_TYPES.TASK_COMPLETED]: "🏁",
   [NOTIFICATION_TYPES.DEADLINE_WARNING]: "⚠️",
   [NOTIFICATION_TYPES.TIMER_REMINDER]: "⏱️",
+  [NOTIFICATION_TYPES.TASK_NOTE]: "💬",
 }
 
 export function NotificationBell() {
@@ -82,7 +83,7 @@ export function NotificationBell() {
                         <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{notification.body}</p>
                       )}
                       <p className="text-[11px] text-zinc-400 mt-1">
-                        {formatDate(notification.created_at)}
+                        {formatDateTime(notification.created_at)}
                       </p>
                     </div>
                     {!notification.is_read && (

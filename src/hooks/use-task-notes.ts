@@ -18,6 +18,8 @@ export function useTaskNotes(taskId: number, enabled = true) {
     queryFn: () =>
       fetch(`/api/tasks/${taskId}/notes`).then(r => r.json()).then(r => r.data || []),
     enabled,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
   })
 }
 

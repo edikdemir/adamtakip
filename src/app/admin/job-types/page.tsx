@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { JobType, JobWorkItem } from "@/types/task"
 import { toast } from "sonner"
@@ -87,6 +87,7 @@ export default function JobTypesPage() {
   const [subForm, setSubForm] = useState({ name: "" })
   const [expandedSubType, setExpandedSubType] = useState<string | null>(null)
   const [workItemInputs, setWorkItemInputs] = useState<Record<string, string>>({})
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   const { data: jobTypes = [], isLoading } = useJobTypes()
   const createJobType = useCreateJobType()
@@ -208,7 +209,7 @@ export default function JobTypesPage() {
                                     <span className="text-xs text-zinc-300">•</span>
                                     <span className="text-xs text-zinc-600 flex-1">{wi.name}</span>
                                     <button
-                                      onClick={() => deleteWorkItem.mutate(wi.id)}
+                                      onClick={() => setDeleteConfirmId(wi.id)}
                                       className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 transition-opacity"
                                       title="Sil"
                                     >
@@ -287,6 +288,31 @@ export default function JobTypesPage() {
             <Button variant="outline" onClick={() => setCreateSubOpen(null)}>İptal</Button>
             <Button onClick={handleCreateSub} disabled={!subForm.name.trim() || createSubType.isPending}>
               {createSubType.isPending ? "Oluşturuluyor..." : "Oluştur"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete work item confirmation */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>İş Kalemini Sil</DialogTitle>
+            <DialogDescription>Bu iş kalemi kalıcı olarak silinecek. Emin misiniz?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>İptal</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmId) {
+                  deleteWorkItem.mutate(deleteConfirmId)
+                  setDeleteConfirmId(null)
+                }
+              }}
+              disabled={deleteWorkItem.isPending}
+            >
+              Sil
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -71,7 +71,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("id, assigned_to, assigned_by, admin_status, drawing_no, timer_started_at, total_elapsed_seconds")
+    .select(`
+      id, assigned_to, assigned_by, admin_status, drawing_no, description,
+      timer_started_at, total_elapsed_seconds,
+      project:projects(id, code, name),
+      job_type:job_types(id, name),
+      job_sub_type:job_sub_types(id, name)
+    `)
     .eq("id", id)
     .single()
 

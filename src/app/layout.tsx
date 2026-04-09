@@ -19,6 +19,7 @@ const inter = localFont({
 export const metadata: Metadata = {
   title: "İş Takip | Cemre",
   description: "Cemre Tersanesi Dizayn Departmanı İş Takip Sistemi",
+  icons: { icon: "/logo_cemre.png" },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -20,6 +20,7 @@ import {
   ClipboardList, UserCheck, CheckSquare, Clock, Timer,
   Search, AlertTriangle, Layers, BadgeCheck,
 } from "lucide-react"
+import { UserAvatar } from "@/components/ui/user-avatar"
 
 function useUsers() {
   return useQuery({
@@ -74,7 +75,7 @@ export default function AdminDashboardPage() {
     { label: "Atandı", value: stats.atandi, icon: UserCheck, color: "text-blue-600 bg-blue-100" },
     { label: "Devam Ediyor", value: stats.devam_ediyor, icon: Layers, color: "text-indigo-600 bg-indigo-100" },
     { label: "Onay Bekliyor", value: stats.tamamlandi, icon: CheckSquare, color: "text-orange-600 bg-orange-100" },
-    { label: "Onaylandı", value: stats.onaylandi, icon: BadgeCheck, color: "text-green-600 bg-green-100" },
+    { label: "Hazır", value: stats.onaylandi, icon: BadgeCheck, color: "text-green-600 bg-green-100" },
     { label: "Aktif Timer", value: stats.aktifTimer, icon: Timer, color: "text-rose-600 bg-rose-100" },
   ]
 
@@ -174,9 +175,10 @@ export default function AdminDashboardPage() {
                         {task.assigned_user ? (
                           <Link
                             href={`/admin/users/${task.assigned_user.id}`}
-                            className="text-sm font-bold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-2 transition-colors"
+                            className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                           >
-                            {task.assigned_user.display_name}
+                            <UserAvatar displayName={task.assigned_user.display_name} photoUrl={task.assigned_user.photo_url} size="sm" />
+                            <span className="text-sm font-bold text-indigo-700 hover:underline underline-offset-2">{task.assigned_user.display_name}</span>
                           </Link>
                         ) : <span className="text-zinc-400">—</span>}
                       </TableCell>
@@ -258,9 +260,10 @@ export default function AdminDashboardPage() {
                           {task.assigned_user ? (
                             <Link
                               href={`/admin/users/${task.assigned_user.id}`}
-                              className="text-sm font-semibold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-2 transition-colors"
+                              className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                             >
-                              {task.assigned_user.display_name}
+                              <UserAvatar displayName={task.assigned_user.display_name} photoUrl={task.assigned_user.photo_url} size="sm" />
+                              <span className="text-sm font-semibold text-indigo-700 hover:underline underline-offset-2">{task.assigned_user.display_name}</span>
                             </Link>
                           ) : <span className="text-zinc-400 text-sm">—</span>}
                         </TableCell>
