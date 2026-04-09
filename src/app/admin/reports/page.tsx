@@ -193,6 +193,7 @@ async function downloadPdf(
   tasks: ReportTask[],
   applied: Filters,
   labels: { adminStatusLabel: string; projectLabel?: string; userLabel?: string; jobTypeLabel?: string },
+  monthlyData: { month: string; label: string; hours: number }[],
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { pdf } = await import("@react-pdf/renderer") as any
@@ -200,6 +201,7 @@ async function downloadPdf(
     <ReportPdf
       tasks={tasks}
       filters={{ from: applied.from, to: applied.to, ...labels }}
+      monthlyData={monthlyData}
       logoUrl={typeof window !== "undefined" ? window.location.origin + "/logo_cemre.png" : undefined}
     />
   )
@@ -280,7 +282,7 @@ export default function ReportsPage() {
               const projectLabel = applied.project_id !== "all" ? (projects as {id:string;code:string}[]).find(p => p.id === applied.project_id)?.code : undefined
               const userLabel = applied.user_id !== "all" ? (users as {id:string;display_name:string}[]).find(u => u.id === applied.user_id)?.display_name : undefined
               const jobTypeLabel = applied.job_type_id !== "all" ? (jobTypes as {id:string;name:string}[]).find(jt => jt.id === applied.job_type_id)?.name : undefined
-              downloadPdf(tasks, applied, { adminStatusLabel, projectLabel, userLabel, jobTypeLabel })
+              downloadPdf(tasks, applied, { adminStatusLabel, projectLabel, userLabel, jobTypeLabel }, monthlyData)
             }}>
               <FileDown className="h-4 w-4" /> PDF İndir
             </Button>
