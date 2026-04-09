@@ -42,10 +42,8 @@ export async function GET(req: NextRequest) {
     `)
     .order("created_at", { ascending: false })
 
-  // Non-admins only see their own tasks
-  if (user.role === USER_ROLES.USER) {
-    query = query.eq("assigned_to", user.id)
-  }
+  // Her kullanıcı yalnızca kendine atanan görevleri görür
+  query = query.eq("assigned_to", user.id)
 
   if (status) query = query.eq("admin_status", status)
   if (projectId) query = query.eq("project_id", projectId)
