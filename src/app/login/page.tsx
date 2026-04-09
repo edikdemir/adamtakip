@@ -87,8 +87,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
-            <img src="/logo_cemre.png" alt="Cemre Logo" className="w-24 h-24 object-contain" />
+          <div className="inline-flex items-center justify-center w-28 h-28 mb-4 rounded-2xl bg-white border border-zinc-200 shadow-md p-2">
+            <img src="/logo_cemre.png" alt="Cemre Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-zinc-900">Adam Takip</h1>
           <p className="text-zinc-500 text-sm mt-1">Cemre Tersanesi | Dizayn Departmanı İş Takip Sistemi</p>

@@ -84,87 +84,157 @@ async function sendEmail(to: string, subject: string, htmlBody: string): Promise
   }
 }
 
-function emailTemplate(title: string, body: string, ctaUrl?: string, ctaText?: string): string {
+function emailTemplate(
+  title: string,
+  accentColor: string,
+  body: string,
+  ctaUrl?: string,
+  ctaText?: string
+): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f5; margin:0; padding: 20px;">
-  <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    <div style="background: #18181b; padding: 24px 32px;">
-      <h1 style="color: #fff; margin: 0; font-size: 18px; font-weight: 600;">Adam Takip | Cemre</h1>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5; margin:0; padding: 24px 16px;">
+  <div style="max-width: 600px; margin: 0 auto; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+    <!-- Header -->
+    <div style="background: #18181b; padding: 20px 32px; display: flex; align-items: center; gap: 12px;">
+      <div style="width: 4px; height: 32px; background: ${accentColor}; border-radius: 2px;"></div>
+      <div>
+        <div style="color: #fff; font-size: 16px; font-weight: 700; letter-spacing: -0.3px;">Adam Takip</div>
+        <div style="color: #a1a1aa; font-size: 12px; margin-top: 1px;">Cemre Tersanesi — Dizayn Departmanı</div>
+      </div>
     </div>
-    <div style="padding: 32px;">
-      <h2 style="color: #18181b; margin: 0 0 16px; font-size: 20px;">${title}</h2>
-      <p style="color: #52525b; line-height: 1.6; margin: 0 0 24px;">${body}</p>
-      ${ctaUrl ? `<a href="${appUrl}${ctaUrl}" style="display: inline-block; background: #18181b; color: #fff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500;">${ctaText || "Uygulamaya Git"}</a>` : ""}
+    <!-- Title bar -->
+    <div style="background: ${accentColor}; padding: 14px 32px;">
+      <h2 style="color: #fff; margin: 0; font-size: 17px; font-weight: 600;">${title}</h2>
     </div>
-    <div style="background: #f4f4f5; padding: 16px 32px; border-top: 1px solid #e4e4e7;">
-      <p style="color: #a1a1aa; font-size: 12px; margin: 0;">Bu email otomatik olarak gönderilmiştir. Lütfen yanıtlamayınız.</p>
+    <!-- Content -->
+    <div style="padding: 28px 32px;">
+      ${body}
+      ${ctaUrl ? `<div style="margin-top: 28px;"><a href="${appUrl}${ctaUrl}" style="display: inline-block; background: ${accentColor}; color: #fff; padding: 11px 24px; border-radius: 7px; text-decoration: none; font-weight: 600; font-size: 14px;">${ctaText || "Uygulamaya Git"}</a></div>` : ""}
+    </div>
+    <!-- Footer -->
+    <div style="background: #f8f8f9; padding: 14px 32px; border-top: 1px solid #e4e4e7;">
+      <p style="color: #a1a1aa; font-size: 11px; margin: 0;">Bu e-posta otomatik olarak gönderilmiştir. Lütfen yanıtlamayınız.</p>
     </div>
   </div>
 </body>
 </html>`
 }
 
+// Two-column detail table for task info
+function taskDetailTable(rows: Array<[string, string | null | undefined]>): string {
+  const visibleRows = rows.filter(([, v]) => v && v !== "-")
+  if (visibleRows.length === 0) return ""
+  return `
+<table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
+  ${visibleRows.map(([label, value]) => `
+  <tr>
+    <td style="padding: 8px 12px; background: #f8f8f9; border: 1px solid #e4e4e7; font-weight: 600; color: #52525b; width: 38%; vertical-align: top;">${label}</td>
+    <td style="padding: 8px 12px; border: 1px solid #e4e4e7; color: #18181b; vertical-align: top;">${value}</td>
+  </tr>`).join("")}
+</table>`
+}
+
 const PRIORITY_LABEL: Record<string, string> = {
-  low: "Düşük", medium: "Orta", high: "Yüksek", urgent: "Acil",
+  low: "🟢 Düşük", medium: "🟡 Orta", high: "🟠 Yüksek", urgent: "🔴 Acil",
+}
+
+const ADMIN_STATUS_LABEL: Record<string, string> = {
+  atandi: "Atandı", devam_ediyor: "Devam Ediyor",
+  tamamlandi: "Onay Bekliyor", onaylandi: "Hazır", iptal: "İptal",
+}
+
+function fmtDate(d: string | null | undefined): string | null {
+  if (!d) return null
+  return new Date(d).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" })
+}
+
+function greeting(name: string): string {
+  return `<p style="color: #18181b; font-size: 15px; margin: 0 0 20px;">Merhaba <strong>${name}</strong>,</p>`
 }
 
 export async function sendTaskAssignedEmail(user: User, task: Task): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_assign) return
 
-  const subject = `Yeni Görev: ${task.drawing_no} — ${task.project?.code || ""}`
+  const subject = `[Adam Takip] Yeni Görev: ${task.drawing_no} — ${task.project?.code || ""}`
   const body = `
-    Merhaba ${user.display_name},<br><br>
-    Size yeni bir görev atandı:<br><br>
-    <strong>Proje:</strong> ${task.project?.code || "-"}<br>
-    <strong>Çizim No:</strong> ${task.drawing_no}<br>
-    <strong>İş Tipi:</strong> ${task.job_type?.name || "-"}<br>
-    <strong>İş Alt Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
-    <strong>Açıklama:</strong> ${task.description}<br>
-    <strong>Öncelik:</strong> ${PRIORITY_LABEL[task.priority] || task.priority}<br>
-    ${task.planned_start ? `<strong>Başlama Tarihi:</strong> ${new Date(task.planned_start).toLocaleDateString("tr-TR")}<br>` : ""}
-    ${task.planned_end ? `<strong>Hedef Bitiş Tarihi:</strong> ${new Date(task.planned_end).toLocaleDateString("tr-TR")}<br>` : ""}
-    ${task.admin_notes ? `<strong>Admin Notu:</strong> ${task.admin_notes}<br>` : ""}
-    <br>Detaylar için uygulamaya gidiniz.
+    ${greeting(user.display_name)}
+    <p style="color: #52525b; font-size: 14px; margin: 0 0 4px;">Size yeni bir görev atandı. Görev detayları aşağıda yer almaktadır:</p>
+    ${taskDetailTable([
+      ["Proje", task.project?.code ? `${task.project.code}${task.project.name ? " — " + task.project.name : ""}` : null],
+      ["Çizim No", task.drawing_no],
+      ["İş Tipi", task.job_type?.name],
+      ["İş Alt Tipi", task.job_sub_type?.name],
+      ["Açıklama", task.description],
+      ["Öncelik", PRIORITY_LABEL[task.priority] || task.priority],
+      ["Başlama Tarihi", fmtDate(task.planned_start)],
+      ["Hedef Bitiş Tarihi", fmtDate(task.planned_end)],
+      ["Durum", ADMIN_STATUS_LABEL[task.admin_status] || task.admin_status],
+      ["Admin Notu", task.admin_notes],
+    ])}
+    <p style="color: #52525b; font-size: 13px; margin: 16px 0 0;">Görevi görüntülemek ve kronometreyi başlatmak için uygulamaya giriniz.</p>
   `
-  await sendEmail(user.email, subject, emailTemplate("Yeni Görev Atandı", body, "/dashboard"))
+  await sendEmail(
+    user.email, subject,
+    emailTemplate("Yeni Görev Atandı", "#2563eb", body, "/dashboard", "Göreve Git")
+  )
 }
 
 export async function sendTaskApprovedEmail(user: User, task: Task): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_approve) return
 
+  const subject = `[Adam Takip] Görev Onaylandı — Hazır: ${task.drawing_no}`
+  const totalHours = ((task.total_elapsed_seconds || 0) / 3600 + (task.manual_hours || 0)).toFixed(1)
   const body = `
-    Merhaba ${user.display_name},<br><br>
-    <strong>${task.drawing_no}</strong> numaralı göreviniz onaylandı ve tamamlandı olarak işaretlendi.<br><br>
-    <strong>Proje:</strong> ${task.project?.code || "-"}<br>
-    <strong>İş Tipi:</strong> ${task.job_type?.name || "-"}<br>
-    <strong>İş Alt Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
-    <strong>Açıklama:</strong> ${task.description}<br>
-    ${task.approved_at ? `<strong>Kesin Bitiş Tarihi:</strong> ${new Date(task.approved_at).toLocaleDateString("tr-TR")}<br>` : ""}
+    ${greeting(user.display_name)}
+    <p style="color: #52525b; font-size: 14px; margin: 0 0 4px;">Aşağıdaki göreviniz yöneticiniz tarafından onaylandı ve <strong>Hazır</strong> olarak işaretlendi. Tebrikler!</p>
+    ${taskDetailTable([
+      ["Proje", task.project?.code ? `${task.project.code}${task.project.name ? " — " + task.project.name : ""}` : null],
+      ["Çizim No", task.drawing_no],
+      ["İş Tipi", task.job_type?.name],
+      ["İş Alt Tipi", task.job_sub_type?.name],
+      ["Açıklama", task.description],
+      ["Kesin Bitiş Tarihi", fmtDate(task.approved_at)],
+      ["Toplam Süre", totalHours && totalHours !== "0.0" ? `${totalHours} saat` : null],
+    ])}
   `
-  await sendEmail(user.email, `Görev Hazır: ${task.drawing_no}`, emailTemplate("Görev Onaylandı — Hazır", body, "/dashboard"))
+  await sendEmail(
+    user.email, subject,
+    emailTemplate("Görev Onaylandı — Hazır ✓", "#16a34a", body, "/dashboard", "Panele Git")
+  )
 }
 
 export async function sendTaskRejectedEmail(user: User, task: Task, reason?: string): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_reject) return
 
+  const subject = `[Adam Takip] Revize İsteği: ${task.drawing_no}`
   const body = `
-    Merhaba ${user.display_name},<br><br>
-    <strong>${task.drawing_no}</strong> numaralı göreviniz revizeye gönderildi.<br><br>
-    <strong>Proje:</strong> ${task.project?.code || "-"}<br>
-    <strong>İş Tipi:</strong> ${task.job_type?.name || "-"}<br>
-    <strong>İş Alt Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
-    <strong>Açıklama:</strong> ${task.description}<br>
-    ${reason ? `<br><strong>Revize Sebebi:</strong> ${reason}<br>` : ""}
-    <br>Lütfen gerekli düzeltmeleri yaparak görevi tekrar tamamlayın.
+    ${greeting(user.display_name)}
+    <p style="color: #52525b; font-size: 14px; margin: 0 0 4px;">Aşağıdaki göreviniz revize için size iade edildi. Gerekli düzeltmeleri yaparak tekrar tamamlayınız.</p>
+    ${taskDetailTable([
+      ["Proje", task.project?.code ? `${task.project.code}${task.project.name ? " — " + task.project.name : ""}` : null],
+      ["Çizim No", task.drawing_no],
+      ["İş Tipi", task.job_type?.name],
+      ["İş Alt Tipi", task.job_sub_type?.name],
+      ["Açıklama", task.description],
+      ["Öncelik", PRIORITY_LABEL[task.priority] || task.priority],
+    ])}
+    ${reason ? `
+    <div style="margin: 16px 0; padding: 14px 16px; background: #fff7ed; border-left: 4px solid #f97316; border-radius: 4px;">
+      <p style="margin: 0; font-size: 13px; font-weight: 600; color: #c2410c; margin-bottom: 4px;">Revize Sebebi</p>
+      <p style="margin: 0; font-size: 14px; color: #7c2d12;">${reason}</p>
+    </div>` : ""}
+    <p style="color: #52525b; font-size: 13px; margin: 16px 0 0;">Lütfen uygulamaya girerek görevi inceleyin ve gerekli düzeltmeleri yapın.</p>
   `
-  await sendEmail(user.email, `Revize: ${task.drawing_no}`, emailTemplate("Görev Revizeye Gönderildi", body, "/dashboard"))
+  await sendEmail(
+    user.email, subject,
+    emailTemplate("Görev Revizeye Gönderildi", "#d97706", body, "/dashboard", "Göreve Git")
+  )
 }
 
 export async function sendOverdueEmail(
@@ -179,27 +249,36 @@ export async function sendOverdueEmail(
   if (recipientRole === "user" && settings.overdue_notify_user === false) return
   if (recipientRole === "admin" && settings.overdue_notify_admin === false) return
 
-  const dueDate = task.planned_end ? new Date(task.planned_end).toLocaleDateString("tr-TR") : "-"
   const actionLine =
     recipientRole === "admin" && task.admin_status === "tamamlandi"
-      ? "Lütfen onaylayın veya iade edin."
+      ? "Görev tamamlandı ancak onay bekliyor. Lütfen onaylayın veya revizeye gönderin."
       : recipientRole === "admin"
-        ? "Görev hâlâ tamamlanmadı."
+        ? "Görev hâlâ tamamlanmadı. Çalışanı bilgilendirmeniz önerilir."
         : "Lütfen görevi en kısa sürede tamamlayın."
 
+  const subject = `[Adam Takip] Gecikmiş Görev (+${daysOverdue} gün): ${task.drawing_no}`
   const body = `
-    Merhaba ${recipientName},<br><br>
-    <strong>${task.drawing_no}</strong> görevinin hedef bitiş tarihi ${daysOverdue} gün önce geçti.<br><br>
-    <strong>Proje:</strong> ${task.project?.code || "-"}<br>
-    <strong>Hedef Bitiş Tarihi:</strong> ${dueDate}<br>
-    <strong>Açıklama:</strong> ${task.description}<br><br>
-    ${actionLine}
+    ${greeting(recipientName)}
+    <p style="color: #52525b; font-size: 14px; margin: 0 0 4px;"><strong>${task.drawing_no}</strong> numaralı görevin hedef bitiş tarihi <strong>${daysOverdue} gün</strong> önce geçti.</p>
+    ${taskDetailTable([
+      ["Proje", task.project?.code ? `${task.project.code}${task.project.name ? " — " + task.project.name : ""}` : null],
+      ["Çizim No", task.drawing_no],
+      ["İş Tipi", (task as unknown as Record<string, unknown> & { job_type?: { name?: string } }).job_type?.name],
+      ["İş Alt Tipi", (task as unknown as Record<string, unknown> & { job_sub_type?: { name?: string } }).job_sub_type?.name],
+      ["Açıklama", task.description],
+      ["Hedef Bitiş Tarihi", fmtDate(task.planned_end)],
+      ["Gecikme", `${daysOverdue} gün`],
+      ["Öncelik", PRIORITY_LABEL[task.priority] || task.priority],
+      ["Durum", ADMIN_STATUS_LABEL[task.admin_status] || task.admin_status],
+    ])}
+    <div style="margin: 16px 0; padding: 14px 16px; background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px;">
+      <p style="margin: 0; font-size: 14px; color: #991b1b;">${actionLine}</p>
+    </div>
   `
   const cta = recipientRole === "admin" ? "/admin/job-pool" : "/dashboard"
   await sendEmail(
-    recipientEmail,
-    `[Adam Takip] Hedef Bitiş Tarihi Geçti — ${task.drawing_no}`,
-    emailTemplate("Hedef Bitiş Tarihi Geçti", body, cta)
+    recipientEmail, subject,
+    emailTemplate("Hedef Bitiş Tarihi Geçti ⚠️", "#dc2626", body, cta, "Göreve Git")
   )
 }
 
@@ -213,19 +292,31 @@ export async function sendTaskNoteEmail(
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_note) return
 
+  const t = task as unknown as Task & {
+    project?: { code?: string; name?: string }
+    job_type?: { name?: string }
+    job_sub_type?: { name?: string }
+  }
+
+  const subject = `[Adam Takip] Yeni Not: ${task.drawing_no}`
   const body = `
-    Merhaba ${recipientName},<br><br>
-    <strong>${senderName}</strong> tarafından aşağıdaki göreve yeni bir not eklendi:<br><br>
-    <strong>Çizim No:</strong> ${task.drawing_no}<br>
-    <strong>Proje:</strong> ${(task as unknown as Record<string, unknown> & { project?: { code?: string } }).project?.code || "-"}<br><br>
-    <strong>Not:</strong><br>
-    <blockquote style="border-left: 3px solid #e4e4e7; margin: 8px 0; padding: 8px 12px; color: #52525b;">${noteContent}</blockquote>
-    <br>Görevi görmek için uygulamaya gidiniz.
+    ${greeting(recipientName)}
+    <p style="color: #52525b; font-size: 14px; margin: 0 0 4px;"><strong>${senderName}</strong> tarafından aşağıdaki göreve yeni bir not eklendi:</p>
+    ${taskDetailTable([
+      ["Proje", t.project?.code ? `${t.project.code}${t.project.name ? " — " + t.project.name : ""}` : null],
+      ["Çizim No", task.drawing_no],
+      ["İş Tipi", t.job_type?.name],
+      ["İş Alt Tipi", t.job_sub_type?.name],
+    ])}
+    <div style="margin: 16px 0; padding: 14px 16px; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 4px;">
+      <p style="margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #0369a1; text-transform: uppercase; letter-spacing: 0.5px;">Not İçeriği</p>
+      <p style="margin: 0; font-size: 14px; color: #0c4a6e; line-height: 1.6;">${noteContent}</p>
+    </div>
+    <p style="color: #52525b; font-size: 13px; margin: 16px 0 0;">Notu görmek ve yanıtlamak için uygulamaya giriniz.</p>
   `
   await sendEmail(
-    recipientEmail,
-    `Yeni Not: ${task.drawing_no}`,
-    emailTemplate("Göreve Yeni Not Eklendi", body, "/dashboard")
+    recipientEmail, subject,
+    emailTemplate("Göreve Yeni Not Eklendi 💬", "#0ea5e9", body, "/dashboard", "Göreve Git")
   )
 }
 
@@ -233,16 +324,31 @@ export async function sendTaskCompletedEmail(adminEmail: string, adminName: stri
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_complete) return
 
+  const t = task as unknown as Task & {
+    project?: { code?: string; name?: string }
+    job_type?: { name?: string }
+    job_sub_type?: { name?: string }
+  }
   const totalHours = ((task.total_elapsed_seconds || 0) / 3600 + (task.manual_hours || 0)).toFixed(1)
+
+  const subject = `[Adam Takip] Onay Bekliyor: ${task.drawing_no} — ${workerName}`
   const body = `
-    Merhaba ${adminName},<br><br>
-    <strong>${workerName}</strong> tarafından aşağıdaki görev tamamlandı ve onayınızı bekliyor:<br><br>
-    <strong>Proje:</strong> ${(task as unknown as Record<string, unknown> & { project?: { code?: string } }).project?.code || "-"}<br>
-    <strong>Çizim No:</strong> ${task.drawing_no}<br>
-    <strong>İş Tipi:</strong> ${(task as unknown as Record<string, unknown> & { job_type?: { name?: string } }).job_type?.name || "-"}<br>
-    <strong>İş Alt Tipi:</strong> ${(task as unknown as Record<string, unknown> & { job_sub_type?: { name?: string } }).job_sub_type?.name || "-"}<br>
-    <strong>Açıklama:</strong> ${task.description}<br>
-    <strong>Toplam Süre:</strong> ${totalHours} sa<br>
+    ${greeting(adminName)}
+    <p style="color: #52525b; font-size: 14px; margin: 0 0 4px;"><strong>${workerName}</strong> aşağıdaki görevi tamamladı ve onayınızı bekliyor:</p>
+    ${taskDetailTable([
+      ["Proje", t.project?.code ? `${t.project.code}${t.project.name ? " — " + t.project.name : ""}` : null],
+      ["Çizim No", task.drawing_no],
+      ["İş Tipi", t.job_type?.name],
+      ["İş Alt Tipi", t.job_sub_type?.name],
+      ["Açıklama", task.description],
+      ["Çalışan", workerName],
+      ["Toplam Süre", totalHours && totalHours !== "0.0" ? `${totalHours} saat` : null],
+      ["Öncelik", PRIORITY_LABEL[task.priority] || task.priority],
+    ])}
+    <p style="color: #52525b; font-size: 13px; margin: 16px 0 0;">Görevi onaylamak veya revizeye göndermek için İş Havuzu'na gidiniz.</p>
   `
-  await sendEmail(adminEmail, `Onay Bekliyor: ${task.drawing_no}`, emailTemplate("Görev Onay Bekliyor", body, "/admin/job-pool"))
+  await sendEmail(
+    adminEmail, subject,
+    emailTemplate("Görev Onay Bekliyor", "#7c3aed", body, "/admin/job-pool", "İş Havuzuna Git")
+  )
 }

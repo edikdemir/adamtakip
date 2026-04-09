@@ -20,6 +20,8 @@ export async function GET(req: NextRequest) {
     .select(`
       *,
       project:projects(id, code, name),
+      job_type:job_types(id, name),
+      job_sub_type:job_sub_types(id, name),
       assigned_user:users!assigned_to(id, email, display_name)
     `)
     .lt("planned_end", today)
