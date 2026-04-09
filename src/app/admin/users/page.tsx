@@ -11,12 +11,14 @@ import { USER_ROLES, ROLE_LABELS, UserRole } from "@/lib/constants"
 import { toast } from "sonner"
 import { Users } from "lucide-react"
 import { formatDate } from "@/lib/utils"
+import { UserAvatar } from "@/components/ui/user-avatar"
 
 interface User {
   id: string
   email: string
   display_name: string
   job_title?: string | null
+  photo_url?: string | null
   role: UserRole
   is_active: boolean
   created_at: string
@@ -94,8 +96,8 @@ export default function UsersPage() {
                 <TableRow key={user.id} className="hover:bg-zinc-50/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Link href={`/admin/users/${user.id}`} className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold uppercase flex-shrink-0 hover:bg-indigo-200 transition-colors">
-                        {user.display_name.charAt(0)}
+                      <Link href={`/admin/users/${user.id}`} className="flex-shrink-0">
+                        <UserAvatar displayName={user.display_name} photoUrl={user.photo_url} size="sm" />
                       </Link>
                       <div>
                         <Link href={`/admin/users/${user.id}`} className="font-semibold text-indigo-700 hover:text-indigo-900 hover:underline underline-offset-2 transition-colors">

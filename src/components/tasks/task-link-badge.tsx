@@ -1,11 +1,13 @@
 "use client"
 import { GitBranch } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { ADMIN_STATUS_LABELS } from "@/lib/constants"
 
 interface LinkedTaskRef {
   id: number
   drawing_no: string
   description: string
+  admin_status?: string
 }
 
 export function TaskLinkBadge({
@@ -17,6 +19,9 @@ export function TaskLinkBadge({
 }) {
   // Bu görev bir ana göreve BAĞIMLI → amber
   if (parent?.id) {
+    const statusLabel = parent.admin_status
+      ? (ADMIN_STATUS_LABELS[parent.admin_status as keyof typeof ADMIN_STATUS_LABELS] ?? parent.admin_status)
+      : null
     return (
       <TooltipProvider delayDuration={150}>
         <Tooltip>
@@ -28,14 +33,19 @@ export function TaskLinkBadge({
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
             <div className="text-xs space-y-1">
-              <div className="font-semibold text-amber-400">Bağımlı Görev</div>
+              <div className="font-semibold text-amber-400">Bağımlı Görev (Ana Görev)</div>
               <div className="text-zinc-300">
-                Bu görev, ana göreve bağımlı olarak yürütülüyor.
+                Bu görev, aşağıdaki ana göreve bağımlı olarak yürütülüyor.
               </div>
               <div className="mt-1 font-mono text-zinc-200">
                 #{parent.id} — {parent.drawing_no}
               </div>
-              <div className="text-zinc-400 truncate">{parent.description}</div>
+              <div className="text-zinc-400 text-[11px]" style={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {parent.description}
+              </div>
+              {statusLabel && (
+                <div className="text-zinc-500 text-[10px]">Durum: <span className="text-zinc-300 font-medium">{statusLabel}</span></div>
+              )}
             </div>
           </TooltipContent>
         </Tooltip>
@@ -59,12 +69,26 @@ export function TaskLinkBadge({
               <div className="font-semibold text-violet-400">
                 Ana Görev — {dependents.length} Bağımlı
               </div>
-              <ul className="mt-1 space-y-1">
-                {dependents.map((d) => (
-                  <li key={d.id} className="text-zinc-300">
-                    <span className="font-mono">#{d.id}</span> — {d.drawing_no}
-                  </li>
-                ))}
+              <ul className="mt-1 space-y-1.5">
+                {dependents.map((d) => {
+                  const dStatusLabel = d.admin_status
+                    ? (ADMIN_STATUS_LABELS[d.admin_status as keyof typeof ADMIN_STATUS_LABELS] ?? d.admin_status)
+                    : null
+                  return (
+                    <li key={d.id} className="text-zinc-300 leading-tight">
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-mono text-zinc-200">#{d.id}</span>
+                        <span>— {d.drawing_no}</span>
+                      </div>
+                      <div className="text-zinc-500 text-[10px]" style={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {d.description}
+                      </div>
+                      {dStatusLabel && (
+                        <div className="text-zinc-600 text-[10px]">Durum: <span className="text-zinc-400">{dStatusLabel}</span></div>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           </TooltipContent>

@@ -1,8 +1,8 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { LogOut, User } from "lucide-react"
+import { LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,12 +30,6 @@ export function Header({ title }: HeaderProps) {
     router.push("/login")
   }
 
-  const initials = user?.display_name
-    ?.split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || "?"
 
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between h-16 px-6 bg-white border-b border-zinc-200">
@@ -49,11 +43,12 @@ export function Header({ title }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-9 px-2 gap-2">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-zinc-900 text-white text-xs font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                displayName={user?.display_name || "?"}
+                photoUrl={user?.photo_url}
+                size="sm"
+                className="border border-zinc-200"
+              />
               <span className="text-sm font-medium text-zinc-700 max-w-28 truncate">
                 {user?.display_name}
               </span>

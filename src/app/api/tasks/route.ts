@@ -7,10 +7,10 @@ import { z } from "zod"
 const emptyToUndefined = z.literal("").transform(() => undefined)
 
 const createTaskSchema = z.object({
-  project_id: z.string().guid(),
-  job_type_id: z.string().guid(),
-  job_sub_type_id: z.string().guid(),
-  zone_id: z.union([emptyToUndefined, z.string().guid()]).optional(),
+  project_id: z.string().min(1),
+  job_type_id: z.string().min(1),
+  job_sub_type_id: z.string().min(1),
+  zone_id: z.union([emptyToUndefined, z.string().min(1)]).optional(),
   location: z.union([emptyToUndefined, z.string()]).optional(),
   drawing_no: z.string().min(1),
   description: z.string().min(1),

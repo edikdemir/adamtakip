@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: updatedTask } = await supabase
     .from("tasks")
     .update({
-      admin_status: ADMIN_STATUS.DEVAM_EDIYOR,
+      admin_status: ADMIN_STATUS.ATANDI,
       worker_status: WORKER_STATUS.HAZIR,
       completion_date: null,
       updated_at: new Date().toISOString(),

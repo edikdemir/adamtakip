@@ -6,6 +6,7 @@ export interface User {
   email: string
   display_name: string
   job_title?: string | null
+  photo_url?: string | null
   role: UserRole
   is_active: boolean
   created_at: string
@@ -17,5 +18,6 @@ export interface SessionUser {
   email: string
   display_name: string
   job_title?: string | null
+  photo_url?: string | null
   role: UserRole
 }

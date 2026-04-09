@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
     `)
     .not("assigned_to", "is", null)
 
-  if (from)         query = query.gte("planned_start", from)
-  if (to)           query = query.lte("planned_end", to)
+  if (from)         query = query.gte("completion_date", from)
+  if (to)           query = query.lte("completion_date", to)
   if (projectId)    query = query.eq("project_id", projectId)
   if (userId)       query = query.eq("assigned_to", userId)
   if (jobTypeId)    query = query.eq("job_type_id", jobTypeId)

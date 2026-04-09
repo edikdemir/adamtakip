@@ -14,11 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Combobox } from "@/components/ui/combobox"
-import { formatDate } from "@/lib/utils"
+import { formatDate, cn } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
-import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2, FileSpreadsheet } from "lucide-react"
+import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2, FileSpreadsheet, Bell } from "lucide-react"
+import { useLocations } from "@/hooks/use-locations"
 import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 import { ImportTasksDialog } from "@/components/tasks/import-tasks-dialog"
+import { TaskNoteButton } from "@/components/tasks/task-note-button"
 
 function useProjects() {
   return useQuery({ queryKey: ["projects"], queryFn: () => fetch("/api/projects").then(r => r.json()).then(r => r.data || []) })
@@ -48,27 +50,11 @@ function useZones(projectId: string) {
     enabled: !!projectId,
   })
 }
-function useLocations(projectId: string, zoneId: string) {
-  return useQuery({
-    queryKey: ["locations", projectId, zoneId],
-    queryFn: () => {
-      const params = new URLSearchParams()
-      if (projectId) params.set("project_id", projectId)
-      if (zoneId) params.set("zone_id", zoneId)
-      return fetch(`/api/locations?${params}`)
-        .then(r => r.json())
-        .then(r => {
-          const data: { id: string; name: string }[] = r.data || []
-          return [...data].sort((a, b) => a.name.localeCompare(b.name, "tr"))
-        })
-    },
-    enabled: !!projectId,
-  })
-}
 
 export default function JobPoolPage() {
   const [activeTab, setActiveTab] = useState("all")
   const [search, setSearch] = useState("")
+  const [workerFilter, setWorkerFilter] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [assignTask, setAssignTask] = useState<Task | null>(null)
@@ -77,6 +63,7 @@ export default function JobPoolPage() {
   const [cancelTask, setCancelTask] = useState<Task | null>(null)
   const [cancelReason, setCancelReason] = useState("")
   const [selectedUserId, setSelectedUserId] = useState("")
+  const today = new Date().toISOString().slice(0, 10)
 
   const { data: tasks = [], isLoading } = useTasks(activeTab !== "all" ? { status: activeTab } : undefined)
   const createTask = useCreateTask()
@@ -92,12 +79,12 @@ export default function JobPoolPage() {
 
   const [form, setForm] = useState({
     project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "",
-    drawing_no: "", description: "", planned_start: "", planned_end: "",
+    drawing_no: "", description: "", planned_start: today, planned_end: "",
     priority: "medium", location: "", admin_notes: "",
   })
 
   const { data: zones = [] } = useZones(form.project_id)
-  const { data: locations = [] } = useLocations(form.project_id, form.zone_id)
+  const { data: locations = [] } = useLocations(form.project_id)
   const selectedJobType = jobTypes.find((jt: { id: string }) => jt.id === form.job_type_id)
   const subTypes = selectedJobType?.job_sub_types || []
   const selectedSubType = subTypes.find((st: { id: string }) => st.id === form.job_sub_type_id)
@@ -106,14 +93,18 @@ export default function JobPoolPage() {
     .map((wi: { name: string }) => wi.name)
 
   const filtered = tasks.filter((t: Task) => {
-    return !search ||
+    const matchSearch = !search ||
       t.drawing_no.toLowerCase().includes(search.toLowerCase()) ||
       t.description.toLowerCase().includes(search.toLowerCase()) ||
       t.project?.code?.toLowerCase().includes(search.toLowerCase()) ||
       (t.zone?.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
       (t.location ?? "").toLowerCase().includes(search.toLowerCase()) ||
       t.assigned_user?.display_name?.toLowerCase().includes(search.toLowerCase())
+    const matchWorker = !workerFilter || t.assigned_to === workerFilter
+    return matchSearch && matchWorker
   })
+
+  const pendingCount = tasks.filter((t: Task) => t.admin_status === ADMIN_STATUS.TAMAMLANDI).length
 
   const handleCreate = async () => {
     const payload = {
@@ -126,7 +117,7 @@ export default function JobPoolPage() {
     }
     await createTask.mutateAsync(payload as Parameters<typeof createTask.mutateAsync>[0])
     setCreateOpen(false)
-    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "", drawing_no: "", description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "" })
+    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "", drawing_no: "", description: "", planned_start: today, planned_end: "", priority: "medium", location: "", admin_notes: "" })
   }
 
   const handleAssign = async () => {
@@ -150,7 +141,7 @@ export default function JobPoolPage() {
     setCancelReason("")
   }
 
-  const colSpan = 16
+  const colSpan = 18
 
   return (
     <div className="space-y-4">
@@ -167,7 +158,7 @@ export default function JobPoolPage() {
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setWorkerFilter(null) }}>
           <TabsList>
             <TabsTrigger value="all">Tümü</TabsTrigger>
             {Object.entries(ADMIN_STATUS_LABELS).map(([val, label]) => (
@@ -175,11 +166,90 @@ export default function JobPoolPage() {
             ))}
           </TabsList>
         </Tabs>
+        {pendingCount > 0 && (
+          <Button
+            size="sm"
+            variant={activeTab === ADMIN_STATUS.TAMAMLANDI ? "default" : "outline"}
+            className="gap-2 h-9"
+            onClick={() => { setActiveTab(ADMIN_STATUS.TAMAMLANDI); setWorkerFilter(null) }}
+          >
+            <Bell className="h-4 w-4" />
+            Onay Bekleyen
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-white text-xs font-bold ml-0.5">
+              {pendingCount}
+            </span>
+          </Button>
+        )}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <Input placeholder="Ara..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
         </div>
       </div>
+
+      {/* Worker cards */}
+      {(() => {
+        const activeStatuses = [ADMIN_STATUS.ATANDI, ADMIN_STATUS.DEVAM_EDIYOR, ADMIN_STATUS.TAMAMLANDI]
+        const workerMap = new Map<string, { id: string; display_name: string; job_title?: string | null; photo_url?: string | null; count: number }>()
+        for (const t of tasks) {
+          if (!t.assigned_to || !t.assigned_user) continue
+          if (!activeStatuses.includes(t.admin_status as typeof activeStatuses[number])) continue
+          const u = t.assigned_user as { id: string; display_name: string; email: string }
+          const entry = workerMap.get(u.id) ?? { id: u.id, display_name: u.display_name, count: 0 }
+          entry.count += 1
+          workerMap.set(u.id, entry)
+        }
+        const workers = [...workerMap.values()].sort((a, b) => b.count - a.count)
+        if (workers.length === 0) return null
+        return (
+          <div className="flex flex-wrap gap-3">
+            {workerFilter && (
+              <button
+                onClick={() => setWorkerFilter(null)}
+                className="flex flex-col items-center gap-1 p-3 rounded-xl border-2 border-zinc-400 bg-zinc-50 min-w-[72px] hover:bg-zinc-100 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-semibold text-zinc-600">
+                  ✕
+                </div>
+                <span className="text-xs font-medium text-zinc-600">Tümü</span>
+              </button>
+            )}
+            {workers.map((w) => {
+              const isSelected = workerFilter === w.id
+              const initials = w.display_name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
+              return (
+                <button
+                  key={w.id}
+                  onClick={() => setWorkerFilter(isSelected ? null : w.id)}
+                  className={cn(
+                    "flex flex-col items-center gap-1 p-3 rounded-xl border-2 min-w-[72px] transition-colors",
+                    isSelected
+                      ? "border-zinc-900 bg-zinc-900"
+                      : "border-zinc-200 bg-white hover:border-zinc-400"
+                  )}
+                >
+                  <div className="relative">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold",
+                      isSelected ? "bg-zinc-700 text-white" : "bg-zinc-100 text-zinc-700"
+                    )}>
+                      {initials}
+                    </div>
+                    <span className={cn(
+                      "absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
+                      isSelected ? "bg-white text-zinc-900" : "bg-zinc-900 text-white"
+                    )}>
+                      {w.count}
+                    </span>
+                  </div>
+                  <span className={cn("text-xs font-medium text-center leading-tight max-w-[64px] truncate", isSelected ? "text-white" : "text-zinc-700")}>
+                    {w.display_name.split(" ")[0]}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       <div className="rounded-xl border border-zinc-200 bg-white overflow-x-auto shadow-sm">
         <Table>
@@ -195,11 +265,13 @@ export default function JobPoolPage() {
               <TableHead>Yapılacak İş</TableHead>
               <TableHead className="w-24">Başlama</TableHead>
               <TableHead className="w-24">Hedef Bitiş</TableHead>
+              <TableHead className="w-24">Kesin Bitiş</TableHead>
               <TableHead className="w-32">Atanan</TableHead>
               <TableHead className="w-20">Süre (sa)</TableHead>
               <TableHead className="w-28">Durum</TableHead>
               <TableHead className="w-20">Öncelik</TableHead>
               <TableHead className="w-28">Bağlı Görevler</TableHead>
+              <TableHead className="w-10">Not</TableHead>
               <TableHead className="w-28 text-right">İşlem</TableHead>
             </TableRow>
           </TableHeader>
@@ -209,7 +281,10 @@ export default function JobPoolPage() {
             ) : filtered.length === 0 ? (
               <TableRow><TableCell colSpan={colSpan} className="text-center py-12 text-zinc-400">Görev bulunamadı</TableCell></TableRow>
             ) : filtered.map((task: Task) => (
-              <TableRow key={task.id} className="hover:bg-zinc-50/50">
+              <TableRow key={task.id} className={cn(
+                "hover:bg-zinc-50/50",
+                task.admin_status === ADMIN_STATUS.TAMAMLANDI && "bg-amber-50/70 border-l-2 border-amber-400 animate-pulse"
+              )}>
                 <TableCell className="font-mono text-xs text-zinc-400">#{task.id}</TableCell>
                 <TableCell className="font-medium text-zinc-800">{task.project?.code}</TableCell>
                 <TableCell className="text-sm text-zinc-700">{task.job_type?.name}</TableCell>
@@ -224,12 +299,16 @@ export default function JobPoolPage() {
                 </TableCell>
                 <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_start)}</TableCell>
                 <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_end)}</TableCell>
+                <TableCell className="text-sm text-zinc-500">{task.approved_at ? formatDate(task.approved_at) : <span className="text-zinc-300">—</span>}</TableCell>
                 <TableCell className="text-sm">{task.assigned_user?.display_name || <span className="text-zinc-400">—</span>}</TableCell>
                 <TableCell><TimeDurationCell task={task} /></TableCell>
                 <TableCell><AdminStatusBadge status={task.admin_status} /></TableCell>
                 <TableCell><PriorityBadge priority={task.priority} /></TableCell>
                 <TableCell>
                   <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
+                </TableCell>
+                <TableCell>
+                  <TaskNoteButton taskId={task.id} drawingNo={task.drawing_no} />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
