@@ -24,7 +24,7 @@ import { LinkTasksDialog } from "@/components/tasks/link-tasks-dialog"
 import { TaskNoteButton } from "@/components/tasks/task-note-button"
 
 export default function DashboardPage() {
-  const { data: tasks = [], isLoading, refetch } = useTasks()
+  const { data: tasks = [], isLoading, refetch } = useTasks({ my_tasks: true })
   const updateTask = useUpdateTask()
   const { user: currentUser } = useCurrentUser()
   const [search, setSearch] = useState("")
