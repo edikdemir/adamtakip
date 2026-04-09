@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Bu göreve erişim yetkiniz yok" }, { status: 403 })
   }
 
-  if (task.linked_to_task_id !== null) {
+  if (task.linked_to_task_id != null) {
     return NextResponse.json({ error: "Bağımlı görevde kronometre başlatılamaz" }, { status: 400 })
   }
 

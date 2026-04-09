@@ -82,6 +82,10 @@ export function useTaskTimer(
   }, [task.timer_started_at, task.total_elapsed_seconds])
 
   const start = useCallback(async () => {
+    if (task.linked_to_task_id) {
+      toast.error("Bağımlı görevde kronometre başlatılamaz")
+      return
+    }
     setIsLoading(true)
     try {
       const res = await fetch(`/api/tasks/${task.id}/timer/start`, { method: "POST" })
