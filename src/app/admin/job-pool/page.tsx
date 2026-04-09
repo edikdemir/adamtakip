@@ -198,13 +198,19 @@ export default function JobPoolPage() {
       {/* Worker cards */}
       {(() => {
         const activeStatuses = [ADMIN_STATUS.ATANDI, ADMIN_STATUS.DEVAM_EDIYOR, ADMIN_STATUS.TAMAMLANDI]
-        const workerMap = new Map<string, { id: string; display_name: string; photo_url?: string | null; count: number }>()
+        const workerMap = new Map<string, { id: string; display_name: string; photo_url?: string | null; job_title?: string | null; count: number }>()
         for (const t of tasks) {
           if (!t.assigned_to || !t.assigned_user) continue
           if (!activeStatuses.includes(t.admin_status as typeof activeStatuses[number])) continue
           const u = t.assigned_user as { id: string; display_name: string; email: string; photo_url?: string | null }
-          const userInfo = users.find((usr: { id: string; photo_url?: string | null }) => usr.id === u.id)
-          const entry = workerMap.get(u.id) ?? { id: u.id, display_name: u.display_name, photo_url: userInfo?.photo_url ?? null, count: 0 }
+          const userInfo = users.find((usr: { id: string; photo_url?: string | null; job_title?: string | null }) => usr.id === u.id)
+          const entry = workerMap.get(u.id) ?? {
+            id: u.id,
+            display_name: u.display_name,
+            photo_url: userInfo?.photo_url ?? u.photo_url ?? null,
+            job_title: userInfo?.job_title ?? null,
+            count: 0,
+          }
           entry.count += 1
           workerMap.set(u.id, entry)
         }
@@ -215,12 +221,12 @@ export default function JobPoolPage() {
             {workerFilter && (
               <button
                 onClick={() => setWorkerFilter(null)}
-                className="flex flex-col items-center gap-1 p-3 rounded-xl border-2 border-zinc-400 bg-zinc-50 min-w-[72px] hover:bg-zinc-100 transition-colors"
+                className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl border-2 border-zinc-400 bg-zinc-50 min-w-[130px] max-w-[150px] hover:bg-zinc-100 transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-zinc-200 flex items-center justify-center text-sm font-semibold text-zinc-600">
+                <div className="w-12 h-12 rounded-full bg-zinc-200 flex items-center justify-center text-base font-semibold text-zinc-600">
                   ✕
                 </div>
-                <span className="text-xs font-medium text-zinc-600">Tümü</span>
+                <span className="text-xs font-semibold text-zinc-700">Tümü</span>
               </button>
             )}
             {workers.map((w) => {
@@ -230,7 +236,7 @@ export default function JobPoolPage() {
                   key={w.id}
                   onClick={() => setWorkerFilter(isSelected ? null : w.id)}
                   className={cn(
-                    "flex flex-col items-center gap-1 p-3 rounded-xl border-2 min-w-[72px] transition-colors",
+                    "flex flex-col items-center gap-2 p-3 rounded-xl border-2 min-w-[130px] max-w-[150px] transition-colors",
                     isSelected
                       ? "border-zinc-900 bg-zinc-900"
                       : "border-zinc-200 bg-white hover:border-zinc-400"
@@ -240,7 +246,7 @@ export default function JobPoolPage() {
                     <UserAvatar
                       displayName={w.display_name}
                       photoUrl={w.photo_url}
-                      size="md"
+                      size="lg"
                       className={isSelected ? "ring-2 ring-white" : ""}
                     />
                     <span className={cn(
@@ -250,9 +256,22 @@ export default function JobPoolPage() {
                       {w.count}
                     </span>
                   </div>
-                  <span className={cn("text-xs font-medium text-center leading-tight max-w-[64px] truncate", isSelected ? "text-white" : "text-zinc-700")}>
-                    {w.display_name.split(" ")[0]}
-                  </span>
+                  <div className="flex flex-col items-center gap-0.5 w-full">
+                    <span className={cn(
+                      "text-xs font-semibold text-center leading-tight truncate w-full",
+                      isSelected ? "text-white" : "text-zinc-800"
+                    )}>
+                      {w.display_name}
+                    </span>
+                    {w.job_title && (
+                      <span className={cn(
+                        "text-[10px] text-center leading-tight truncate w-full",
+                        isSelected ? "text-zinc-300" : "text-zinc-500"
+                      )}>
+                        {w.job_title}
+                      </span>
+                    )}
+                  </div>
                 </button>
               )
             })}
@@ -311,9 +330,19 @@ export default function JobPoolPage() {
                 <TableCell className="text-sm text-zinc-500">{task.approved_at ? formatDate(task.approved_at) : <span className="text-zinc-300">—</span>}</TableCell>
                 <TableCell>
                   {task.assigned_user ? (
-                    <Link href={`/admin/users/${task.assigned_user.id}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                      <UserAvatar displayName={task.assigned_user.display_name} photoUrl={(task.assigned_user as { photo_url?: string | null }).photo_url} size="sm" />
-                      <span className="text-xs font-medium text-indigo-700 hover:underline truncate max-w-[80px]">{task.assigned_user.display_name}</span>
+                    <Link
+                      href={`/admin/users/${task.assigned_user.id}`}
+                      className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <UserAvatar
+                        displayName={task.assigned_user.display_name}
+                        photoUrl={(task.assigned_user as { photo_url?: string | null }).photo_url}
+                        size="md"
+                      />
+                      <span className="text-[11px] font-medium text-indigo-700 hover:underline text-center leading-tight line-clamp-2">
+                        {task.assigned_user.display_name}
+                      </span>
                     </Link>
                   ) : <span className="text-zinc-400 text-xs">—</span>}
                 </TableCell>
