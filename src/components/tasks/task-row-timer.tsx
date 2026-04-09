@@ -49,9 +49,10 @@ export function TaskRowTimer({ task, onUpdate, hasOtherActiveTimer }: TaskRowTim
               : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
           )}
           onClick={(e) => { e.stopPropagation(); toggle() }}
-          disabled={isLoading || (!isRunning && !!hasOtherActiveTimer)}
+          disabled={isLoading || (!isRunning && !!hasOtherActiveTimer) || (!isRunning && !!task.linked_to_task_id)}
           title={
             isRunning ? "Durdur"
+            : task.linked_to_task_id ? "Bağımlı görevde kronometre başlatılamaz"
             : hasOtherActiveTimer ? "Önce aktif kronometreyi durdurun"
             : "Başlat"
           }

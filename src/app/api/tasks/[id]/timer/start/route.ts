@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: task, error: fetchError } = await supabase
     .from("tasks")
-    .select("id, assigned_to, timer_started_at, total_elapsed_seconds, admin_status")
+    .select("id, assigned_to, timer_started_at, total_elapsed_seconds, admin_status, linked_to_task_id")
     .eq("id", id)
     .single()
 
@@ -22,6 +22,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (task.assigned_to !== user.id) {
     return NextResponse.json({ error: "Bu göreve erişim yetkiniz yok" }, { status: 403 })
+  }
+
+  if (task.linked_to_task_id !== null) {
+    return NextResponse.json({ error: "Bağımlı görevde kronometre başlatılamaz" }, { status: 400 })
   }
 
   if (task.admin_status === ADMIN_STATUS.IPTAL) {
