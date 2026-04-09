@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Combobox } from "@/components/ui/combobox"
+import { useLocations } from "@/hooks/use-locations"
 import { formatDate } from "@/lib/utils"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
 import { Plus, Check, RotateCcw, UserPlus, Search, Ban, Undo2, FileSpreadsheet } from "lucide-react"
@@ -48,23 +49,6 @@ function useZones(projectId: string) {
     enabled: !!projectId,
   })
 }
-function useLocations(projectId: string, zoneId: string) {
-  return useQuery({
-    queryKey: ["locations", projectId, zoneId],
-    queryFn: () => {
-      const params = new URLSearchParams()
-      if (projectId) params.set("project_id", projectId)
-      if (zoneId) params.set("zone_id", zoneId)
-      return fetch(`/api/locations?${params}`)
-        .then(r => r.json())
-        .then(r => {
-          const data: { id: string; name: string }[] = r.data || []
-          return [...data].sort((a, b) => a.name.localeCompare(b.name, "tr"))
-        })
-    },
-    enabled: !!projectId,
-  })
-}
 
 export default function JobPoolPage() {
   const [activeTab, setActiveTab] = useState("all")
@@ -92,12 +76,12 @@ export default function JobPoolPage() {
 
   const [form, setForm] = useState({
     project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "",
-    drawing_no: "", description: "", planned_start: "", planned_end: "",
+    drawing_no: "", description: "", planned_start: new Date().toISOString().slice(0, 10), planned_end: "",
     priority: "medium", location: "", admin_notes: "",
   })
 
   const { data: zones = [] } = useZones(form.project_id)
-  const { data: locations = [] } = useLocations(form.project_id, form.zone_id)
+  const { data: locations = [] } = useLocations(form.project_id)
   const selectedJobType = jobTypes.find((jt: { id: string }) => jt.id === form.job_type_id)
   const subTypes = selectedJobType?.job_sub_types || []
   const selectedSubType = subTypes.find((st: { id: string }) => st.id === form.job_sub_type_id)
@@ -126,7 +110,7 @@ export default function JobPoolPage() {
     }
     await createTask.mutateAsync(payload as Parameters<typeof createTask.mutateAsync>[0])
     setCreateOpen(false)
-    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "", drawing_no: "", description: "", planned_start: "", planned_end: "", priority: "medium", location: "", admin_notes: "" })
+    setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "", drawing_no: "", description: "", planned_start: new Date().toISOString().slice(0, 10), planned_end: "", priority: "medium", location: "", admin_notes: "" })
   }
 
   const handleAssign = async () => {

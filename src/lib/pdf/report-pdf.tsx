@@ -1,16 +1,13 @@
 "use client"
 import {
-  Document, Page, Text, View, StyleSheet, Font, Image,
+  Document, Page, Text, View, StyleSheet, Image,
 } from "@react-pdf/renderer"
-
-// ─── Fonts ────────────────────────────────────────────────────────────────────
-// System font fallback — @react-pdf uses Helvetica by default (built-in)
 
 // ─── Colors ──────────────────────────────────────────────────────────────────
 const C = {
-  primary:   "#1e40af",   // koyu mavi
-  secondary: "#1e3a5f",   // daha koyu
-  accent:    "#3b82f6",   // açık mavi
+  primary:   "#1e40af",
+  secondary: "#1e3a5f",
+  accent:    "#3b82f6",
   bg:        "#f8fafc",
   surface:   "#ffffff",
   border:    "#e2e8f0",
@@ -198,11 +195,6 @@ const s = StyleSheet.create({
     fontSize: 8,
     color: C.text,
   },
-  tdMono: {
-    fontSize: 8,
-    fontFamily: "Helvetica",
-    color: C.text,
-  },
   tdMuted: {
     fontSize: 8,
     color: C.muted,
@@ -211,52 +203,6 @@ const s = StyleSheet.create({
     fontSize: 8,
     fontFamily: "Helvetica-Bold",
     color: C.text,
-  },
-  tdRight: {
-    textAlign: "right",
-  },
-  statusOnaylandi: {
-    fontSize: 7,
-    color: C.success,
-    fontFamily: "Helvetica-Bold",
-  },
-  statusPending: {
-    fontSize: 7,
-    color: C.warning,
-    fontFamily: "Helvetica-Bold",
-  },
-  statusOther: {
-    fontSize: 7,
-    color: C.muted,
-  },
-
-  // Worker section header
-  workerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: C.bg,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    marginBottom: 4,
-    marginTop: 8,
-  },
-  workerName: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: C.secondary,
-  },
-  workerMeta: {
-    fontSize: 8,
-    color: C.muted,
-  },
-  workerHours: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    color: C.primary,
   },
 
   // Footer
@@ -307,7 +253,8 @@ export interface ReportPdfProps {
     userLabel?: string
     jobTypeLabel?: string
   }
-  logoUrl?: string  // base64 veya URL — sonradan eklenecek
+  monthlyData: { month: string; label: string; hours: number }[]
+  logoUrl?: string
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -324,16 +271,8 @@ function fmtDate(d: string | null | undefined) {
   return new Date(d).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" })
 }
 
-function statusLabel(s: string) {
-  if (s === "onaylandi")    return "Onaylandı"
-  if (s === "tamamlandi")   return "Onay Bekliyor"
-  if (s === "devam_ediyor") return "Devam Ediyor"
-  if (s === "atandi")       return "Atandı"
-  return s
-}
-
 // ─── Document ─────────────────────────────────────────────────────────────────
-export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
+export function ReportPdf({ tasks, filters, monthlyData, logoUrl }: ReportPdfProps) {
   const totalHours     = tasks.reduce((a, t) => a + adamSaat(t), 0)
   const totalTasks     = tasks.length
   const completedTasks = tasks.filter(t => t.admin_status === "onaylandi").length
@@ -353,19 +292,19 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
   // Sub-type breakdown
   const subTypeMap: Record<string, { name: string; tasks: number; hours: number }> = {}
   for (const t of tasks) {
-    const key  = t.job_sub_type?.name ?? "Bilinmiyor"
+    const key = t.job_sub_type?.name ?? "Bilinmiyor"
     if (!subTypeMap[key]) subTypeMap[key] = { name: key, tasks: 0, hours: 0 }
     subTypeMap[key].tasks++
     subTypeMap[key].hours += adamSaat(t)
   }
   const subTypeRows = Object.values(subTypeMap).sort((a, b) => b.hours - a.hours)
 
-  // Worker breakdown
-  const workerMap: Record<string, { user: NonNullable<ReportTask["assigned_user"]>; tasks: ReportTask[]; hours: number }> = {}
+  // Worker breakdown (summary only)
+  const workerMap: Record<string, { name: string; tasks: number; hours: number }> = {}
   for (const t of tasks) {
     const u = t.assigned_user; if (!u) continue
-    if (!workerMap[u.id]) workerMap[u.id] = { user: u, tasks: [], hours: 0 }
-    workerMap[u.id].tasks.push(t)
+    if (!workerMap[u.id]) workerMap[u.id] = { name: u.display_name, tasks: 0, hours: 0 }
+    workerMap[u.id].tasks++
     workerMap[u.id].hours += adamSaat(t)
   }
   const workerRows = Object.values(workerMap).sort((a, b) => b.hours - a.hours)
@@ -378,11 +317,9 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
       author="Cemre Tersanesi Dizayn"
       subject="AdamxSaat Raporu"
     >
-      {/* ── Sayfa 1: Özet ─────────────────────────────────────────────────── */}
       <Page size="A4" style={s.page}>
         {/* Header */}
         <View style={s.header}>
-          {/* Logo */}
           <View style={s.logoBox}>
             {logoUrl ? (
               <Image src={logoUrl} style={s.logoImg} />
@@ -390,7 +327,6 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
               <Text style={s.logoPlaceholder}>LOGO{"\n"}BURAYA</Text>
             )}
           </View>
-          {/* Şirket */}
           <View style={s.headerRight}>
             <Text style={s.companyName}>CEMRE TERSANESİ</Text>
             <Text style={s.companySubtitle}>Dizayn Departmanı — İş Takip Sistemi</Text>
@@ -398,7 +334,7 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
         </View>
         <View style={s.accentStrip} />
 
-        {/* Rapor başlığı */}
+        {/* Rapor başlığı + filtre bilgileri */}
         <View style={s.titleSection}>
           <View>
             <Text style={s.reportTitle}>AdamxSaat Raporu</Text>
@@ -439,6 +375,31 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
               <Text style={s.summaryLabel}>Çalışan Sayısı</Text>
             </View>
           </View>
+
+          {/* Aylık AdamxSaat Tablosu */}
+          {monthlyData.length > 0 && (
+            <>
+              <Text style={s.sectionTitle}>AYLIK ADAMxSAAT DAĞILIMI</Text>
+              <View style={s.table}>
+                <View style={s.thead}>
+                  <Text style={[s.th, { flex: 3 }]}>Ay</Text>
+                  <Text style={[s.th, { flex: 2, textAlign: "right" }]}>AdamxSaat (sa)</Text>
+                  <Text style={[s.th, { flex: 1, textAlign: "right" }]}>Pay (%)</Text>
+                </View>
+                <View style={s.tbody}>
+                  {monthlyData.map((row, i) => (
+                    <View key={row.month} style={[s.tr, i % 2 === 0 ? s.tr_even : s.tr_odd]}>
+                      <Text style={[s.td, { flex: 3 }]}>{row.label}</Text>
+                      <Text style={[s.tdBold, { flex: 2, textAlign: "right" }]}>{fmt(row.hours)}</Text>
+                      <Text style={[s.tdMuted, { flex: 1, textAlign: "right" }]}>
+                        {totalHours > 0 ? Math.round((row.hours / totalHours) * 100) : 0}%
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </>
+          )}
 
           {/* İş Tipi Tablosu */}
           <Text style={s.sectionTitle}>İŞİN TİPİNE GÖRE DAĞILIM</Text>
@@ -486,7 +447,7 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
             </View>
           </View>
 
-          {/* Çalışan Özet Tablosu */}
+          {/* Çalışan Bazlı Özet */}
           <Text style={s.sectionTitle}>ÇALIŞAN BAZLI ÖZET</Text>
           <View style={s.table}>
             <View style={s.thead}>
@@ -497,9 +458,9 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
             </View>
             <View style={s.tbody}>
               {workerRows.map((row, i) => (
-                <View key={row.user.id} style={[s.tr, i % 2 === 0 ? s.tr_even : s.tr_odd]}>
-                  <Text style={[s.td, { flex: 3 }]}>{row.user.display_name}</Text>
-                  <Text style={[s.td, { flex: 1, textAlign: "center" }]}>{row.tasks.length}</Text>
+                <View key={row.name} style={[s.tr, i % 2 === 0 ? s.tr_even : s.tr_odd]}>
+                  <Text style={[s.td, { flex: 3 }]}>{row.name}</Text>
+                  <Text style={[s.td, { flex: 1, textAlign: "center" }]}>{row.tasks}</Text>
                   <Text style={[s.tdBold, { flex: 1.5, textAlign: "right" }]}>{fmt(row.hours)}</Text>
                   <Text style={[s.tdMuted, { flex: 1, textAlign: "right" }]}>
                     {totalHours > 0 ? Math.round((row.hours / totalHours) * 100) : 0}%
@@ -516,83 +477,6 @@ export function ReportPdf({ tasks, filters, logoUrl }: ReportPdfProps) {
           <Text style={s.pageNum} render={({ pageNumber, totalPages }) => `Sayfa ${pageNumber} / ${totalPages}`} />
         </View>
       </Page>
-
-      {/* ── Sonraki Sayfalar: Çalışan Detayları ──────────────────────────── */}
-      {workerRows.map((wr) => (
-        <Page key={wr.user.id} size="A4" style={s.page}>
-          {/* Header */}
-          <View style={s.header}>
-            <View style={s.logoBox}>
-              {logoUrl ? (
-                <Image src={logoUrl} style={s.logoImg} />
-              ) : (
-                <Text style={s.logoPlaceholder}>LOGO{"\n"}BURAYA</Text>
-              )}
-            </View>
-            <View style={s.headerRight}>
-              <Text style={s.companyName}>CEMRE TERSANESİ</Text>
-              <Text style={s.companySubtitle}>Dizayn Departmanı — İş Takip Sistemi</Text>
-            </View>
-          </View>
-          <View style={s.accentStrip} />
-
-          <View style={s.body}>
-            {/* Çalışan başlık */}
-            <View style={[s.workerHeader, { marginTop: 16 }]}>
-              <View>
-                <Text style={s.workerName}>{wr.user.display_name}</Text>
-                <Text style={s.workerMeta}>{wr.user.email}</Text>
-              </View>
-              <View style={{ alignItems: "flex-end" }}>
-                <Text style={s.workerHours}>{fmt(wr.hours)} sa</Text>
-                <Text style={s.workerMeta}>{wr.tasks.length} görev</Text>
-              </View>
-            </View>
-
-            {/* Görev detay tablosu */}
-            <View style={s.table}>
-              <View style={s.thead}>
-                <Text style={[s.th, { flex: 0.7 }]}>Proje</Text>
-                <Text style={[s.th, { flex: 1.3 }]}>Resim No</Text>
-                <Text style={[s.th, { flex: 1.5 }]}>İş Tipi</Text>
-                <Text style={[s.th, { flex: 1.5 }]}>Alt Tip</Text>
-                <Text style={[s.th, { flex: 2.5 }]}>Yapılacak İş</Text>
-                <Text style={[s.th, { flex: 1.2, textAlign: "right" }]}>AdamxSaat</Text>
-                <Text style={[s.th, { flex: 1.2 }]}>Tamamlanma</Text>
-                <Text style={[s.th, { flex: 1.1 }]}>Durum</Text>
-              </View>
-              <View style={s.tbody}>
-                {wr.tasks.map((t, i) => {
-                  const status = t.admin_status
-                  return (
-                    <View key={t.id} style={[s.tr, i % 2 === 0 ? s.tr_even : s.tr_odd]}>
-                      <Text style={[s.tdMono, { flex: 0.7 }]}>{t.project?.code ?? "—"}</Text>
-                      <Text style={[s.tdMono, { flex: 1.3 }]}>{t.drawing_no}</Text>
-                      <Text style={[s.tdMuted, { flex: 1.5 }]}>{t.job_type?.name ?? "—"}</Text>
-                      <Text style={[s.tdMuted, { flex: 1.5 }]}>{t.job_sub_type?.name ?? "—"}</Text>
-                      <Text style={[s.td, { flex: 2.5 }]}>{t.drawing_no}</Text>
-                      <Text style={[s.tdBold, { flex: 1.2, textAlign: "right" }]}>{fmt(adamSaat(t))}</Text>
-                      <Text style={[s.tdMuted, { flex: 1.2 }]}>{fmtDate(t.completion_date)}</Text>
-                      <Text style={[
-                        status === "onaylandi"    ? s.statusOnaylandi :
-                        status === "tamamlandi"   ? s.statusPending :
-                        s.statusOther,
-                        { flex: 1.1 }
-                      ]}>{statusLabel(status)}</Text>
-                    </View>
-                  )
-                })}
-              </View>
-            </View>
-          </View>
-
-          {/* Footer */}
-          <View style={s.footer} fixed>
-            <Text style={s.footerText}>Cemre Tersanesi — Dizayn İş Takip Sistemi</Text>
-            <Text style={s.pageNum} render={({ pageNumber, totalPages }) => `Sayfa ${pageNumber} / ${totalPages}`} />
-          </View>
-        </Page>
-      ))}
     </Document>
   )
 }

@@ -9,12 +9,10 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url)
   const projectId = searchParams.get("project_id")
-  const zoneId = searchParams.get("zone_id")
 
   const supabase = createServerClient()
   let query = supabase.from("locations").select("id, project_id, name").order("name")
   if (projectId) query = query.eq("project_id", projectId)
-  if (zoneId) query = query.eq("zone_id", zoneId)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
