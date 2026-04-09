@@ -189,8 +189,6 @@ function downloadCSV(tasks: ReportTask[]) {
 
 // ─── PDF export ───────────────────────────────────────────────────────────────
 
-// ─── PDF export ───────────────────────────────────────────────────────────────
-
 async function downloadPdf(
   tasks: ReportTask[],
   applied: Filters,
@@ -199,14 +197,9 @@ async function downloadPdf(
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { pdf } = await import("@react-pdf/renderer") as any
-  
-  // Calculate the required monthlyData using your existing helper
-  const monthlyData = buildMonthlyData(tasks)
-
   const doc = (
     <ReportPdf
       tasks={tasks}
-      monthlyData={monthlyData} // <-- Pass the missing prop here
       filters={{ from: applied.from, to: applied.to, ...labels }}
       monthlyData={monthlyData}
       logoUrl={typeof window !== "undefined" ? window.location.origin + "/logo_cemre.png" : undefined}
