@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const status = searchParams.get("status")
   const projectId = searchParams.get("project_id")
+  const myTasks = searchParams.get("my_tasks") === "true"
 
   let query = supabase
     .from("tasks")
@@ -42,8 +43,10 @@ export async function GET(req: NextRequest) {
     `)
     .order("created_at", { ascending: false })
 
-  // Her kullanıcı yalnızca kendine atanan görevleri görür
-  query = query.eq("assigned_to", user.id)
+  // Workers always see only their own tasks; admins see all unless my_tasks=true
+  if (user.role === USER_ROLES.USER || myTasks) {
+    query = query.eq("assigned_to", user.id)
+  }
 
   if (status) query = query.eq("admin_status", status)
   if (projectId) query = query.eq("project_id", projectId)

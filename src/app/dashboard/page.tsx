@@ -23,7 +23,7 @@ import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 import { LinkTasksDialog } from "@/components/tasks/link-tasks-dialog"
 
 export default function DashboardPage() {
-  const { data: tasks = [], isLoading, refetch } = useTasks()
+  const { data: tasks = [], isLoading, refetch } = useTasks({ my_tasks: true })
   const updateTask = useUpdateTask()
   const { user: currentUser } = useCurrentUser()
   const [search, setSearch] = useState("")

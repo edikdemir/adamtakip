@@ -3,10 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Task, CreateTaskInput } from "@/types/task"
 import { toast } from "sonner"
 
-export function useTasks(params?: { status?: string; project_id?: string }) {
+export function useTasks(params?: { status?: string; project_id?: string; my_tasks?: boolean }) {
   const searchParams = new URLSearchParams()
   if (params?.status) searchParams.set("status", params.status)
   if (params?.project_id) searchParams.set("project_id", params.project_id)
+  if (params?.my_tasks) searchParams.set("my_tasks", "true")
 
   return useQuery<Task[]>({
     queryKey: ["tasks", params],
