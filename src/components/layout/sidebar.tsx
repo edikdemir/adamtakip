@@ -3,8 +3,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, ClipboardList, Users, Settings,
-  FolderKanban, CheckSquare, BarChart3, Building2,
-  Wrench, UserCheck
+  FolderKanban, BarChart3, Building2, Wrench
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useCurrentUser } from "@/hooks/use-current-user"
@@ -24,8 +23,6 @@ const userNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard },
   { href: "/admin/job-pool", label: "İş Havuzu", icon: ClipboardList },
-  { href: "/admin/assignments", label: "Atamalar", icon: UserCheck },
-  { href: "/admin/approvals", label: "Onay Kuyruğu", icon: CheckSquare },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users, roles: [USER_ROLES.SUPER_ADMIN] },
   { href: "/admin/projects", label: "Projeler", icon: FolderKanban, roles: [USER_ROLES.SUPER_ADMIN] },
   { href: "/admin/job-types", label: "İş Tipleri", icon: Wrench, roles: [USER_ROLES.SUPER_ADMIN] },

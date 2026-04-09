@@ -84,3 +84,13 @@ export async function notifyTaskCompleted(adminId: string, taskId: number, drawi
     task_id: taskId,
   })
 }
+
+export async function notifyTaskNote(userId: string, taskId: number, drawingNo: string, senderName: string): Promise<void> {
+  await createNotification({
+    user_id: userId,
+    type: NOTIFICATION_TYPES.TASK_NOTE,
+    title: "Yeni Not",
+    body: `${senderName} — ${drawingNo} görevine not ekledi.`,
+    task_id: taskId,
+  })
+}

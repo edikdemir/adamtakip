@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth/middleware-auth"
 import { z } from "zod"
 
 const createSchema = z.object({
-  job_sub_type_id: z.string().uuid(),
+  job_sub_type_id: z.string().min(1),
   name: z.string().trim().min(1).max(200),
 })
 

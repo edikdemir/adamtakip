@@ -47,8 +47,9 @@ export async function GET(req: NextRequest) {
     const email = account.username // UPN / email
     const displayName = account.name || email
 
-    // Fetch jobTitle from Microsoft Graph
+    // Fetch jobTitle and profile photo from Microsoft Graph
     let jobTitle: string | null = null
+    let photoUrl: string | null = null
     try {
       const graphRes = await fetch(
         "https://graph.microsoft.com/v1.0/me?$select=jobTitle",
@@ -60,6 +61,20 @@ export async function GET(req: NextRequest) {
       }
     } catch {
       // Non-critical — continue without job title
+    }
+    try {
+      const photoRes = await fetch(
+        "https://graph.microsoft.com/v1.0/me/photo/$value",
+        { headers: { Authorization: `Bearer ${tokenResponse.accessToken}` } }
+      )
+      if (photoRes.ok) {
+        const buffer = await photoRes.arrayBuffer()
+        const base64 = Buffer.from(buffer).toString("base64")
+        const contentType = photoRes.headers.get("content-type") || "image/jpeg"
+        photoUrl = `data:${contentType};base64,${base64}`
+      }
+    } catch {
+      // Non-critical — continue without photo
     }
 
     // Upsert user in DB
@@ -81,16 +96,16 @@ export async function GET(req: NextRequest) {
       userId = existingUser.id
       userRole = existingUser.role
 
-      // Update display name, email and job title in case they changed
+      // Update display name, email, job title and photo
       await supabase
         .from("users")
-        .update({ email, display_name: displayName, job_title: jobTitle, updated_at: new Date().toISOString() })
+        .update({ email, display_name: displayName, job_title: jobTitle, ...(photoUrl ? { photo_url: photoUrl } : {}), updated_at: new Date().toISOString() })
         .eq("id", userId)
     } else {
       // First login: create user
       const { data: newUser, error: insertError } = await supabase
         .from("users")
-        .insert({ azure_oid: azureOid, email, display_name: displayName, job_title: jobTitle, role: "user" })
+        .insert({ azure_oid: azureOid, email, display_name: displayName, job_title: jobTitle, photo_url: photoUrl, role: "user" })
         .select("id, role")
         .single()
 

@@ -5,7 +5,7 @@ import { useCurrentUser } from "@/hooks/use-current-user"
 import { Task } from "@/types/task"
 import { TaskRowTimer } from "@/components/tasks/task-row-timer"
 import { TimeDurationCell } from "@/components/tasks/time-duration-cell"
-import { WorkerStatusBadge, PriorityBadge, AdminStatusBadge } from "@/components/tasks/task-status-badge"
+import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -14,13 +14,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter
 } from "@/components/ui/dialog"
-import { formatDate, formatHours, getDeadlineStatus, cn } from "@/lib/utils"
-import { WORKER_STATUS, WORKER_STATUS_LABELS } from "@/lib/constants"
-import { Search, AlertTriangle, Link2 } from "lucide-react"
+import { formatDate, getDeadlineStatus, cn } from "@/lib/utils"
+import { ADMIN_STATUS, ADMIN_STATUS_LABELS, WORKER_STATUS } from "@/lib/constants"
+import { Search, AlertTriangle, Link2, SendHorizonal } from "lucide-react"
 import { toast } from "sonner"
 import { useTimerGuard } from "@/hooks/use-timer-guard"
 import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 import { LinkTasksDialog } from "@/components/tasks/link-tasks-dialog"
+import { TaskNoteButton } from "@/components/tasks/task-note-button"
 
 export default function DashboardPage() {
   const { data: tasks = [], isLoading, refetch } = useTasks({ my_tasks: true })
@@ -38,7 +39,7 @@ export default function DashboardPage() {
       t.description.toLowerCase().includes(search.toLowerCase()) ||
       t.project?.code?.toLowerCase().includes(search.toLowerCase())
     const matchStatus =
-      statusFilter === "all" || t.worker_status === statusFilter
+      statusFilter === "all" || t.admin_status === statusFilter
     return matchSearch && matchStatus
   })
 
@@ -47,24 +48,25 @@ export default function DashboardPage() {
 
   useTimerGuard(runningTimers.length > 0)
 
-  const handleStatusChange = async (task: Task, newStatus: string) => {
-    if (newStatus === WORKER_STATUS.BITTI) {
-      setCompletionTask(task)
-      return
-    }
-    await updateTask.mutateAsync({ taskId: task.id, updates: { worker_status: newStatus as Task["worker_status"] } })
-  }
-
   const confirmCompletion = async () => {
     if (!completionTask) return
     await updateTask.mutateAsync({
       taskId: completionTask.id,
       updates: { worker_status: WORKER_STATUS.BITTI },
     })
-    toast.success("Görev tamamlandı olarak işaretlendi. Onay bekleniyor.")
+    toast.success("Görev onaya gönderildi.")
     setCompletionTask(null)
     refetch()
   }
+
+  const statusOptions = [
+    { value: "all", label: "Tüm Durumlar" },
+    { value: ADMIN_STATUS.ATANDI, label: ADMIN_STATUS_LABELS.atandi },
+    { value: ADMIN_STATUS.DEVAM_EDIYOR, label: ADMIN_STATUS_LABELS.devam_ediyor },
+    { value: ADMIN_STATUS.TAMAMLANDI, label: ADMIN_STATUS_LABELS.tamamlandi },
+    { value: ADMIN_STATUS.ONAYLANDI, label: ADMIN_STATUS_LABELS.onaylandi },
+    { value: ADMIN_STATUS.IPTAL, label: ADMIN_STATUS_LABELS.iptal },
+  ]
 
   return (
     <div className="space-y-4">
@@ -95,13 +97,12 @@ export default function DashboardPage() {
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40 h-9">
+          <SelectTrigger className="w-44 h-9">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tüm Durumlar</SelectItem>
-            {Object.entries(WORKER_STATUS_LABELS).map(([val, label]) => (
-              <SelectItem key={val} value={val}>{label}</SelectItem>
+            {statusOptions.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>{label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -123,29 +124,35 @@ export default function DashboardPage() {
               <TableHead className="max-w-[180px]">Yapılacak İş</TableHead>
               <TableHead className="w-24">Başlama</TableHead>
               <TableHead className="w-24">Hedef Bitiş</TableHead>
+              <TableHead className="w-24">Kesin Bitiş</TableHead>
               <TableHead className="w-36">Kronometre</TableHead>
               <TableHead className="w-20">Süre (sa)</TableHead>
               <TableHead className="w-28">Durum</TableHead>
               <TableHead className="w-24">Öncelik</TableHead>
               <TableHead className="w-32">Bağlı Görevler</TableHead>
+              <TableHead className="w-10">Not</TableHead>
+              <TableHead className="w-36">İşlem</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
+                <TableCell colSpan={18} className="text-center py-12 text-zinc-400">
                   Yükleniyor...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={15} className="text-center py-12 text-zinc-400">
+                <TableCell colSpan={18} className="text-center py-12 text-zinc-400">
                   Görev bulunamadı
                 </TableCell>
               </TableRow>
             ) : (
               filtered.map((task) => {
                 const deadlineStatus = getDeadlineStatus(task.planned_end)
+                const canSubmit =
+                  task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR &&
+                  task.assigned_to === currentUser?.id
                 return (
                   <TableRow
                     key={task.id}
@@ -197,8 +204,14 @@ export default function DashboardPage() {
                         )}
                       </span>
                     </TableCell>
+                    <TableCell className="text-sm text-zinc-500">
+                      {task.approved_at ? formatDate(task.approved_at) : "—"}
+                    </TableCell>
                     <TableCell>
-                      {task.worker_status !== WORKER_STATUS.BITTI && task.admin_status !== "iptal" && task.admin_status !== "onaylandi" && task.assigned_to === currentUser?.id ? (
+                      {task.admin_status !== ADMIN_STATUS.TAMAMLANDI &&
+                       task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
+                       task.admin_status !== ADMIN_STATUS.IPTAL &&
+                       task.assigned_to === currentUser?.id ? (
                         <TaskRowTimer
                           task={task}
                           onUpdate={() => refetch()}
@@ -212,22 +225,7 @@ export default function DashboardPage() {
                       <TimeDurationCell task={task} />
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={task.worker_status}
-                        onValueChange={(val) => handleStatusChange(task, val)}
-                        disabled={task.admin_status === "onaylandi" || task.admin_status === "iptal"}
-                      >
-                        <SelectTrigger className="h-7 text-xs border-0 bg-transparent p-0 shadow-none hover:bg-zinc-100 rounded px-2">
-                          <SelectValue>
-                            <WorkerStatusBadge status={task.worker_status} />
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(WORKER_STATUS_LABELS).map(([val, label]) => (
-                            <SelectItem key={val} value={val}>{label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <AdminStatusBadge status={task.admin_status as import("@/lib/constants").AdminStatus} />
                     </TableCell>
                     <TableCell>
                       <PriorityBadge priority={task.priority} />
@@ -238,7 +236,9 @@ export default function DashboardPage() {
                           parent={task.linked_to_task}
                           dependents={task.linked_tasks}
                         />
-                        {task.linked_to_task_id == null && task.assigned_to === currentUser?.id && (
+                        {task.linked_to_task_id == null &&
+                          task.assigned_to === currentUser?.id &&
+                          task.admin_status !== ADMIN_STATUS.ONAYLANDI && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -250,6 +250,22 @@ export default function DashboardPage() {
                           </Button>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <TaskNoteButton taskId={task.id} drawingNo={task.drawing_no} />
+                    </TableCell>
+                    <TableCell>
+                      {canSubmit && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs gap-1 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                          onClick={() => setCompletionTask(task)}
+                        >
+                          <SendHorizonal className="h-3.5 w-3.5" />
+                          Onaya Gönder
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 )
@@ -263,9 +279,9 @@ export default function DashboardPage() {
       <Dialog open={!!completionTask} onOpenChange={(open) => !open && setCompletionTask(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Görevi Tamamla</DialogTitle>
+            <DialogTitle>Onaya Gönder</DialogTitle>
             <DialogDescription>
-              <strong>{completionTask?.drawing_no}</strong> görevini tamamlandı olarak işaretlemek istiyor musunuz?
+              <strong>{completionTask?.drawing_no}</strong> görevini tamamlandı olarak işaretlemek ve onaya göndermek istiyor musunuz?
               <br /><br />
               Timer otomatik olarak durdurulacak ve yöneticinize bildirim gönderilecek.
             </DialogDescription>
@@ -273,7 +289,7 @@ export default function DashboardPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCompletionTask(null)}>İptal</Button>
             <Button onClick={confirmCompletion} disabled={updateTask.isPending}>
-              {updateTask.isPending ? "Kaydediliyor..." : "Evet, Tamamlandı"}
+              {updateTask.isPending ? "Gönderiliyor..." : "Evet, Onaya Gönder"}
             </Button>
           </DialogFooter>
         </DialogContent>

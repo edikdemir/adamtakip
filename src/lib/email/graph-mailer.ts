@@ -38,6 +38,7 @@ async function getEmailSettings() {
     send_on_approve: boolean
     send_on_reject: boolean
     send_on_complete: boolean
+    send_on_note?: boolean
     overdue_notify_user?: boolean
     overdue_notify_admin?: boolean
   } | null
@@ -107,6 +108,10 @@ function emailTemplate(title: string, body: string, ctaUrl?: string, ctaText?: s
 </html>`
 }
 
+const PRIORITY_LABEL: Record<string, string> = {
+  low: "Düşük", medium: "Orta", high: "Yüksek", urgent: "Acil",
+}
+
 export async function sendTaskAssignedEmail(user: User, task: Task): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_assign) return
@@ -117,9 +122,13 @@ export async function sendTaskAssignedEmail(user: User, task: Task): Promise<voi
     Size yeni bir görev atandı:<br><br>
     <strong>Proje:</strong> ${task.project?.code || "-"}<br>
     <strong>Çizim No:</strong> ${task.drawing_no}<br>
+    <strong>İş Tipi:</strong> ${task.job_type?.name || "-"}<br>
+    <strong>İş Alt Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
     <strong>Açıklama:</strong> ${task.description}<br>
-    <strong>İş Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
+    <strong>Öncelik:</strong> ${PRIORITY_LABEL[task.priority] || task.priority}<br>
+    ${task.planned_start ? `<strong>Başlama Tarihi:</strong> ${new Date(task.planned_start).toLocaleDateString("tr-TR")}<br>` : ""}
     ${task.planned_end ? `<strong>Hedef Bitiş Tarihi:</strong> ${new Date(task.planned_end).toLocaleDateString("tr-TR")}<br>` : ""}
+    ${task.admin_notes ? `<strong>Admin Notu:</strong> ${task.admin_notes}<br>` : ""}
     <br>Detaylar için uygulamaya gidiniz.
   `
   await sendEmail(user.email, subject, emailTemplate("Yeni Görev Atandı", body, "/dashboard"))
@@ -129,15 +138,32 @@ export async function sendTaskApprovedEmail(user: User, task: Task): Promise<voi
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_approve) return
 
-  const body = `Merhaba ${user.display_name},<br><br><strong>${task.drawing_no}</strong> çizim numaralı göreviniz onaylandı.`
-  await sendEmail(user.email, `Görev Onaylandı: ${task.drawing_no}`, emailTemplate("Görev Onaylandı", body, "/dashboard"))
+  const body = `
+    Merhaba ${user.display_name},<br><br>
+    <strong>${task.drawing_no}</strong> numaralı göreviniz onaylandı ve tamamlandı olarak işaretlendi.<br><br>
+    <strong>Proje:</strong> ${task.project?.code || "-"}<br>
+    <strong>İş Tipi:</strong> ${task.job_type?.name || "-"}<br>
+    <strong>İş Alt Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
+    <strong>Açıklama:</strong> ${task.description}<br>
+    ${task.approved_at ? `<strong>Kesin Bitiş Tarihi:</strong> ${new Date(task.approved_at).toLocaleDateString("tr-TR")}<br>` : ""}
+  `
+  await sendEmail(user.email, `Görev Hazır: ${task.drawing_no}`, emailTemplate("Görev Onaylandı — Hazır", body, "/dashboard"))
 }
 
 export async function sendTaskRejectedEmail(user: User, task: Task, reason?: string): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_reject) return
 
-  const body = `Merhaba ${user.display_name},<br><br><strong>${task.drawing_no}</strong> çizim numaralı göreviniz revizeye gönderildi.${reason ? `<br><br><strong>Revize Sebebi:</strong> ${reason}` : ""}<br><br>Lütfen gerekli düzeltmeleri yaparak görevi tekrar tamamlayın.`
+  const body = `
+    Merhaba ${user.display_name},<br><br>
+    <strong>${task.drawing_no}</strong> numaralı göreviniz revizeye gönderildi.<br><br>
+    <strong>Proje:</strong> ${task.project?.code || "-"}<br>
+    <strong>İş Tipi:</strong> ${task.job_type?.name || "-"}<br>
+    <strong>İş Alt Tipi:</strong> ${task.job_sub_type?.name || "-"}<br>
+    <strong>Açıklama:</strong> ${task.description}<br>
+    ${reason ? `<br><strong>Revize Sebebi:</strong> ${reason}<br>` : ""}
+    <br>Lütfen gerekli düzeltmeleri yaparak görevi tekrar tamamlayın.
+  `
   await sendEmail(user.email, `Revize: ${task.drawing_no}`, emailTemplate("Görev Revizeye Gönderildi", body, "/dashboard"))
 }
 
@@ -177,10 +203,46 @@ export async function sendOverdueEmail(
   )
 }
 
+export async function sendTaskNoteEmail(
+  recipientEmail: string,
+  recipientName: string,
+  task: Task,
+  senderName: string,
+  noteContent: string
+): Promise<void> {
+  const settings = await getEmailSettings()
+  if (!settings?.enabled || !settings?.send_on_note) return
+
+  const body = `
+    Merhaba ${recipientName},<br><br>
+    <strong>${senderName}</strong> tarafından aşağıdaki göreve yeni bir not eklendi:<br><br>
+    <strong>Çizim No:</strong> ${task.drawing_no}<br>
+    <strong>Proje:</strong> ${(task as unknown as Record<string, unknown> & { project?: { code?: string } }).project?.code || "-"}<br><br>
+    <strong>Not:</strong><br>
+    <blockquote style="border-left: 3px solid #e4e4e7; margin: 8px 0; padding: 8px 12px; color: #52525b;">${noteContent}</blockquote>
+    <br>Görevi görmek için uygulamaya gidiniz.
+  `
+  await sendEmail(
+    recipientEmail,
+    `Yeni Not: ${task.drawing_no}`,
+    emailTemplate("Göreve Yeni Not Eklendi", body, "/dashboard")
+  )
+}
+
 export async function sendTaskCompletedEmail(adminEmail: string, adminName: string, task: Task, workerName: string): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings?.send_on_complete) return
 
-  const body = `Merhaba ${adminName},<br><br><strong>${workerName}</strong> tarafından <strong>${task.drawing_no}</strong> görevi tamamlandı ve onayınızı bekliyor.`
-  await sendEmail(adminEmail, `Onay Bekliyor: ${task.drawing_no}`, emailTemplate("Görev Onay Bekliyor", body, "/admin/approvals"))
+  const totalHours = ((task.total_elapsed_seconds || 0) / 3600 + (task.manual_hours || 0)).toFixed(1)
+  const body = `
+    Merhaba ${adminName},<br><br>
+    <strong>${workerName}</strong> tarafından aşağıdaki görev tamamlandı ve onayınızı bekliyor:<br><br>
+    <strong>Proje:</strong> ${(task as unknown as Record<string, unknown> & { project?: { code?: string } }).project?.code || "-"}<br>
+    <strong>Çizim No:</strong> ${task.drawing_no}<br>
+    <strong>İş Tipi:</strong> ${(task as unknown as Record<string, unknown> & { job_type?: { name?: string } }).job_type?.name || "-"}<br>
+    <strong>İş Alt Tipi:</strong> ${(task as unknown as Record<string, unknown> & { job_sub_type?: { name?: string } }).job_sub_type?.name || "-"}<br>
+    <strong>Açıklama:</strong> ${task.description}<br>
+    <strong>Toplam Süre:</strong> ${totalHours} sa<br>
+  `
+  await sendEmail(adminEmail, `Onay Bekliyor: ${task.drawing_no}`, emailTemplate("Görev Onay Bekliyor", body, "/admin/job-pool"))
 }

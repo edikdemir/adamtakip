@@ -40,6 +40,7 @@ export const NOTIFICATION_TYPES = {
   DEADLINE_WARNING: "deadline_warning",
   TIMER_REMINDER: "timer_reminder",
   TASK_COMPLETED: "task_completed",
+  TASK_NOTE: "task_note",
 } as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[keyof typeof NOTIFICATION_TYPES]
@@ -54,8 +55,8 @@ export const ADMIN_STATUS_LABELS: Record<AdminStatus, string> = {
   havuzda: "Havuzda",
   atandi: "Atandı",
   devam_ediyor: "Devam Ediyor",
-  tamamlandi: "Tamamlandı",
-  onaylandi: "Onaylandı",
+  tamamlandi: "Onay Bekliyor",
+  onaylandi: "Hazır",
   iptal: "İptal",
 }
 
