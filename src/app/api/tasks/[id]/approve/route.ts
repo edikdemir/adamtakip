@@ -14,7 +14,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("*, assigned_user:users!assigned_to(id, email, display_name)")
+    .select(`
+      *,
+      project:projects(id, code, name),
+      job_type:job_types(id, name),
+      job_sub_type:job_sub_types(id, name),
+      assigned_user:users!assigned_to(id, email, display_name)
+    `)
     .eq("id", id)
     .single()
 
@@ -36,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const assignedUser = task.assigned_user as { id: string; email: string; display_name: string } | null
     if (assignedUser) {
       notifyTaskApproved(assignedUser.id, parseInt(id), task.drawing_no).catch(console.error)
-      sendTaskApprovedEmail(assignedUser as Parameters<typeof sendTaskApprovedEmail>[0], updatedTask || task).catch(console.error)
+      sendTaskApprovedEmail(assignedUser as Parameters<typeof sendTaskApprovedEmail>[0], { ...task, approved_at: updatedTask?.approved_at ?? task.approved_at } as unknown as import("@/types/task").Task).catch(console.error)
     }
   }
 

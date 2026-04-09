@@ -36,7 +36,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   // Verify access: user must be assigned to task or be admin
   const { data: task } = await supabase
     .from("tasks")
-    .select("id, drawing_no, assigned_to, assigned_by, assigned_user:users!assigned_to(id, email, display_name)")
+    .select(`
+      id, drawing_no, assigned_to, assigned_by,
+      project:projects(id, code, name),
+      job_type:job_types(id, name),
+      job_sub_type:job_sub_types(id, name),
+      assigned_user:users!assigned_to(id, email, display_name)
+    `)
     .eq("id", parseInt(id))
     .single()
 
