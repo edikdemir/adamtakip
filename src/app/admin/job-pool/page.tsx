@@ -21,6 +21,8 @@ import { useLocations } from "@/hooks/use-locations"
 import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
 import { ImportTasksDialog } from "@/components/tasks/import-tasks-dialog"
 import { TaskNoteButton } from "@/components/tasks/task-note-button"
+import { UserAvatar } from "@/components/ui/user-avatar"
+import Link from "next/link"
 
 function useProjects() {
   return useQuery({ queryKey: ["projects"], queryFn: () => fetch("/api/projects").then(r => r.json()).then(r => r.data || []) })
@@ -115,7 +117,14 @@ export default function JobPoolPage() {
       location:      form.location      || undefined,
       admin_notes:   form.admin_notes   || undefined,
     }
-    await createTask.mutateAsync(payload as Parameters<typeof createTask.mutateAsync>[0])
+    const created = await createTask.mutateAsync(payload as Parameters<typeof createTask.mutateAsync>[0])
+    if (form.admin_notes && created?.id) {
+      await fetch(`/api/tasks/${created.id}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: `📋 Admin Notu: ${form.admin_notes}` }),
+      })
+    }
     setCreateOpen(false)
     setForm({ project_id: "", job_type_id: "", job_sub_type_id: "", zone_id: "", drawing_no: "", description: "", planned_start: today, planned_end: "", priority: "medium", location: "", admin_notes: "" })
   }
@@ -189,12 +198,13 @@ export default function JobPoolPage() {
       {/* Worker cards */}
       {(() => {
         const activeStatuses = [ADMIN_STATUS.ATANDI, ADMIN_STATUS.DEVAM_EDIYOR, ADMIN_STATUS.TAMAMLANDI]
-        const workerMap = new Map<string, { id: string; display_name: string; job_title?: string | null; photo_url?: string | null; count: number }>()
+        const workerMap = new Map<string, { id: string; display_name: string; photo_url?: string | null; count: number }>()
         for (const t of tasks) {
           if (!t.assigned_to || !t.assigned_user) continue
           if (!activeStatuses.includes(t.admin_status as typeof activeStatuses[number])) continue
-          const u = t.assigned_user as { id: string; display_name: string; email: string }
-          const entry = workerMap.get(u.id) ?? { id: u.id, display_name: u.display_name, count: 0 }
+          const u = t.assigned_user as { id: string; display_name: string; email: string; photo_url?: string | null }
+          const userInfo = users.find((usr: { id: string; photo_url?: string | null }) => usr.id === u.id)
+          const entry = workerMap.get(u.id) ?? { id: u.id, display_name: u.display_name, photo_url: userInfo?.photo_url ?? null, count: 0 }
           entry.count += 1
           workerMap.set(u.id, entry)
         }
@@ -215,7 +225,6 @@ export default function JobPoolPage() {
             )}
             {workers.map((w) => {
               const isSelected = workerFilter === w.id
-              const initials = w.display_name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
               return (
                 <button
                   key={w.id}
@@ -228,12 +237,12 @@ export default function JobPoolPage() {
                   )}
                 >
                   <div className="relative">
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold",
-                      isSelected ? "bg-zinc-700 text-white" : "bg-zinc-100 text-zinc-700"
-                    )}>
-                      {initials}
-                    </div>
+                    <UserAvatar
+                      displayName={w.display_name}
+                      photoUrl={w.photo_url}
+                      size="md"
+                      className={isSelected ? "ring-2 ring-white" : ""}
+                    />
                     <span className={cn(
                       "absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold",
                       isSelected ? "bg-white text-zinc-900" : "bg-zinc-900 text-white"
@@ -300,7 +309,14 @@ export default function JobPoolPage() {
                 <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_start)}</TableCell>
                 <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_end)}</TableCell>
                 <TableCell className="text-sm text-zinc-500">{task.approved_at ? formatDate(task.approved_at) : <span className="text-zinc-300">—</span>}</TableCell>
-                <TableCell className="text-sm">{task.assigned_user?.display_name || <span className="text-zinc-400">—</span>}</TableCell>
+                <TableCell>
+                  {task.assigned_user ? (
+                    <Link href={`/admin/users/${task.assigned_user.id}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                      <UserAvatar displayName={task.assigned_user.display_name} photoUrl={(task.assigned_user as { photo_url?: string | null }).photo_url} size="sm" />
+                      <span className="text-xs font-medium text-indigo-700 hover:underline truncate max-w-[80px]">{task.assigned_user.display_name}</span>
+                    </Link>
+                  ) : <span className="text-zinc-400 text-xs">—</span>}
+                </TableCell>
                 <TableCell><TimeDurationCell task={task} /></TableCell>
                 <TableCell><AdminStatusBadge status={task.admin_status} /></TableCell>
                 <TableCell><PriorityBadge priority={task.priority} /></TableCell>
@@ -473,26 +489,34 @@ export default function JobPoolPage() {
 
       {/* Assign Dialog */}
       <Dialog open={!!assignTask} onOpenChange={(open) => !open && setAssignTask(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Görev Ata</DialogTitle>
             <DialogDescription>#{assignTask?.id} — {assignTask?.drawing_no} — {assignTask?.description}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label>Kullanıcı Seç</Label>
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger><SelectValue placeholder="Kullanıcı seç" /></SelectTrigger>
-              <SelectContent>
-                {users.map((u: { id: string; display_name: string; job_title?: string | null; email: string }) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    <div className="flex flex-col">
-                      <span>{u.display_name}</span>
-                      {u.job_title && <span className="text-xs text-zinc-500">{u.job_title}</span>}
+          <div className="py-2">
+            <Label className="mb-2 block">Kullanıcı Seç</Label>
+            <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+              {users.map((u: { id: string; display_name: string; job_title?: string | null; photo_url?: string | null }) => {
+                const isSelected = selectedUserId === u.id
+                return (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUserId(isSelected ? "" : u.id)}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-lg border p-2.5 text-left transition-colors",
+                      isSelected ? "border-indigo-500 bg-indigo-50" : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                    )}
+                  >
+                    <UserAvatar displayName={u.display_name} photoUrl={u.photo_url} size="sm" />
+                    <div className="min-w-0">
+                      <p className={cn("text-xs font-semibold truncate", isSelected ? "text-indigo-700" : "text-zinc-800")}>{u.display_name}</p>
+                      {u.job_title && <p className="text-[10px] text-zinc-500 truncate">{u.job_title}</p>}
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </button>
+                )
+              })}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAssignTask(null)}>İptal</Button>

@@ -48,10 +48,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (reason) {
-    await supabase.from("task_comments").insert({
+    await supabase.from("task_notes").insert({
       task_id: parseInt(id),
       user_id: user.id,
-      body: `🚫 İptal Sebebi: ${reason}`,
+      content: `🚫 İptal Sebebi: ${reason}`,
     })
   }
 

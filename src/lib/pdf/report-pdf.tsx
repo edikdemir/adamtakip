@@ -1,10 +1,16 @@
 "use client"
 import {
-  Document, Page, Text, View, StyleSheet, Font, Image,
+  Document, Page, Text, View, StyleSheet, Image, Font,
+  Svg, Rect, Line, Path, G,
 } from "@react-pdf/renderer"
 
-// ─── Fonts ────────────────────────────────────────────────────────────────────
-// System font fallback — @react-pdf uses Helvetica by default (built-in)
+Font.register({
+  family: "Inter",
+  fonts: [
+    { src: "/fonts/inter-regular.woff2", fontWeight: 400 },
+    { src: "/fonts/inter-bold.woff2", fontWeight: 700 },
+  ],
+})
 
 // ─── Colors ──────────────────────────────────────────────────────────────────
 const C = {
@@ -26,7 +32,7 @@ const C = {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   page: {
-    fontFamily: "Helvetica",
+    fontFamily: "Inter",
     fontSize: 9,
     color: C.text,
     backgroundColor: C.surface,
@@ -69,7 +75,7 @@ const s = StyleSheet.create({
   },
   companyName: {
     fontSize: 16,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: "#ffffff",
     letterSpacing: 0.5,
   },
@@ -99,7 +105,7 @@ const s = StyleSheet.create({
   },
   reportTitle: {
     fontSize: 18,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.primary,
   },
   reportSubtitle: {
@@ -125,7 +131,7 @@ const s = StyleSheet.create({
   // Section
   sectionTitle: {
     fontSize: 11,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.primary,
     marginBottom: 8,
     marginTop: 16,
@@ -151,7 +157,7 @@ const s = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 18,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.primary,
   },
   summaryLabel: {
@@ -177,7 +183,7 @@ const s = StyleSheet.create({
   },
   th: {
     fontSize: 8,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: "#ffffff",
   },
   tbody: {},
@@ -200,7 +206,7 @@ const s = StyleSheet.create({
   },
   tdMono: {
     fontSize: 8,
-    fontFamily: "Helvetica",
+    fontFamily: "Inter",
     color: C.text,
   },
   tdMuted: {
@@ -209,7 +215,7 @@ const s = StyleSheet.create({
   },
   tdBold: {
     fontSize: 8,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.text,
   },
   tdRight: {
@@ -218,12 +224,12 @@ const s = StyleSheet.create({
   statusOnaylandi: {
     fontSize: 7,
     color: C.success,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
   },
   statusPending: {
     fontSize: 7,
     color: C.warning,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
   },
   statusOther: {
     fontSize: 7,
@@ -246,7 +252,7 @@ const s = StyleSheet.create({
   },
   workerName: {
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.secondary,
   },
   workerMeta: {
@@ -255,7 +261,7 @@ const s = StyleSheet.create({
   },
   workerHours: {
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Inter", fontWeight: 700,
     color: C.primary,
   },
 

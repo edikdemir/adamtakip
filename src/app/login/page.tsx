@@ -87,10 +87,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-zinc-900 rounded-2xl mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-            </svg>
+          <div className="inline-flex items-center justify-center w-24 h-24 mb-4">
+            <img src="/logo_cemre.png" alt="Cemre Logo" className="w-24 h-24 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-zinc-900">Adam Takip</h1>
           <p className="text-zinc-500 text-sm mt-1">Cemre Tersanesi | Dizayn Departmanı İş Takip Sistemi</p>

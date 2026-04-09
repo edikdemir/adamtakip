@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BarChart3, Download, Clock, CheckCircle, TrendingUp, Layers } from "lucide-react"
+import { BarChart3, Download, FileDown, Clock, CheckCircle, TrendingUp, Layers } from "lucide-react"
+import { ReportPdf } from "@/lib/pdf/report-pdf"
 import { formatDate } from "@/lib/utils"
 import { ADMIN_STATUS } from "@/lib/constants"
 
@@ -186,12 +187,38 @@ function downloadCSV(tasks: ReportTask[]) {
   URL.revokeObjectURL(url)
 }
 
+// ─── PDF export ───────────────────────────────────────────────────────────────
+
+async function downloadPdf(
+  tasks: ReportTask[],
+  applied: Filters,
+  labels: { adminStatusLabel: string; projectLabel?: string; userLabel?: string; jobTypeLabel?: string },
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { pdf } = await import("@react-pdf/renderer") as any
+  const doc = (
+    <ReportPdf
+      tasks={tasks}
+      filters={{ from: applied.from, to: applied.to, ...labels }}
+      logoUrl={typeof window !== "undefined" ? window.location.origin + "/logo_cemre.png" : undefined}
+    />
+  )
+  const blob = await pdf(doc).toBlob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `adamsaat-rapor-${new Date().toISOString().slice(0, 10)}.pdf`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PIE_COLORS = ["#6366f1", "#10b981", "#f59e0b", "#f97316", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"]
 
 const ONAY_OPTIONS = [
-  { value: "onaylandi",    label: "Onaylandı" },
+  { value: "onaylandi",    label: "Hazır" },
   { value: "tamamlandi",   label: "Onay Bekliyor" },
   { value: "devam_ediyor", label: "Devam Ediyor" },
   { value: "atandi",       label: "Atandı" },
@@ -244,9 +271,20 @@ export default function ReportsPage() {
           <BarChart3 className="h-5 w-5" /> Aylık AdamxSaat Raporu
         </h1>
         {tasks.length > 0 && (
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => downloadCSV(tasks)}>
-            <Download className="h-4 w-4" /> CSV İndir
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => downloadCSV(tasks)}>
+              <Download className="h-4 w-4" /> CSV İndir
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => {
+              const adminStatusLabel = ONAY_OPTIONS.find(o => o.value === applied.admin_status)?.label ?? applied.admin_status
+              const projectLabel = applied.project_id !== "all" ? (projects as {id:string;code:string}[]).find(p => p.id === applied.project_id)?.code : undefined
+              const userLabel = applied.user_id !== "all" ? (users as {id:string;display_name:string}[]).find(u => u.id === applied.user_id)?.display_name : undefined
+              const jobTypeLabel = applied.job_type_id !== "all" ? (jobTypes as {id:string;name:string}[]).find(jt => jt.id === applied.job_type_id)?.name : undefined
+              downloadPdf(tasks, applied, { adminStatusLabel, projectLabel, userLabel, jobTypeLabel })
+            }}>
+              <FileDown className="h-4 w-4" /> PDF İndir
+            </Button>
+          </div>
         )}
       </div>
 
