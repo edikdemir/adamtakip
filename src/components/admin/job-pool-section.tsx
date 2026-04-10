@@ -14,17 +14,17 @@ export function AdminJobPoolSection() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
+      <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 shadow-sm sm:px-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-700">Ana Operasyon Alanı</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">İş Havuzu</h2>
-            <p className="mt-2 max-w-3xl text-sm text-zinc-500">
-              Gelişmiş filtrelerle görevleri daraltın, satıra tıklayarak detay panelini açın ve işlemleri aynı akıştan yönetin.
+            <h2 className="text-xl font-semibold tracking-tight text-zinc-950">İş Havuzu</h2>
+            <p className="max-w-2xl text-sm text-zinc-500">
+              Görevleri filtreleyin, detayları panelden açın ve tüm operasyonu tek akıştan yönetin.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <Button size="sm" variant="outline" className="gap-2 rounded-full" onClick={() => state.setImportOpen(true)}>
               <FileSpreadsheet className="h-4 w-4" />
               Excel İçe Aktar

@@ -44,6 +44,46 @@ function normalizeDashboardFilters(filters: TaskFilterState) {
   }
 }
 
+function isToday(dateValue?: string | null) {
+  if (!dateValue) {
+    return false
+  }
+
+  const date = new Date(dateValue)
+  if (Number.isNaN(date.getTime())) {
+    return false
+  }
+
+  const now = new Date()
+
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  )
+}
+
+function isOverdue(task: Task) {
+  if (!task.planned_end) {
+    return false
+  }
+
+  if (
+    task.admin_status === ADMIN_STATUS.ONAYLANDI ||
+    task.admin_status === ADMIN_STATUS.IPTAL ||
+    task.admin_status === ADMIN_STATUS.TAMAMLANDI
+  ) {
+    return false
+  }
+
+  const plannedEnd = new Date(task.planned_end)
+  if (Number.isNaN(plannedEnd.getTime())) {
+    return false
+  }
+
+  return plannedEnd.getTime() < Date.now()
+}
+
 export default function DashboardPage() {
   const { user: currentUser } = useCurrentUser()
   const [filters, setFilters] = useState<TaskFilterState>(() => createTaskFilters())
@@ -74,7 +114,7 @@ export default function DashboardPage() {
     [activeTimers, currentUser?.id]
   )
 
-  const assignedAndInProgressTasks = useMemo(
+  const activeWorkTasks = useMemo(
     () =>
       baseTasks.filter(
         (task) => task.admin_status === ADMIN_STATUS.ATANDI || task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR
@@ -86,6 +126,10 @@ export default function DashboardPage() {
     () => baseTasks.filter((task) => task.admin_status === ADMIN_STATUS.TAMAMLANDI),
     [baseTasks]
   )
+
+  const updatedTodayCount = useMemo(() => baseTasks.filter((task) => isToday(task.updated_at)).length, [baseTasks])
+
+  const overdueFilteredCount = useMemo(() => filteredTasks.filter(isOverdue).length, [filteredTasks])
 
   useTimerGuard(runningTimers.length > 0)
 
@@ -127,6 +171,49 @@ export default function DashboardPage() {
 
   const statusOptions = STATUS_FILTER_OPTIONS.filter((option) => option.value !== ADMIN_STATUS.HAVUZDA)
 
+  const renderDuration = (task: Task) =>
+    task.admin_status !== ADMIN_STATUS.TAMAMLANDI &&
+    task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
+    task.admin_status !== ADMIN_STATUS.IPTAL &&
+    task.assigned_to === currentUser?.id ? (
+      <TaskRowTimer
+        task={task}
+        onUpdate={refetchDashboardTasks}
+        hasOtherActiveTimer={runningTimers.length > 0 && task.timer_started_at === null}
+      />
+    ) : (
+      <TimeDurationCell task={task} />
+    )
+
+  const renderActions = (task: Task) => {
+    const canSubmit = task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR && task.assigned_to === currentUser?.id
+    const canLink =
+      task.linked_to_task_id == null && task.assigned_to === currentUser?.id && task.admin_status !== ADMIN_STATUS.ONAYLANDI
+
+    return (
+      <div className="flex items-center gap-1">
+        {canLink ? (
+          <Button variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs" onClick={() => setLinkPrimary(task)}>
+            <Link2 className="mr-1 h-3.5 w-3.5" />
+            {task.linked_tasks && task.linked_tasks.length > 0 ? "Bağlar" : "Linkle"}
+          </Button>
+        ) : null}
+
+        {canSubmit ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 rounded-full px-3 text-xs text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+            onClick={() => setCompletionTask(task)}
+          >
+            <SendHorizonal className="mr-1 h-3.5 w-3.5" />
+            Onaya Gönder
+          </Button>
+        ) : null}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5">
       {runningTimers.length > 0 ? (
@@ -157,11 +244,33 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
+      <div className="grid gap-3 lg:grid-cols-3">
+        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">Kronometre Durumu</p>
+          <p className={cn("mt-2 text-sm font-semibold", runningTimers.length > 0 ? "text-red-700" : "text-emerald-700")}>
+            {runningTimers.length > 0 ? "Aktif kronometre var" : "Aktif kronometre yok"}
+          </p>
+          <p className="mt-1 text-xs text-zinc-500">Çalışma sırasında süreyi durdurmadan sayfadan ayrılmayın.</p>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">Onay Akışı</p>
+          <p className="mt-2 text-sm font-semibold text-amber-700">{waitingApprovalTasks.length} görev onay bekliyor</p>
+          <p className="mt-1 text-xs text-zinc-500">Tamamlayıp gönderdiğiniz işler bu sekmede izlenir.</p>
+        </div>
+
+        <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">Bugünkü Hareket</p>
+          <p className="mt-2 text-sm font-semibold text-blue-700">{updatedTodayCount} görev bugün güncellendi</p>
+          <p className="mt-1 text-xs text-zinc-500">Bugün işlem gören görevleri hızlıca takip edin.</p>
+        </div>
+      </div>
+
       <Tabs defaultValue="active" className="space-y-4">
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
           <TabsList className="h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
             <TabsTrigger value="active" className="rounded-full px-4 py-2">
-              Devam Ediyor ({assignedAndInProgressTasks.length})
+              Aktif İşler ({activeWorkTasks.length})
             </TabsTrigger>
             <TabsTrigger value="approval" className="rounded-full px-4 py-2">
               Onay Bekliyor ({waitingApprovalTasks.length})
@@ -174,10 +283,10 @@ export default function DashboardPage() {
 
         <TabsContent value="active" className="space-y-4">
           <CompactTaskTable
-            tasks={assignedAndInProgressTasks}
+            tasks={activeWorkTasks}
             isLoading={isBaseLoading}
             showAssignedUser={false}
-            emptyTitle="Aktif görev bulunamadı"
+            emptyTitle="Aktif iş bulunamadı"
             emptyDescription="Atanan veya devam eden görevleriniz burada görünecek."
             rowClassName={(task) =>
               cn(
@@ -185,55 +294,8 @@ export default function DashboardPage() {
                 task.timer_started_at && task.assigned_to === currentUser?.id && "bg-emerald-50/60"
               )
             }
-            renderDuration={(task) =>
-              task.admin_status !== ADMIN_STATUS.TAMAMLANDI &&
-              task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
-              task.admin_status !== ADMIN_STATUS.IPTAL &&
-              task.assigned_to === currentUser?.id ? (
-                <TaskRowTimer
-                  task={task}
-                  onUpdate={refetchDashboardTasks}
-                  hasOtherActiveTimer={runningTimers.length > 0 && task.timer_started_at === null}
-                />
-              ) : (
-                <TimeDurationCell task={task} />
-              )
-            }
-            renderActions={(task) => {
-              const canSubmit = task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR && task.assigned_to === currentUser?.id
-              const canLink =
-                task.linked_to_task_id == null &&
-                task.assigned_to === currentUser?.id &&
-                task.admin_status !== ADMIN_STATUS.ONAYLANDI
-
-              return (
-                <div className="flex items-center gap-1">
-                  {canLink ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-full px-3 text-xs"
-                      onClick={() => setLinkPrimary(task)}
-                    >
-                      <Link2 className="mr-1 h-3.5 w-3.5" />
-                      {task.linked_tasks && task.linked_tasks.length > 0 ? "Bağlar" : "Linkle"}
-                    </Button>
-                  ) : null}
-
-                  {canSubmit ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-full px-3 text-xs text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                      onClick={() => setCompletionTask(task)}
-                    >
-                      <SendHorizonal className="mr-1 h-3.5 w-3.5" />
-                      Onaya Gönder
-                    </Button>
-                  ) : null}
-                </div>
-              )
-            }}
+            renderDuration={renderDuration}
+            renderActions={renderActions}
           />
         </TabsContent>
 
@@ -263,6 +325,16 @@ export default function DashboardPage() {
             hideAssignedFilter
           />
 
+          <div className="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-zinc-900">{filteredTasks.length} görev bulundu</p>
+              <p className="text-xs text-zinc-500">Filtreler yalnızca bu sekmedeki görev listesini etkiler.</p>
+            </div>
+            <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
+              {overdueFilteredCount} gecikmiş görev
+            </span>
+          </div>
+
           <CompactTaskTable
             tasks={filteredTasks}
             isLoading={isFilteredLoading}
@@ -275,55 +347,8 @@ export default function DashboardPage() {
                 task.timer_started_at && task.assigned_to === currentUser?.id && "bg-emerald-50/60"
               )
             }
-            renderDuration={(task) =>
-              task.admin_status !== ADMIN_STATUS.TAMAMLANDI &&
-              task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
-              task.admin_status !== ADMIN_STATUS.IPTAL &&
-              task.assigned_to === currentUser?.id ? (
-                <TaskRowTimer
-                  task={task}
-                  onUpdate={refetchDashboardTasks}
-                  hasOtherActiveTimer={runningTimers.length > 0 && task.timer_started_at === null}
-                />
-              ) : (
-                <TimeDurationCell task={task} />
-              )
-            }
-            renderActions={(task) => {
-              const canSubmit = task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR && task.assigned_to === currentUser?.id
-              const canLink =
-                task.linked_to_task_id == null &&
-                task.assigned_to === currentUser?.id &&
-                task.admin_status !== ADMIN_STATUS.ONAYLANDI
-
-              return (
-                <div className="flex items-center gap-1">
-                  {canLink ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-full px-3 text-xs"
-                      onClick={() => setLinkPrimary(task)}
-                    >
-                      <Link2 className="mr-1 h-3.5 w-3.5" />
-                      {task.linked_tasks && task.linked_tasks.length > 0 ? "Bağlar" : "Linkle"}
-                    </Button>
-                  ) : null}
-
-                  {canSubmit ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 rounded-full px-3 text-xs text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                      onClick={() => setCompletionTask(task)}
-                    >
-                      <SendHorizonal className="mr-1 h-3.5 w-3.5" />
-                      Onaya Gönder
-                    </Button>
-                  ) : null}
-                </div>
-              )
-            }}
+            renderDuration={renderDuration}
+            renderActions={renderActions}
           />
         </TabsContent>
       </Tabs>
