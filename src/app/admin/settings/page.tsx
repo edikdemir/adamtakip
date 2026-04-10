@@ -230,10 +230,10 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-zinc-600">
               <div className="rounded-[20px] border border-zinc-100 bg-zinc-50 p-4">
-                8 saati geçen aktif timer’lar için kullanıcı tarafında uygulama içi uyarı gösterilir.
+                -.
               </div>
               <div className="rounded-[20px] border border-zinc-100 bg-zinc-50 p-4">
-                Timer verileri her 60 saniyede bir eşitlenir; tarayıcı kapanırsa açık süre kaybolmaz.
+                Timer verileri her 60 saniyede bir eşitlenir;
               </div>
               <div className="rounded-[20px] border border-zinc-100 bg-zinc-50 p-4">
                 Oturum kapatma sırasında aktif timer varsa kullanıcı ayrıca bilgilendirilir.
