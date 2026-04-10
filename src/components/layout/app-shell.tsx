@@ -7,13 +7,13 @@ import { AppShellProvider, useAppShell } from "@/components/layout/app-shell-con
 import { cn } from "@/lib/utils"
 
 const TITLE_MAP: Array<{ matcher: RegExp; title: string; subtitle: string }> = [
-  { matcher: /^\/admin$/, title: "Genel Bakış", subtitle: "İş havuzu, onaylar ve aktif kronometreler tek ekranda." },
+  { matcher: /^\/admin$/, title: "Genel Bakış", subtitle: "İş havuzu, onaylar ve aktif kronometreler" },
   { matcher: /^\/admin\/users(\/.*)?$/, title: "Kullanıcılar", subtitle: "Kullanıcı hesapları, roller ve detay ekranları." },
   { matcher: /^\/admin\/projects$/, title: "Projeler", subtitle: "Projeler, zone ve mahal yapıları." },
   { matcher: /^\/admin\/job-types$/, title: "İş Tipleri", subtitle: "İş tipi ağacı ve alt iş kalemleri." },
   { matcher: /^\/admin\/reports$/, title: "Raporlar", subtitle: "Adam/saat kırılımları ve dışa aktarımlar." },
   { matcher: /^\/admin\/settings$/, title: "Ayarlar", subtitle: "Sistem davranışı, bildirim ve çalışma saatleri." },
-  { matcher: /^\/admin\/assignments$/, title: "Atamalar", subtitle: "Görev dengeleme ve atama operasyonları." },
+  { matcher: /^\/admin\/assignments$/, title: "Atamalar", subtitle: "Görev ve atama operasyonları." },
   { matcher: /^\/admin\/approvals$/, title: "Onaylar", subtitle: "Onay bekleyen görev kuyruğu." },
   { matcher: /^\/dashboard$/, title: "Görevlerim", subtitle: "Aktif işler, kronometreler ve teslim akışı." },
 ]
