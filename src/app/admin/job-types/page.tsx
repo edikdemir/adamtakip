@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useJobTypes } from "@/hooks/use-reference-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -9,13 +10,6 @@ import { Badge } from "@/components/ui/badge"
 import { JobType, JobWorkItem } from "@/types/task"
 import { toast } from "sonner"
 import { Plus, ChevronRight, ChevronDown, Wrench, Tag, List, X } from "lucide-react"
-
-function useJobTypes() {
-  return useQuery<JobType[]>({
-    queryKey: ["job-types"],
-    queryFn: () => fetch("/api/job-types").then(r => r.json()).then(r => r.data || []),
-  })
-}
 
 function useCreateJobType() {
   const queryClient = useQueryClient()

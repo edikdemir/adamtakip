@@ -275,7 +275,7 @@ export async function sendOverdueEmail(
       <p style="margin: 0; font-size: 14px; color: #991b1b;">${actionLine}</p>
     </div>
   `
-  const cta = recipientRole === "admin" ? "/admin/job-pool" : "/dashboard"
+  const cta = recipientRole === "admin" ? "/admin" : "/dashboard"
   await sendEmail(
     recipientEmail, subject,
     emailTemplate("Hedef Bitiş Tarihi Geçti ⚠️", "#dc2626", body, cta, "Göreve Git")
@@ -349,6 +349,6 @@ export async function sendTaskCompletedEmail(adminEmail: string, adminName: stri
   `
   await sendEmail(
     adminEmail, subject,
-    emailTemplate("Görev Onay Bekliyor", "#7c3aed", body, "/admin/job-pool", "İş Havuzuna Git")
+    emailTemplate("Görev Onay Bekliyor", "#7c3aed", body, "/admin", "İş Havuzuna Git")
   )
 }

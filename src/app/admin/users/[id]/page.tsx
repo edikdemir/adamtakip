@@ -3,6 +3,7 @@ import { use, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { useCurrentUser } from "@/hooks/use-current-user"
+import { UserIdentity } from "@/components/admin/users/user-identity"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
@@ -14,7 +15,7 @@ import {
 } from "recharts"
 import {
   ArrowLeft, Clock, CheckCircle, Layers, Timer, AlertTriangle,
-  Play, Square, User, Mail, Briefcase, Pencil,
+  Play, Square, Pencil,
 } from "lucide-react"
 import { ManualHoursBadge } from "@/components/tasks/manual-time-button"
 
@@ -51,6 +52,7 @@ interface UserData {
   id: string
   email: string
   display_name: string
+  photo_url?: string | null
   job_title?: string | null
   role: string
   is_active: boolean
@@ -177,34 +179,31 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="flex-1 flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-blue-100 text-indigo-700 text-xl font-bold uppercase flex-shrink-0 shadow-sm">
-              {user.display_name.charAt(0)}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-zinc-900">{user.display_name}</h1>
-                <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", ROLE_COLORS[user.role] || "bg-zinc-100 text-zinc-600")}>
+          <UserIdentity
+            displayName={user.display_name}
+            photoUrl={user.photo_url}
+            email={user.email}
+            jobTitle={user.job_title}
+            size="xl"
+            titleSuffix={
+              <>
+                <span
+                  className={cn(
+                    "text-xs px-2 py-0.5 rounded-full font-medium",
+                    ROLE_COLORS[user.role] || "bg-zinc-100 text-zinc-600"
+                  )}
+                >
                   {ROLE_LABELS[user.role] || user.role}
                 </span>
-                {!user.is_active && (
+                {!user.is_active ? (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">
                     Pasif
                   </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 mt-1 text-sm text-zinc-500">
-                <span className="flex items-center gap-1">
-                  <Mail className="h-3.5 w-3.5" />{user.email}
-                </span>
-                {user.job_title && (
-                  <span className="flex items-center gap-1">
-                    <Briefcase className="h-3.5 w-3.5" />{user.job_title}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
+                ) : null}
+              </>
+            }
+            emailClassName="max-w-xl"
+          />
         </div>
       </div>
 

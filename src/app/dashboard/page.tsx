@@ -1,55 +1,101 @@
 "use client"
-import { useState } from "react"
-import { useTasks, useUpdateTask } from "@/hooks/use-tasks"
-import { useCurrentUser } from "@/hooks/use-current-user"
-import { Task } from "@/types/task"
+
+import { useMemo, useState } from "react"
+import { AlertTriangle, Link2, SendHorizonal, Timer, ClipboardList, CheckCircle2 } from "lucide-react"
+import { CompactTaskTable } from "@/components/tasks/compact-task-table"
+import { LinkTasksDialog } from "@/components/tasks/link-tasks-dialog"
+import { PageHeader } from "@/components/layout/page-header"
+import { MetricCardStrip } from "@/components/layout/metric-card-strip"
+import { TaskFilterPanel } from "@/components/tasks/task-filter-panel"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TaskRowTimer } from "@/components/tasks/task-row-timer"
 import { TimeDurationCell } from "@/components/tasks/time-duration-cell"
-import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter
-} from "@/components/ui/dialog"
-import { formatDate, getDeadlineStatus, cn } from "@/lib/utils"
+import { useTasks, useUpdateTask } from "@/hooks/use-tasks"
+import { useCurrentUser } from "@/hooks/use-current-user"
+import { useJobTypes, useProjects, useZones } from "@/hooks/use-reference-data"
+import { useLocations } from "@/hooks/use-locations"
+import { createTaskFilters, STATUS_FILTER_OPTIONS, TaskFilterState } from "@/lib/tasks/task-filters"
 import { ADMIN_STATUS, ADMIN_STATUS_LABELS, WORKER_STATUS } from "@/lib/constants"
-import { Search, AlertTriangle, Link2, SendHorizonal } from "lucide-react"
-import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { useTimerGuard } from "@/hooks/use-timer-guard"
-import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
-import { LinkTasksDialog } from "@/components/tasks/link-tasks-dialog"
-import { TaskNoteButton } from "@/components/tasks/task-note-button"
+import { Task } from "@/types/task"
+import { toast } from "sonner"
+
+function normalizeDashboardFilters(filters: TaskFilterState) {
+  return {
+    my_tasks: true,
+    include_links: true,
+    status: filters.status !== "all" ? filters.status : undefined,
+    project_id: filters.project_id !== "all" ? filters.project_id : undefined,
+    job_type_id: filters.job_type_id !== "all" ? filters.job_type_id : undefined,
+    job_sub_type_id: filters.job_sub_type_id !== "all" ? filters.job_sub_type_id : undefined,
+    zone_id: filters.zone_id !== "all" ? filters.zone_id : undefined,
+    location: filters.location !== "all" ? filters.location : undefined,
+    priority: filters.priority !== "all" ? filters.priority : undefined,
+    timer_state: filters.timer_state !== "all" ? filters.timer_state : undefined,
+    link_state: filters.link_state !== "all" ? filters.link_state : undefined,
+    deadline_state: filters.deadline_state !== "all" ? filters.deadline_state : undefined,
+    planned_start_from: filters.planned_start_from || undefined,
+    planned_start_to: filters.planned_start_to || undefined,
+    planned_end_from: filters.planned_end_from || undefined,
+    planned_end_to: filters.planned_end_to || undefined,
+    search: filters.search || undefined,
+    sort: filters.sort,
+  }
+}
 
 export default function DashboardPage() {
-  const { data: tasks = [], isLoading, refetch } = useTasks({ my_tasks: true })
-  const updateTask = useUpdateTask()
   const { user: currentUser } = useCurrentUser()
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [filters, setFilters] = useState<TaskFilterState>(() => createTaskFilters())
   const [completionTask, setCompletionTask] = useState<Task | null>(null)
   const [linkPrimary, setLinkPrimary] = useState<Task | null>(null)
 
-  const filtered = tasks.filter((t) => {
-    const matchSearch =
-      !search ||
-      t.drawing_no.toLowerCase().includes(search.toLowerCase()) ||
-      t.description.toLowerCase().includes(search.toLowerCase()) ||
-      t.project?.code?.toLowerCase().includes(search.toLowerCase())
-    const matchStatus =
-      statusFilter === "all" || t.admin_status === statusFilter
-    return matchSearch && matchStatus
-  })
+  const { data: tasks = [], isLoading, refetch } = useTasks(normalizeDashboardFilters(filters))
+  const { data: projects = [] } = useProjects()
+  const { data: jobTypes = [] } = useJobTypes()
+  const { data: zones = [] } = useZones(filters.project_id !== "all" ? filters.project_id : "")
+  const { data: locations = [] } = useLocations(filters.project_id !== "all" ? filters.project_id : undefined)
+  const updateTask = useUpdateTask()
 
-  // Tasks with running timers — only for current user's own tasks
-  const runningTimers = tasks.filter((t) => t.timer_started_at !== null && t.assigned_to === currentUser?.id)
+  const runningTimers = useMemo(
+    () => tasks.filter((task) => task.timer_started_at !== null && task.assigned_to === currentUser?.id),
+    [currentUser?.id, tasks]
+  )
 
   useTimerGuard(runningTimers.length > 0)
 
+  const summary = useMemo(
+    () => ({
+      total: tasks.length,
+      running: runningTimers.length,
+      waitingApproval: tasks.filter((task) => task.admin_status === ADMIN_STATUS.TAMAMLANDI).length,
+    }),
+    [runningTimers.length, tasks]
+  )
+
+  const handleFilterChange = (key: keyof TaskFilterState, value: string) => {
+    setFilters((current) => {
+      const next = { ...current, [key]: value }
+
+      if (key === "project_id") {
+        next.zone_id = "all"
+        next.location = "all"
+      }
+
+      if (key === "job_type_id") {
+        next.job_sub_type_id = "all"
+      }
+
+      return next
+    })
+  }
+
   const confirmCompletion = async () => {
-    if (!completionTask) return
+    if (!completionTask) {
+      return
+    }
+
     await updateTask.mutateAsync({
       taskId: completionTask.id,
       updates: { worker_status: WORKER_STATUS.BITTI },
@@ -59,237 +105,127 @@ export default function DashboardPage() {
     refetch()
   }
 
-  const statusOptions = [
-    { value: "all", label: "Tüm Durumlar" },
-    { value: ADMIN_STATUS.ATANDI, label: ADMIN_STATUS_LABELS.atandi },
-    { value: ADMIN_STATUS.DEVAM_EDIYOR, label: ADMIN_STATUS_LABELS.devam_ediyor },
-    { value: ADMIN_STATUS.TAMAMLANDI, label: ADMIN_STATUS_LABELS.tamamlandi },
-    { value: ADMIN_STATUS.ONAYLANDI, label: ADMIN_STATUS_LABELS.onaylandi },
-    { value: ADMIN_STATUS.IPTAL, label: ADMIN_STATUS_LABELS.iptal },
-  ]
+  const statusOptions = STATUS_FILTER_OPTIONS.filter((option) => option.value !== ADMIN_STATUS.HAVUZDA)
 
   return (
-    <div className="space-y-4">
-      {/* Running timer banner */}
-      {runningTimers.length > 0 && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-300 text-sm text-emerald-800 font-medium">
-          <span className="relative flex h-3 w-3 flex-shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-          </span>
-          <span>
-            {runningTimers.length === 1
-              ? `Kronometre çalışıyor: "${runningTimers[0].drawing_no}" — Sayfayı kapatmadan önce durdurun.`
-              : `${runningTimers.length} aktif kronometre çalışıyor — Sayfayı kapatmadan önce durdurun.`}
-          </span>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Çalışan Görünümü"
+        title="Görevlerim"
+        description="Kendi iş listenizi filtreleyin, kronometrelerinizi yönetin ve görevleri onaya hazırlayın."
+      />
+
+      {runningTimers.length > 0 ? (
+        <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-800 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3 flex-shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+            </span>
+            <span>
+              {runningTimers.length === 1
+                ? `Aktif kronometre var: "${runningTimers[0].drawing_no}". Sayfadan ayrılmadan önce durdurmayı unutmayın.`
+                : `${runningTimers.length} aktif kronometre çalışıyor. Sayfadan ayrılmadan önce sürelerinizi kontrol edin.`}
+            </span>
+          </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-          <Input
-            placeholder="Çizim no, açıklama, proje..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-44 h-9">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map(({ value, label }) => (
-              <SelectItem key={value} value={value}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span className="text-sm text-zinc-500">{filtered.length} görev</span>
-      </div>
+      <MetricCardStrip
+        items={[
+          { label: "Toplam görev", value: summary.total, icon: ClipboardList, tone: "slate" },
+          { label: "Aktif kronometre", value: summary.running, icon: Timer, tone: "green" },
+          { label: "Onay bekleyen", value: summary.waitingApproval, icon: CheckCircle2, tone: "amber" },
+        ]}
+      />
 
-      {/* Table */}
-      <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-zinc-50/80">
-              <TableHead className="w-16">#</TableHead>
-              <TableHead className="w-20">Proje</TableHead>
-              <TableHead className="w-28">İş Tipi</TableHead>
-              <TableHead className="w-28">İş Alt Tipi</TableHead>
-              <TableHead className="w-24">Zone</TableHead>
-              <TableHead className="w-24">Mahal</TableHead>
-              <TableHead className="w-28">Resim No</TableHead>
-              <TableHead className="max-w-[180px]">Yapılacak İş</TableHead>
-              <TableHead className="w-24">Başlama</TableHead>
-              <TableHead className="w-24">Hedef Bitiş</TableHead>
-              <TableHead className="w-24">Kesin Bitiş</TableHead>
-              <TableHead className="w-36">Kronometre</TableHead>
-              <TableHead className="w-20">Süre (sa)</TableHead>
-              <TableHead className="w-28">Durum</TableHead>
-              <TableHead className="w-24">Öncelik</TableHead>
-              <TableHead className="w-32">Bağlı Görevler</TableHead>
-              <TableHead className="w-10">Not</TableHead>
-              <TableHead className="w-36">İşlem</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={18} className="text-center py-12 text-zinc-400">
-                  Yükleniyor...
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={18} className="text-center py-12 text-zinc-400">
-                  Görev bulunamadı
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((task) => {
-                const deadlineStatus = getDeadlineStatus(task.planned_end)
-                const canSubmit =
-                  task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR &&
-                  task.assigned_to === currentUser?.id
-                return (
-                  <TableRow
-                    key={task.id}
-                    className={cn(
-                      "hover:bg-zinc-50/50",
-                      task.admin_status === "iptal" && "bg-zinc-50 opacity-60",
-                      task.timer_started_at && task.assigned_to === currentUser?.id
-                        ? "bg-emerald-50/60"
-                        : ""
-                    )}
-                  >
-                    <TableCell>
-                      <span className="font-mono text-xs text-zinc-400">#{task.id}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium text-zinc-900">{task.project?.code}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs text-zinc-600 font-medium">{task.job_type?.name || "—"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-xs text-zinc-500">{task.job_sub_type?.name || "—"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-zinc-500">{task.zone?.name || "—"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-zinc-500">{task.location || "—"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
-                    </TableCell>
-                    <TableCell className="max-w-[180px]">
-                      <p className="text-sm text-zinc-700 truncate" title={task.description}>
-                        {task.description}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_start)}</TableCell>
-                    <TableCell>
-                      <span className={cn(
-                        "text-sm",
-                        deadlineStatus === "overdue" && "text-red-600 font-medium",
-                        deadlineStatus === "warning" && "text-yellow-600 font-medium",
-                        deadlineStatus === "ok" && "text-zinc-500"
-                      )}>
-                        {formatDate(task.planned_end)}
-                        {deadlineStatus === "overdue" && (
-                          <AlertTriangle className="inline ml-1 h-3 w-3" />
-                        )}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm text-zinc-500">
-                      {task.approved_at ? formatDate(task.approved_at) : "—"}
-                    </TableCell>
-                    <TableCell>
-                      {task.admin_status !== ADMIN_STATUS.TAMAMLANDI &&
-                       task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
-                       task.admin_status !== ADMIN_STATUS.IPTAL &&
-                       task.assigned_to === currentUser?.id ? (
-                        <TaskRowTimer
-                          task={task}
-                          onUpdate={() => refetch()}
-                          hasOtherActiveTimer={runningTimers.length > 0 && task.timer_started_at === null}
-                        />
-                      ) : (
-                        <TimeDurationCell task={task} />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <TimeDurationCell task={task} />
-                    </TableCell>
-                    <TableCell>
-                      <AdminStatusBadge status={task.admin_status as import("@/lib/constants").AdminStatus} />
-                    </TableCell>
-                    <TableCell>
-                      <PriorityBadge priority={task.priority} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <TaskLinkBadge
-                          parent={task.linked_to_task}
-                          dependents={task.linked_tasks}
-                        />
-                        {task.linked_to_task_id == null &&
-                          task.assigned_to === currentUser?.id &&
-                          task.admin_status !== ADMIN_STATUS.ONAYLANDI && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs gap-1"
-                            onClick={() => setLinkPrimary(task)}
-                          >
-                            <Link2 className="h-3.5 w-3.5" />
-                            {task.linked_tasks && task.linked_tasks.length > 0 ? "Düzenle" : "Linkle"}
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <TaskNoteButton taskId={task.id} drawingNo={task.drawing_no} />
-                    </TableCell>
-                    <TableCell>
-                      {canSubmit && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs gap-1 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
-                          onClick={() => setCompletionTask(task)}
-                        >
-                          <SendHorizonal className="h-3.5 w-3.5" />
-                          Onaya Gönder
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <TaskFilterPanel
+        filters={filters}
+        onChange={handleFilterChange}
+        onReset={() => setFilters(createTaskFilters())}
+        projects={projects}
+        users={[]}
+        jobTypes={jobTypes}
+        zones={zones}
+        locations={locations}
+        resultCount={tasks.length}
+        statusOptions={statusOptions}
+        hideAssignedFilter
+      />
 
-      {/* Completion confirmation dialog */}
+      <CompactTaskTable
+        tasks={tasks}
+        isLoading={isLoading}
+        showAssignedUser={false}
+        rowClassName={(task) =>
+          cn(
+            task.admin_status === ADMIN_STATUS.IPTAL && "bg-zinc-50 opacity-70",
+            task.timer_started_at && task.assigned_to === currentUser?.id && "bg-emerald-50/60"
+          )
+        }
+        renderDuration={(task) =>
+          task.admin_status !== ADMIN_STATUS.TAMAMLANDI &&
+          task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
+          task.admin_status !== ADMIN_STATUS.IPTAL &&
+          task.assigned_to === currentUser?.id ? (
+            <TaskRowTimer
+              task={task}
+              onUpdate={() => refetch()}
+              hasOtherActiveTimer={runningTimers.length > 0 && task.timer_started_at === null}
+            />
+          ) : (
+            <TimeDurationCell task={task} />
+          )
+        }
+        renderActions={(task) => {
+          const canSubmit = task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR && task.assigned_to === currentUser?.id
+          const canLink = task.linked_to_task_id == null && task.assigned_to === currentUser?.id && task.admin_status !== ADMIN_STATUS.ONAYLANDI
+
+          return (
+            <div className="flex items-center gap-1">
+              {canLink ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs"
+                  onClick={() => setLinkPrimary(task)}
+                >
+                  <Link2 className="mr-1 h-3.5 w-3.5" />
+                  {task.linked_tasks && task.linked_tasks.length > 0 ? "Bağlar" : "Linkle"}
+                </Button>
+              ) : null}
+
+              {canSubmit ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+                  onClick={() => setCompletionTask(task)}
+                >
+                  <SendHorizonal className="mr-1 h-3.5 w-3.5" />
+                  Onaya Gönder
+                </Button>
+              ) : null}
+            </div>
+          )
+        }}
+      />
+
       <Dialog open={!!completionTask} onOpenChange={(open) => !open && setCompletionTask(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Onaya Gönder</DialogTitle>
             <DialogDescription>
-              <strong>{completionTask?.drawing_no}</strong> görevini tamamlandı olarak işaretlemek ve onaya göndermek istiyor musunuz?
-              <br /><br />
-              Timer otomatik olarak durdurulacak ve yöneticinize bildirim gönderilecek.
+              <strong>{completionTask?.drawing_no}</strong> görevini tamamlandı olarak işaretleyip yöneticinize
+              onaya göndermek istiyor musunuz? Aktif bir timer varsa otomatik olarak durdurulacaktır.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCompletionTask(null)}>İptal</Button>
+            <Button variant="outline" onClick={() => setCompletionTask(null)}>
+              İptal
+            </Button>
             <Button onClick={confirmCompletion} disabled={updateTask.isPending}>
-              {updateTask.isPending ? "Gönderiliyor..." : "Evet, Onaya Gönder"}
+              {updateTask.isPending ? "Gönderiliyor..." : "Evet, Gönder"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -299,7 +235,7 @@ export default function DashboardPage() {
         open={!!linkPrimary}
         onOpenChange={(open) => !open && setLinkPrimary(null)}
         primary={linkPrimary}
-        allUserTasks={tasks.filter((t) => t.assigned_to === currentUser?.id)}
+        allUserTasks={tasks.filter((task) => task.assigned_to === currentUser?.id)}
       />
     </div>
   )

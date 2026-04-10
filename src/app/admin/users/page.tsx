@@ -1,45 +1,41 @@
 "use client"
-import { useState } from "react"
-import Link from "next/link"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { USER_ROLES, ROLE_LABELS, UserRole } from "@/lib/constants"
-import { toast } from "sonner"
-import { Users } from "lucide-react"
-import { UserAvatar } from "@/components/ui/user-avatar"
 
-interface User {
-  id: string
-  email: string
-  display_name: string
-  job_title?: string | null
-  photo_url?: string | null
+import { useMemo, useState } from "react"
+import Link from "next/link"
+import { Search, Users } from "lucide-react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
+import { UserIdentity } from "@/components/admin/users/user-identity"
+import { MetricCardStrip } from "@/components/layout/metric-card-strip"
+import { PageHeader } from "@/components/layout/page-header"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { useUsers, ReferenceUser } from "@/hooks/use-reference-data"
+import { ROLE_LABELS, UserRole } from "@/lib/constants"
+
+interface User extends ReferenceUser {
   role: UserRole
   is_active: boolean
   created_at: string
 }
 
-function useUsers() {
-  return useQuery<User[]>({
-    queryKey: ["users"],
-    queryFn: () => fetch("/api/users").then(r => r.json()).then(r => r.data || []),
-  })
-}
-
 function useUpdateUser() {
   const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<User> }) => {
-      const res = await fetch(`/api/users/${id}`, {
+      const response = await fetch(`/api/users/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       })
-      if (!res.ok) throw new Error("Güncelleme başarısız")
-      return res.json()
+      if (!response.ok) {
+        throw new Error("Güncelleme başarısız")
+      }
+      return response.json()
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
@@ -57,105 +53,138 @@ const ROLE_COLORS: Record<UserRole, string> = {
 export default function UsersPage() {
   const { data: users = [], isLoading } = useUsers()
   const updateUser = useUpdateUser()
-  const [filter, setFilter] = useState<"all" | "active" | "inactive">("active")
+  const [search, setSearch] = useState("")
+  const [activityFilter, setActivityFilter] = useState<"all" | "active" | "inactive">("active")
 
-  const filtered = users.filter(u =>
-    filter === "all" ? true : filter === "active" ? u.is_active : !u.is_active
+  const filteredUsers = useMemo(
+    () =>
+      users.filter((user) => {
+        const matchesActivity =
+          activityFilter === "all" ? true : activityFilter === "active" ? user.is_active : !user.is_active
+        const query = search.trim().toLowerCase()
+        const matchesSearch =
+          !query ||
+          user.display_name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query) ||
+          (user.job_title ?? "").toLowerCase().includes(query)
+        return matchesActivity && matchesSearch
+      }),
+    [activityFilter, search, users]
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
-          <Users className="h-5 w-5" /> Kullanıcı Yönetimi
-        </h1>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">{users.length} kullanıcı</Badge>
-          <div className="flex rounded-lg border border-zinc-200 overflow-hidden">
-            {(["all", "active", "inactive"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                  filter === f ? "bg-zinc-900 text-white" : "bg-white text-zinc-600 hover:bg-zinc-50"
-                }`}
-              >
-                {f === "all" ? "Tümü" : f === "active" ? "Aktif" : "Pasif"}
-              </button>
-            ))}
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Kullanıcı Yönetimi"
+        title="Kullanıcılar"
+        description="Microsoft girişi yapan kullanıcıları arayın, filtreleyin ve rol / aktiflik bilgilerini aynı görünümden yönetin."
+      />
+
+      <MetricCardStrip
+        items={[
+          { label: "Toplam kullanıcı", value: users.length, icon: Users, tone: "slate" },
+          { label: "Aktif", value: users.filter((user) => user.is_active).length, icon: Users, tone: "green" },
+          { label: "Pasif", value: users.filter((user) => !user.is_active).length, icon: Users, tone: "amber" },
+          { label: "Süper admin", value: users.filter((user) => user.role === "super_admin").length, icon: Users, tone: "blue" },
+        ]}
+      />
+
+      <section className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_220px_auto]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Ad, unvan veya e-posta ara"
+              className="h-11 rounded-2xl border-zinc-200 bg-zinc-50 pl-10"
+            />
           </div>
+
+          <Select value={activityFilter} onValueChange={(value: "all" | "active" | "inactive") => setActivityFilter(value)}>
+            <SelectTrigger className="h-11 rounded-2xl border-zinc-200 bg-zinc-50">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Aktif kullanıcılar</SelectItem>
+              <SelectItem value="inactive">Pasif kullanıcılar</SelectItem>
+              <SelectItem value="all">Tüm kullanıcılar</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center text-sm text-zinc-500">{filteredUsers.length} kullanıcı listeleniyor</div>
         </div>
-      </div>
+      </section>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-zinc-200 bg-white p-5 animate-pulse">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-16 h-16 rounded-full bg-zinc-200" />
-                <div className="h-4 w-32 bg-zinc-200 rounded" />
-                <div className="h-3 w-24 bg-zinc-100 rounded" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div key={index} className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-sm">
+              <div className="animate-pulse space-y-4">
+                <div className="h-14 w-14 rounded-full bg-zinc-200" />
+                <div className="h-4 w-28 rounded bg-zinc-200" />
+                <div className="h-3 w-40 rounded bg-zinc-100" />
               </div>
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-zinc-400">
-          <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Kullanıcı bulunamadı.</p>
+      ) : filteredUsers.length === 0 ? (
+        <div className="rounded-[28px] border border-dashed border-zinc-300 bg-white/70 px-6 py-14 text-center">
+          <Users className="mx-auto mb-3 h-10 w-10 text-zinc-300" />
+          <p className="text-sm font-medium text-zinc-600">Bu filtrede kullanıcı bulunamadı.</p>
+          <p className="mt-1 text-sm text-zinc-400">Farklı bir arama ya da aktiflik filtresi deneyin.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((user) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {filteredUsers.map((user) => (
             <div
               key={user.id}
-              className={`rounded-xl border bg-white shadow-sm flex flex-col items-center p-5 gap-3 transition-opacity ${
-                user.is_active ? "border-zinc-200 opacity-100" : "border-zinc-100 opacity-60"
+              className={`rounded-[28px] border bg-white/92 p-5 shadow-[0_20px_48px_rgba(15,23,42,0.06)] transition-opacity ${
+                user.is_active ? "border-white/80" : "border-zinc-100 opacity-70"
               }`}
             >
-              <Link href={`/admin/users/${user.id}`} className="flex flex-col items-center gap-2 group">
-                <UserAvatar
+              <Link href={`/admin/users/${user.id}`} className="block">
+                <UserIdentity
                   displayName={user.display_name}
                   photoUrl={user.photo_url}
+                  email={user.email}
+                  jobTitle={user.job_title}
                   size="lg"
-                  className="ring-2 ring-zinc-100 group-hover:ring-indigo-200 transition-all"
+                  align="center"
+                  avatarClassName="transition-all hover:ring-blue-200"
                 />
-                <div className="text-center">
-                  <p className="font-semibold text-zinc-900 group-hover:text-indigo-700 transition-colors text-sm leading-tight">
-                    {user.display_name}
-                  </p>
-                  {user.job_title && (
-                    <p className="text-xs text-zinc-500 mt-0.5 leading-tight">{user.job_title}</p>
-                  )}
-                  <p className="text-xs text-zinc-400 mt-0.5 truncate max-w-[160px]">{user.email}</p>
-                </div>
               </Link>
 
-              <div className="w-full border-t border-zinc-100 pt-3 flex items-center justify-between gap-2">
+              <div className="mt-5 flex items-center justify-between gap-2 border-t border-zinc-100 pt-4">
                 <Select
                   value={user.role}
                   onValueChange={(role) => updateUser.mutate({ id: user.id, updates: { role: role as UserRole } })}
                 >
-                  <SelectTrigger className="h-7 w-auto text-xs border-0 shadow-none bg-transparent p-0 hover:bg-zinc-100 rounded px-2 flex-1">
+                  <SelectTrigger className="h-8 w-auto rounded-full border-none bg-transparent px-0 shadow-none hover:bg-zinc-100">
                     <SelectValue>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${ROLE_COLORS[user.role]}`}>
+                      <span className={`rounded-full border px-2 py-1 text-xs font-medium ${ROLE_COLORS[user.role]}`}>
                         {ROLE_LABELS[user.role]}
                       </span>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(ROLE_LABELS).map(([val, label]) => (
-                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <Switch
-                  checked={user.is_active}
-                  onCheckedChange={(checked) =>
-                    updateUser.mutate({ id: user.id, updates: { is_active: checked } })
-                  }
-                />
+                <div className="flex items-center gap-2">
+                  <Badge variant={user.is_active ? "secondary" : "outline"} className="rounded-full px-2 py-1 text-[11px]">
+                    {user.is_active ? "Aktif" : "Pasif"}
+                  </Badge>
+                  <Switch
+                    checked={user.is_active}
+                    onCheckedChange={(checked) => updateUser.mutate({ id: user.id, updates: { is_active: checked } })}
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -163,8 +192,8 @@ export default function UsersPage() {
       )}
 
       <p className="text-xs text-zinc-400">
-        Kullanıcılar Microsoft Entra ID ile ilk kez giriş yaptıklarında otomatik olarak sisteme eklenir.
-        BT tarafından aktif olmayan kullanıcılar buradan devre dışı bırakılabilir.
+        Kullanıcılar Microsoft Entra ID ile ilk giriş yaptıklarında otomatik olarak eklenir. Pasif kullanıcılar
+        burada devre dışı bırakılabilir.
       </p>
     </div>
   )

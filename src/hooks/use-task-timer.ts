@@ -5,6 +5,7 @@ import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
 import { formatDuration } from "@/lib/utils"
 import { TIMER_SYNC_INTERVAL_MS, TIMER_WARNING_HOURS } from "@/lib/constants"
 import { toast } from "sonner"
+import { useSharedSecond } from "@/hooks/use-shared-second"
 
 interface UseTaskTimerReturn {
   elapsedSeconds: number
@@ -21,6 +22,7 @@ export function useTaskTimer(
   task: Task,
   onUpdate?: (updatedTask: Partial<Task>) => void
 ): UseTaskTimerReturn {
+  const currentSecond = useSharedSecond()
   const [elapsedSeconds, setElapsedSeconds] = useState(() =>
     getEffectiveElapsedSeconds(task.total_elapsed_seconds, task.timer_started_at)
   )
@@ -28,22 +30,16 @@ export function useTaskTimer(
   const [totalElapsed, setTotalElapsed] = useState(task.total_elapsed_seconds)
   const [isLoading, setIsLoading] = useState(false)
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const isRunning = timerStartedAt !== null
 
-  // Tick every second while running
+  // Shared second ticker updates all visible timers from one source.
   useEffect(() => {
     if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setElapsedSeconds(getEffectiveElapsedSeconds(totalElapsed, timerStartedAt))
-      }, 1000)
+      setElapsedSeconds(getEffectiveElapsedSeconds(totalElapsed, timerStartedAt))
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [isRunning, timerStartedAt, totalElapsed])
+  }, [currentSecond, isRunning, timerStartedAt, totalElapsed])
 
   // Periodic sync every 60s while running
   useEffect(() => {

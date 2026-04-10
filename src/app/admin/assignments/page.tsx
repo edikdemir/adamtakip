@@ -1,183 +1,190 @@
 "use client"
-import { useState } from "react"
-import { useTasks, useAssignTask } from "@/hooks/use-tasks"
-import { useQuery } from "@tanstack/react-query"
-import { Task } from "@/types/task"
-import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { formatDate, formatHours } from "@/lib/utils"
-import { ADMIN_STATUS } from "@/lib/constants"
-import { UserPlus, Search, Users } from "lucide-react"
 
-function useUsers() {
-  return useQuery({
-    queryKey: ["users"],
-    queryFn: () => fetch("/api/users").then(r => r.json()).then(r => r.data || []),
-  })
+import { useMemo, useState } from "react"
+import { ClipboardList, UserPlus, Users } from "lucide-react"
+import { CompactTaskTable } from "@/components/tasks/compact-task-table"
+import { MetricCardStrip } from "@/components/layout/metric-card-strip"
+import { PageHeader } from "@/components/layout/page-header"
+import { TaskFilterPanel } from "@/components/tasks/task-filter-panel"
+import { UserAvatar } from "@/components/ui/user-avatar"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useAssignTask, useTasks } from "@/hooks/use-tasks"
+import { useJobTypes, useProjects, useUsers, useZones } from "@/hooks/use-reference-data"
+import { useLocations } from "@/hooks/use-locations"
+import { createTaskFilters, TaskFilterState } from "@/lib/tasks/task-filters"
+import { ADMIN_STATUS } from "@/lib/constants"
+import { Task } from "@/types/task"
+
+function normalizeFilters(filters: TaskFilterState) {
+  return {
+    include_links: true,
+    status: filters.status !== "all" ? filters.status : undefined,
+    project_id: filters.project_id !== "all" ? filters.project_id : undefined,
+    assigned_to: filters.assigned_to !== "all" ? filters.assigned_to : undefined,
+    job_type_id: filters.job_type_id !== "all" ? filters.job_type_id : undefined,
+    job_sub_type_id: filters.job_sub_type_id !== "all" ? filters.job_sub_type_id : undefined,
+    zone_id: filters.zone_id !== "all" ? filters.zone_id : undefined,
+    location: filters.location !== "all" ? filters.location : undefined,
+    priority: filters.priority !== "all" ? filters.priority : undefined,
+    timer_state: filters.timer_state !== "all" ? filters.timer_state : undefined,
+    link_state: filters.link_state !== "all" ? filters.link_state : undefined,
+    deadline_state: filters.deadline_state !== "all" ? filters.deadline_state : undefined,
+    search: filters.search || undefined,
+    sort: filters.sort,
+  }
 }
 
 export default function AssignmentsPage() {
-  const [search, setSearch] = useState("")
+  const [filters, setFilters] = useState<TaskFilterState>(() =>
+    createTaskFilters({ status: "all", assignment_state: "all" })
+  )
   const [assignTask, setAssignTask] = useState<Task | null>(null)
   const [selectedUserId, setSelectedUserId] = useState("")
-  const [selectedTasks, setSelectedTasks] = useState<number[]>([])
 
-  const { data: tasks = [], isLoading } = useTasks()
+  const { data: tasks = [], isLoading } = useTasks(normalizeFilters(filters))
   const { data: users = [] } = useUsers()
+  const { data: projects = [] } = useProjects()
+  const { data: jobTypes = [] } = useJobTypes()
+  const { data: zones = [] } = useZones(filters.project_id !== "all" ? filters.project_id : "")
+  const { data: locations = [] } = useLocations(filters.project_id !== "all" ? filters.project_id : undefined)
   const assignTaskMutation = useAssignTask()
 
-  // Show unassigned (havuzda) + already assigned for reassignment
-  const assignable = tasks.filter((t: Task) => {
-    const matchSearch = !search ||
-      t.drawing_no.toLowerCase().includes(search.toLowerCase()) ||
-      t.description.toLowerCase().includes(search.toLowerCase()) ||
-      t.project?.code?.toLowerCase().includes(search.toLowerCase())
-    return matchSearch && [ADMIN_STATUS.HAVUZDA, ADMIN_STATUS.ATANDI].includes(t.admin_status as "havuzda" | "atandi")
-  })
+  const assignableTasks = useMemo(
+    () => tasks.filter((task) => task.admin_status === ADMIN_STATUS.HAVUZDA || task.admin_status === ADMIN_STATUS.ATANDI),
+    [tasks]
+  )
 
-  const handleAssign = async (taskId: number, userId: string) => {
-    await assignTaskMutation.mutateAsync({ taskId, userId })
+  const workload = useMemo(
+    () =>
+      users
+        .map((user) => ({
+          ...user,
+          activeTasks: tasks.filter(
+            (task) =>
+              task.assigned_to === user.id &&
+              task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
+              task.admin_status !== ADMIN_STATUS.IPTAL
+          ).length,
+          activeHours: tasks
+            .filter(
+              (task) =>
+                task.assigned_to === user.id &&
+                task.admin_status !== ADMIN_STATUS.ONAYLANDI &&
+                task.admin_status !== ADMIN_STATUS.IPTAL
+            )
+            .reduce((total, task) => total + task.total_elapsed_seconds / 3600 + (task.manual_hours ?? 0), 0),
+        }))
+        .sort((first, second) => second.activeTasks - first.activeTasks)
+        .slice(0, 8),
+    [tasks, users]
+  )
+
+  const handleFilterChange = (key: keyof TaskFilterState, value: string) => {
+    setFilters((current) => {
+      const next = { ...current, [key]: value }
+      if (key === "project_id") {
+        next.zone_id = "all"
+        next.location = "all"
+      }
+      if (key === "job_type_id") {
+        next.job_sub_type_id = "all"
+      }
+      return next
+    })
+  }
+
+  const handleAssign = async () => {
+    if (!assignTask || !selectedUserId) {
+      return
+    }
+
+    await assignTaskMutation.mutateAsync({ taskId: assignTask.id, userId: selectedUserId })
     setAssignTask(null)
     setSelectedUserId("")
   }
 
-  // Workload summary per user
-  const workload = users.map((u: { id: string; display_name: string; job_title?: string | null; email: string }) => ({
-    ...u,
-    activeTasks: tasks.filter((t: Task) => t.assigned_to === u.id && t.admin_status !== ADMIN_STATUS.ONAYLANDI).length,
-    totalHours: tasks
-      .filter((t: Task) => t.assigned_to === u.id && t.admin_status !== ADMIN_STATUS.ONAYLANDI)
-      .reduce((acc: number, t: Task) => acc + t.total_elapsed_seconds / 3600, 0),
-  })).sort((a: { activeTasks: number }, b: { activeTasks: number }) => b.activeTasks - a.activeTasks)
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-zinc-900">Atamalar</h1>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Atama Akışı"
+        title="Görev Atamaları"
+        description="Havuzdaki veya yeniden dağıtılacak görevleri filtreleyin, çalışan yükünü görün ve aynı tablodan atama yapın."
+      />
 
-      {/* Workload summary */}
-      <div className="rounded-xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-zinc-100 bg-zinc-50/60">
-          <h2 className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
-            <Users className="h-4 w-4" /> Çalışan İş Yükü
-          </h2>
+      <MetricCardStrip
+        items={[
+          { label: "Atanabilir görev", value: assignableTasks.length, icon: ClipboardList, tone: "blue" },
+          { label: "Aktif çalışan özeti", value: workload.length, icon: Users, tone: "green" },
+        ]}
+      />
+
+      <TaskFilterPanel
+        filters={filters}
+        onChange={handleFilterChange}
+        onReset={() => setFilters(createTaskFilters())}
+        projects={projects}
+        users={users}
+        jobTypes={jobTypes}
+        zones={zones}
+        locations={locations}
+        resultCount={assignableTasks.length}
+      />
+
+      <section className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-900">
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+            <Users className="h-4 w-4" />
+          </div>
+          Çalışan yük dengesi
         </div>
-        <div className="divide-y divide-zinc-100">
-          {workload.map((u: { id: string; display_name: string; job_title?: string | null; email: string; activeTasks: number; totalHours: number }) => (
-            <div key={u.id} className="flex items-center justify-between px-5 py-3">
-              <div>
-                <p className="text-sm font-medium text-zinc-900">{u.display_name}</p>
-                {u.job_title && <p className="text-xs text-zinc-500">{u.job_title}</p>}
-                <p className="text-xs text-zinc-400">{u.email}</p>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="text-right">
-                  <p className="font-semibold text-zinc-900">{u.activeTasks}</p>
-                  <p className="text-xs text-zinc-400">aktif görev</p>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {workload.map((user) => (
+            <div key={user.id} className="rounded-[22px] border border-zinc-200 bg-zinc-50/80 p-4">
+              <div className="flex items-center gap-3">
+                <UserAvatar displayName={user.display_name} photoUrl={user.photo_url} size="md" className="ring-2 ring-white" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-zinc-900">{user.display_name}</p>
+                  <p className="truncate text-xs text-zinc-500">{user.job_title || user.email}</p>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-zinc-900">{u.totalHours.toFixed(1)} sa</p>
-                  <p className="text-xs text-zinc-400">toplam süre</p>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="rounded-2xl bg-white p-3">
+                  <p className="text-[11px] text-zinc-400">Aktif görev</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-950">{user.activeTasks}</p>
+                </div>
+                <div className="rounded-2xl bg-white p-3">
+                  <p className="text-[11px] text-zinc-400">Aktif saat</p>
+                  <p className="mt-1 text-lg font-semibold text-zinc-950">{user.activeHours.toFixed(1)}</p>
                 </div>
               </div>
             </div>
           ))}
-          {workload.length === 0 && (
-            <p className="px-5 py-4 text-sm text-zinc-400">Henüz kullanıcı yok</p>
-          )}
         </div>
-      </div>
+      </section>
 
-      {/* Assignable tasks */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
-              placeholder="Çizim no, açıklama..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9"
-            />
-          </div>
-          <span className="text-sm text-zinc-500">{assignable.length} atanabilir görev</span>
-        </div>
+      <CompactTaskTable
+        tasks={assignableTasks}
+        isLoading={isLoading}
+        emptyTitle="Atanabilir görev yok"
+        emptyDescription="Havuzdaki veya yeniden dağıtılacak görevler burada görünecek."
+        renderActions={(task) => (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 rounded-full px-3 text-xs text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+            onClick={() => {
+              setAssignTask(task)
+              setSelectedUserId(task.assigned_to || "")
+            }}
+          >
+            <UserPlus className="mr-1 h-3.5 w-3.5" />
+            {task.assigned_to ? "Yeniden ata" : "Ata"}
+          </Button>
+        )}
+      />
 
-        <div className="rounded-xl border border-zinc-200 bg-white overflow-x-auto shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-zinc-50/80">
-                <TableHead className="w-16">ID</TableHead>
-                <TableHead className="w-20">Proje</TableHead>
-                <TableHead className="w-28">İş Tipi</TableHead>
-                <TableHead className="w-28">İş Alt Tipi</TableHead>
-                <TableHead className="w-24">Zone</TableHead>
-                <TableHead className="w-24">Mahal</TableHead>
-                <TableHead className="w-28">Resim No</TableHead>
-                <TableHead>Yapılacak İş</TableHead>
-                <TableHead className="w-24">Hedef Bitiş</TableHead>
-                <TableHead className="w-20">Öncelik</TableHead>
-                <TableHead className="w-28">Durum</TableHead>
-                <TableHead className="w-32">Atanan</TableHead>
-                <TableHead className="w-24"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={13} className="text-center py-10 text-zinc-400">Yükleniyor...</TableCell>
-                </TableRow>
-              ) : assignable.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={13} className="text-center py-10 text-zinc-400">Atanabilir görev yok</TableCell>
-                </TableRow>
-              ) : assignable.map((task: Task) => (
-                <TableRow key={task.id} className="hover:bg-zinc-50/50">
-                  <TableCell className="font-mono text-xs text-zinc-400">#{task.id}</TableCell>
-                  <TableCell className="font-medium text-zinc-800">{task.project?.code}</TableCell>
-                  <TableCell className="text-sm text-zinc-700">{task.job_type?.name}</TableCell>
-                  <TableCell className="text-sm text-zinc-500">{task.job_sub_type?.name}</TableCell>
-                  <TableCell className="text-sm text-zinc-600">{task.zone?.name || <span className="text-zinc-300">—</span>}</TableCell>
-                  <TableCell className="text-sm text-zinc-600">{task.location || <span className="text-zinc-300">—</span>}</TableCell>
-                  <TableCell className="font-mono text-sm font-medium">{task.drawing_no}</TableCell>
-                  <TableCell className="max-w-[160px]">
-                    <p className="text-sm truncate" title={task.description}>{task.description}</p>
-                  </TableCell>
-                  <TableCell className="text-sm text-zinc-500">{formatDate(task.planned_end)}</TableCell>
-                  <TableCell><PriorityBadge priority={task.priority} /></TableCell>
-                  <TableCell><AdminStatusBadge status={task.admin_status} /></TableCell>
-                  <TableCell>
-                    {task.assigned_user ? (
-                      <span className="text-sm text-zinc-700">{task.assigned_user.display_name}</span>
-                    ) : (
-                      <span className="text-xs text-zinc-400">Atanmamış</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => { setAssignTask(task); setSelectedUserId(task.assigned_to || "") }}
-                    >
-                      <UserPlus className="h-3 w-3" />
-                      {task.assigned_to ? "Yeniden Ata" : "Ata"}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Assign dialog */}
       <Dialog open={!!assignTask} onOpenChange={(open) => !open && setAssignTask(null)}>
         <DialogContent>
           <DialogHeader>
@@ -187,30 +194,25 @@ export default function AssignmentsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <label className="text-sm font-medium text-zinc-700">Çalışan Seçin</label>
+            <label className="text-sm font-medium text-zinc-700">Çalışan seçin</label>
             <Select value={selectedUserId} onValueChange={setSelectedUserId}>
               <SelectTrigger>
                 <SelectValue placeholder="Çalışan seçin..." />
               </SelectTrigger>
               <SelectContent>
-                {users.map((u: { id: string; display_name: string; job_title?: string | null; email: string }) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    <div className="flex flex-col">
-                      <span>{u.display_name}</span>
-                      {u.job_title && <span className="text-xs text-zinc-500">{u.job_title}</span>}
-                      <span className="text-xs text-zinc-400">{u.email}</span>
-                    </div>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.display_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAssignTask(null)}>İptal</Button>
-            <Button
-              onClick={() => assignTask && handleAssign(assignTask.id, selectedUserId)}
-              disabled={!selectedUserId || assignTaskMutation.isPending}
-            >
+            <Button variant="outline" onClick={() => setAssignTask(null)}>
+              İptal
+            </Button>
+            <Button onClick={handleAssign} disabled={!selectedUserId || assignTaskMutation.isPending}>
               {assignTaskMutation.isPending ? "Atanıyor..." : "Ata"}
             </Button>
           </DialogFooter>

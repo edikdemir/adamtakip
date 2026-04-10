@@ -1,6 +1,5 @@
 "use client"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog"
@@ -12,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { parseTasksXlsx } from "@/lib/excel/parse-tasks"
 import { downloadTaskTemplate } from "@/lib/excel/template"
 import type { Lookups, ParsedRow, RowStatus } from "@/lib/excel/types"
+import { useAllZones, useJobTypes, useProjects } from "@/hooks/use-reference-data"
 import { useBulkImportTasks, useTasks } from "@/hooks/use-tasks"
 import { toast } from "sonner"
 
@@ -34,25 +34,6 @@ const STATUS_COLORS: Record<RowStatus, string> = {
   error: "bg-red-50 text-red-700 border-red-200",
   "duplicate-db": "bg-yellow-50 text-yellow-800 border-yellow-200",
   "duplicate-file": "bg-amber-50 text-amber-800 border-amber-200",
-}
-
-function useProjects() {
-  return useQuery({
-    queryKey: ["projects"],
-    queryFn: () => fetch("/api/projects").then((r) => r.json()).then((r) => r.data || []),
-  })
-}
-function useJobTypes() {
-  return useQuery({
-    queryKey: ["job-types"],
-    queryFn: () => fetch("/api/job-types").then((r) => r.json()).then((r) => r.data || []),
-  })
-}
-function useAllZones() {
-  return useQuery({
-    queryKey: ["zones", "all"],
-    queryFn: () => fetch("/api/zones").then((r) => r.json()).then((r) => r.data || []),
-  })
 }
 
 export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps) {
@@ -84,8 +65,14 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
 
   const lookups: Lookups = useMemo(
     () => ({
-      projects,
-      jobTypes,
+      projects: projects.map((project) => ({ ...project, name: project.name ?? "" })),
+      jobTypes: jobTypes.map((jobType) => ({
+        ...jobType,
+        job_sub_types: (jobType.job_sub_types || []).map((subType) => ({
+          id: subType.id,
+          name: subType.name,
+        })),
+      })),
       zones,
       existing: existingTasks.map((t) => ({
         project_id: t.project_id,

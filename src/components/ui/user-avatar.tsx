@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 interface UserAvatarProps {
   displayName: string
   photoUrl?: string | null
-  size?: "sm" | "md" | "lg"
+  size?: "sm" | "md" | "lg" | "xl"
   className?: string
 }
 
@@ -11,6 +11,7 @@ const sizeClasses = {
   sm: "w-7 h-7 text-xs",
   md: "w-10 h-10 text-sm",
   lg: "w-12 h-12 text-base",
+  xl: "w-14 h-14 text-lg",
 }
 
 export function UserAvatar({ displayName, photoUrl, size = "md", className }: UserAvatarProps) {

@@ -1,161 +1,172 @@
 "use client"
-import { useState } from "react"
-import { useTasks, useApproveTask, useRejectTask } from "@/hooks/use-tasks"
-import { Task } from "@/types/task"
+
+import { useMemo, useState } from "react"
+import { Check, CheckCircle2, Clock, RotateCcw } from "lucide-react"
+import { CompactTaskTable } from "@/components/tasks/compact-task-table"
+import { MetricCardStrip } from "@/components/layout/metric-card-strip"
+import { PageHeader } from "@/components/layout/page-header"
+import { TaskFilterPanel } from "@/components/tasks/task-filter-panel"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { formatDate, formatHours } from "@/lib/utils"
+import { useApproveTask, useRejectTask, useTasks } from "@/hooks/use-tasks"
+import { useJobTypes, useProjects, useUsers, useZones } from "@/hooks/use-reference-data"
+import { useLocations } from "@/hooks/use-locations"
+import { createTaskFilters, TaskFilterState } from "@/lib/tasks/task-filters"
 import { ADMIN_STATUS } from "@/lib/constants"
-import { Check, RotateCcw, Clock, CheckCircle2 } from "lucide-react"
-import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
+import { Task } from "@/types/task"
+
+function normalizeFilters(filters: TaskFilterState) {
+  return {
+    include_links: true,
+    status: ADMIN_STATUS.TAMAMLANDI,
+    project_id: filters.project_id !== "all" ? filters.project_id : undefined,
+    assigned_to: filters.assigned_to !== "all" ? filters.assigned_to : undefined,
+    job_type_id: filters.job_type_id !== "all" ? filters.job_type_id : undefined,
+    job_sub_type_id: filters.job_sub_type_id !== "all" ? filters.job_sub_type_id : undefined,
+    zone_id: filters.zone_id !== "all" ? filters.zone_id : undefined,
+    location: filters.location !== "all" ? filters.location : undefined,
+    priority: filters.priority !== "all" ? filters.priority : undefined,
+    timer_state: filters.timer_state !== "all" ? filters.timer_state : undefined,
+    link_state: filters.link_state !== "all" ? filters.link_state : undefined,
+    deadline_state: filters.deadline_state !== "all" ? filters.deadline_state : undefined,
+    planned_start_from: filters.planned_start_from || undefined,
+    planned_start_to: filters.planned_start_to || undefined,
+    planned_end_from: filters.planned_end_from || undefined,
+    planned_end_to: filters.planned_end_to || undefined,
+    search: filters.search || undefined,
+    sort: filters.sort,
+  }
+}
 
 export default function ApprovalsPage() {
+  const [filters, setFilters] = useState<TaskFilterState>(() => createTaskFilters({ status: ADMIN_STATUS.TAMAMLANDI }))
   const [rejectTask, setRejectTask] = useState<Task | null>(null)
   const [rejectReason, setRejectReason] = useState("")
 
-  const { data: tasks = [], isLoading } = useTasks({ status: ADMIN_STATUS.TAMAMLANDI })
+  const { data: tasks = [], isLoading } = useTasks(normalizeFilters(filters))
+  const { data: projects = [] } = useProjects()
+  const { data: jobTypes = [] } = useJobTypes()
+  const { data: users = [] } = useUsers()
+  const { data: zones = [] } = useZones(filters.project_id !== "all" ? filters.project_id : "")
+  const { data: locations = [] } = useLocations(filters.project_id !== "all" ? filters.project_id : undefined)
   const approveTask = useApproveTask()
   const rejectTaskMutation = useRejectTask()
 
+  const totalPendingHours = useMemo(
+    () => tasks.reduce((total, task) => total + task.total_elapsed_seconds / 3600 + (task.manual_hours ?? 0), 0),
+    [tasks]
+  )
+
+  const handleFilterChange = (key: keyof TaskFilterState, value: string) => {
+    setFilters((current) => {
+      const next = { ...current, [key]: value }
+      if (key === "project_id") {
+        next.zone_id = "all"
+        next.location = "all"
+      }
+      if (key === "job_type_id") {
+        next.job_sub_type_id = "all"
+      }
+      return next
+    })
+  }
+
   const handleReject = async () => {
-    if (!rejectTask) return
+    if (!rejectTask) {
+      return
+    }
+
     await rejectTaskMutation.mutateAsync({ taskId: rejectTask.id, reason: rejectReason })
     setRejectTask(null)
     setRejectReason("")
   }
 
-  const totalPendingHours = tasks.reduce(
-    (acc: number, t: Task) => acc + t.total_elapsed_seconds / 3600,
-    0
-  )
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-zinc-900">Onay Kuyruğu</h1>
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="gap-1.5 text-sm py-1 px-3">
-            <Clock className="h-3.5 w-3.5" />
-            {tasks.length} görev bekliyor
-          </Badge>
-          <Badge variant="outline" className="text-sm py-1 px-3">
-            {totalPendingHours.toFixed(1)} sa toplam
-          </Badge>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Onay Operasyonu"
+        title="Onay Kuyruğu"
+        description="Tamamlanan görevleri daraltılmış tablo üzerinden inceleyin, detay panelini açın ve onay / revize akışlarını yönetin."
+      />
 
-      {tasks.length === 0 && !isLoading && (
-        <div className="flex flex-col items-center justify-center py-16 text-zinc-400">
-          <CheckCircle2 className="h-10 w-10 mb-3" />
-          <p className="font-medium">Onay bekleyen görev yok</p>
-          <p className="text-sm mt-1">Tüm görevler işlendi.</p>
-        </div>
-      )}
+      <MetricCardStrip
+        items={[
+          { label: "Bekleyen görev", value: tasks.length, icon: Clock, tone: "amber" },
+          { label: "Toplam saat", value: `${totalPendingHours.toFixed(1)} sa`, icon: CheckCircle2, tone: "blue" },
+        ]}
+      />
 
-      {(isLoading || tasks.length > 0) && (
-        <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-zinc-50/80">
-                <TableHead className="w-24">Proje</TableHead>
-                <TableHead>Çizim No</TableHead>
-                <TableHead>Açıklama</TableHead>
-                <TableHead>Çalışan</TableHead>
-                <TableHead>Atayan</TableHead>
-                <TableHead>Kesin Bitiş Tarihi</TableHead>
-                <TableHead>Süre (sa)</TableHead>
-                <TableHead className="w-32">İşlemler</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-zinc-400">Yükleniyor...</TableCell>
-                </TableRow>
-              ) : (
-                tasks.map((task: Task) => (
-                  <TableRow key={task.id} className="hover:bg-zinc-50/50">
-                    <TableCell className="font-medium">{task.project?.code}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-medium">{task.drawing_no}</span>
-                        <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
-                      <div>
-                        <p className="text-sm text-zinc-700 truncate" title={task.description}>{task.description}</p>
-                        <p className="text-xs text-zinc-400">{task.job_sub_type?.name}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-zinc-700">{task.assigned_user?.display_name || "-"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-zinc-500">{task.assigned_by_user?.display_name || "-"}</span>
-                    </TableCell>
-                    <TableCell className="text-sm text-zinc-500">
-                      {formatDate(task.completion_date)}
-                    </TableCell>
-                    <TableCell className="font-semibold text-zinc-900">
-                      {formatHours(task.total_elapsed_seconds)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        <Button
-                          size="sm"
-                          className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => approveTask.mutate(task.id)}
-                          disabled={approveTask.isPending}
-                        >
-                          <Check className="h-3 w-3" /> Onayla
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs gap-1 border-red-200 text-red-600 hover:bg-red-50"
-                          onClick={() => { setRejectTask(task); setRejectReason("") }}
-                        >
-                          <RotateCcw className="h-3 w-3" /> Revizeye Gönder
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <TaskFilterPanel
+        filters={filters}
+        onChange={handleFilterChange}
+        onReset={() => setFilters(createTaskFilters({ status: ADMIN_STATUS.TAMAMLANDI }))}
+        projects={projects}
+        users={users}
+        jobTypes={jobTypes}
+        zones={zones}
+        locations={locations}
+        resultCount={tasks.length}
+        statusOptions={[{ value: ADMIN_STATUS.TAMAMLANDI, label: "Onay bekleyen" }]}
+      />
 
-      {/* Reject dialog */}
+      <CompactTaskTable
+        tasks={tasks}
+        isLoading={isLoading}
+        rowClassName={() => "bg-amber-50/40"}
+        emptyTitle="Onay bekleyen görev yok"
+        emptyDescription="Yeni tamamlanan görevler burada listelenecek."
+        renderActions={(task) => (
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full px-3 text-xs text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
+              onClick={() => approveTask.mutate(task.id)}
+              disabled={approveTask.isPending}
+            >
+              <Check className="mr-1 h-3.5 w-3.5" />
+              Onayla
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full px-3 text-xs text-amber-700 hover:bg-amber-50 hover:text-amber-800"
+              onClick={() => {
+                setRejectTask(task)
+                setRejectReason("")
+              }}
+            >
+              <RotateCcw className="mr-1 h-3.5 w-3.5" />
+              Revize
+            </Button>
+          </div>
+        )}
+      />
+
       <Dialog open={!!rejectTask} onOpenChange={(open) => !open && setRejectTask(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Revizeye Gönder</DialogTitle>
             <DialogDescription>
-              <strong>{rejectTask?.drawing_no}</strong> görevi revizeye gönderilecek. Çalışana e-posta bildirimi iletilecektir.
+              <strong>{rejectTask?.drawing_no}</strong> görevi revizeye gönderilecek. Çalışana e-posta bildirimi
+              iletilecek.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <label className="text-sm font-medium text-zinc-700">Revize Sebebi (zorunlu)</label>
+            <label className="text-sm font-medium text-zinc-700">Revize Sebebi</label>
             <Textarea
               value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Düzeltilmesi gereken noktaları belirtin..."
-              rows={3}
+              onChange={(event) => setRejectReason(event.target.value)}
+              placeholder="Düzeltilmesi gereken noktaları yazın..."
+              rows={4}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectTask(null)}>İptal</Button>
-            <Button
-              variant="destructive"
-              onClick={handleReject}
-              disabled={!rejectReason.trim() || rejectTaskMutation.isPending}
-            >
+            <Button variant="outline" onClick={() => setRejectTask(null)}>
+              İptal
+            </Button>
+            <Button variant="destructive" onClick={handleReject} disabled={!rejectReason.trim() || rejectTaskMutation.isPending}>
               {rejectTaskMutation.isPending ? "Gönderiliyor..." : "Revizeye Gönder"}
             </Button>
           </DialogFooter>
