@@ -9,10 +9,11 @@ import type {
 
 const HEADER_ALIASES: Record<string, string[]> = {
   project_code: ["proje kodu", "proje", "project code", "project"],
+  project_name: ["proje adi", "proje adı", "project name"],
   job_type: ["is tipi", "iş tipi", "job type"],
   job_sub_type: ["is alt tipi", "iş alt tipi", "alt tip", "job sub type"],
   zone: ["zone", "bolge", "bölge"],
-  location: ["yapilacak alan", "yapılacak alan", "mahal", "lokasyon", "location"],
+  location: ["mahal", "yapilacak alan", "yapılacak alan", "lokasyon", "location"],
   drawing_no: ["resim no", "cizim no", "çizim no", "drawing no", "drawing number"],
   description: ["yapilacak is", "yapılacak iş", "aciklama", "açıklama", "description"],
   planned_start: ["baslama tarihi", "başlama tarihi", "baslangic", "başlangıç", "planlanan baslangic", "start date"],
@@ -84,6 +85,7 @@ function dupKey(
   const normalizedDrawingNo = normalize(drawing_no)
   const normalizedDescription = normalize(description ?? "")
   const identity = normalizedDrawingNo || `desc:${normalizedDescription}`
+
   return `${project_id}|${identity}|${normalize(location ?? "")}|${job_sub_type_id}`
 }
 
@@ -115,6 +117,7 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
   const headers = (rows[0] as unknown[]).map((cell) => String(cell ?? ""))
   const idx = {
     project_code: findHeaderIndex(headers, "project_code"),
+    project_name: findHeaderIndex(headers, "project_name"),
     job_type: findHeaderIndex(headers, "job_type"),
     job_sub_type: findHeaderIndex(headers, "job_sub_type"),
     zone: findHeaderIndex(headers, "zone"),
@@ -129,9 +132,10 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
 
   const missing: string[] = []
   if (idx.project_code < 0) missing.push("Proje Kodu")
+  if (idx.project_name < 0) missing.push("Proje Adı")
   if (idx.job_type < 0) missing.push("İş Tipi")
   if (idx.job_sub_type < 0) missing.push("İş Alt Tipi")
-  if (idx.location < 0) missing.push("Yapılacak Alan")
+  if (idx.description < 0) missing.push("Yapılacak İş")
 
   if (missing.length > 0) {
     return { rows: [], fileError: `Eksik zorunlu kolon başlıkları: ${missing.join(", ")}` }
@@ -142,9 +146,13 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
     return { rows: [], fileError: `1000 satır limiti aşıldı (${dataRows.length} satır bulundu)` }
   }
 
-  const projectByCode = new Map<string, { id: string; code: string }>()
+  const projectByCode = new Map<string, { id: string; code: string; name: string }>()
   for (const project of lookups.projects) {
-    projectByCode.set(normalize(project.code), { id: project.id, code: project.code })
+    projectByCode.set(normalize(project.code), {
+      id: project.id,
+      code: project.code,
+      name: project.name ?? "",
+    })
   }
 
   const jobTypeByName = new Map<string, { id: string; subs: Map<string, string> }>()
@@ -191,13 +199,23 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
     if (allEmpty) continue
 
     const projectCode = get(idx.project_code)
+    const projectName = get(idx.project_name)
     display.project_code = projectCode
+    display.project_name = projectName
+
+    let project: { id: string; code: string; name: string } | undefined
     if (!projectCode) {
       errors.push("Proje Kodu zorunlu")
     } else {
-      const project = projectByCode.get(normalize(projectCode))
-      if (!project) errors.push(`Proje '${projectCode}' bulunamadı`)
+      project = projectByCode.get(normalize(projectCode))
+      if (!project) errors.push(`Proje Kodu '${projectCode}' bulunamadı`)
       else fields.project_id = project.id
+    }
+
+    if (!projectName) {
+      errors.push("Proje Adı zorunlu")
+    } else if (project && normalize(project.name) !== normalize(projectName)) {
+      errors.push(`Proje Adı '${projectName}' Proje Kodu ile eşleşmiyor`)
     }
 
     const jobTypeName = get(idx.job_type)
@@ -232,8 +250,7 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
 
     const location = get(idx.location)
     display.location = location
-    if (!location) errors.push("Yapılacak Alan zorunlu")
-    else fields.location = location
+    if (location) fields.location = location
 
     const drawingNo = get(idx.drawing_no)
     display.drawing_no = drawingNo
@@ -241,7 +258,8 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
 
     const description = get(idx.description)
     display.description = description
-    fields.description = description
+    if (!description) errors.push("Yapılacak İş zorunlu")
+    else fields.description = description
 
     const startRaw = idx.planned_start >= 0 ? row[idx.planned_start] : null
     const startResult = toIsoDate(startRaw)
@@ -273,7 +291,7 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
     let status: RowStatus = "valid"
     if (errors.length > 0) {
       status = "error"
-    } else if (fields.project_id && fields.job_sub_type_id && fields.location) {
+    } else if (fields.project_id && fields.job_sub_type_id) {
       const key = dupKey(
         fields.project_id,
         fields.drawing_no ?? "",

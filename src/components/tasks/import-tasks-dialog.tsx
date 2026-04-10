@@ -171,7 +171,7 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
             <FileSpreadsheet className="h-5 w-5" /> Excel ile Toplu Görev İçe Aktar
           </DialogTitle>
           <DialogDescription>
-            Excel dosyasından yüzlerce görevi tek seferde ekleyin. Mevcut görevlerle ve dosya içinde tekrar eden satırlar otomatik olarak işaretlenir.
+            Excel dosyasından yüzlerce görevi tek seferde ekleyin. Mevcut görevlerle ve dosya içindeki tekrar eden satırlar otomatik olarak işaretlenir.
           </DialogDescription>
         </DialogHeader>
 
@@ -209,13 +209,13 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
             <div className="space-y-1 text-xs text-zinc-500">
               <p className="font-semibold text-zinc-700">Kabul edilen kolonlar:</p>
               <p>
-                <strong>Zorunlu:</strong> Proje Kodu, İş Tipi, İş Alt Tipi, Yapılacak Alan
+                <strong>Zorunlu:</strong> Proje Kodu, Proje Adı, İş Tipi, İş Alt Tipi, Yapılacak İş
               </p>
               <p>
-                <strong>Opsiyonel:</strong> Zone, Resim No, Yapılacak İş, Başlama Tarihi, Termin, Öncelik, Notlar
+                <strong>Opsiyonel:</strong> Zone, Mahal, Resim No, Başlama Tarihi, Termin, Öncelik, Notlar
               </p>
               <p>
-                <strong>Duplicate kuralı:</strong> Proje + Resim No + Yapılacak Alan + İş Alt Tipi aynı olan satırlar duplicate sayılır.
+                <strong>Duplicate kuralı:</strong> Proje + Resim No veya Yapılacak İş + Mahal + İş Alt Tipi birleşimi duplicate kontrolünde kullanılır.
               </p>
             </div>
           </div>
@@ -285,11 +285,11 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
                       </TableHead>
                       <TableHead className="w-12">#</TableHead>
                       <TableHead className="w-32">Durum</TableHead>
-                      <TableHead className="w-24">Proje</TableHead>
+                      <TableHead className="w-40">Proje</TableHead>
                       <TableHead className="w-28">İş Tipi</TableHead>
                       <TableHead className="w-28">Alt Tip</TableHead>
                       <TableHead className="w-24">Zone</TableHead>
-                      <TableHead className="w-28">Yapılacak Alan</TableHead>
+                      <TableHead className="w-28">Mahal</TableHead>
                       <TableHead className="w-28">Resim No</TableHead>
                       <TableHead>Yapılacak İş</TableHead>
                       <TableHead className="w-24">Termin</TableHead>
@@ -329,7 +329,12 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
                               {STATUS_LABELS[row.status]}
                             </span>
                           </TableCell>
-                          <TableCell className="text-xs">{row.display.project_code}</TableCell>
+                          <TableCell className="text-xs">
+                            <div className="space-y-0.5">
+                              <div className="font-medium text-zinc-800">{row.display.project_code}</div>
+                              <div className="text-zinc-500">{row.display.project_name}</div>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-xs">{row.display.job_type_name}</TableCell>
                           <TableCell className="text-xs">{row.display.job_sub_type_name}</TableCell>
                           <TableCell className="text-xs">{row.display.zone_name}</TableCell>

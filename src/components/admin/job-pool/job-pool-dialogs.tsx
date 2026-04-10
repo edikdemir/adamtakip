@@ -155,7 +155,9 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Yapılacak Alan *</Label>
+                <Label>
+                  Mahal <span className="text-zinc-400">(opsiyonel)</span>
+                </Label>
                 <Select
                   value={state.form.location}
                   onValueChange={(value) =>
@@ -164,7 +166,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
                   disabled={!state.form.project_id}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder={state.form.project_id ? "Alan seç" : "Önce proje seçin"} />
+                    <SelectValue placeholder={state.form.project_id ? "Mahal seç" : "Önce proje seçin"} />
                   </SelectTrigger>
                   <SelectContent>
                     {state.locations.map((location) => (
@@ -173,7 +175,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
                       </SelectItem>
                     ))}
                     {state.locations.length === 0 && (
-                      <div className="px-2 py-1.5 text-xs text-zinc-400">Bu projede alan tanımlı değil</div>
+                      <div className="px-2 py-1.5 text-xs text-zinc-400">Bu projede mahal tanımlı değil</div>
                     )}
                   </SelectContent>
                 </Select>
@@ -195,9 +197,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label>
-                Yapılacak İş <span className="text-zinc-400">(opsiyonel)</span>
-              </Label>
+              <Label>Yapılacak İş *</Label>
               {state.workItemOptions.length > 0 ? (
                 <Combobox
                   value={state.form.description}
@@ -266,7 +266,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
                 !state.form.project_id ||
                 !state.form.job_type_id ||
                 !state.form.job_sub_type_id ||
-                !state.form.location
+                !state.form.description.trim()
               }
             >
               {state.createTask.isPending ? "Kaydediliyor..." : "Oluştur"}

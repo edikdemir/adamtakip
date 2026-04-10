@@ -54,6 +54,7 @@ export interface ParsedRowFields extends Record<string, unknown> {
 
 export interface ParsedRowDisplay {
   project_code?: string
+  project_name?: string
   job_type_name?: string
   job_sub_type_name?: string
   zone_name?: string

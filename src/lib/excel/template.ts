@@ -3,10 +3,11 @@ export async function downloadTaskTemplate(): Promise<void> {
 
   const headers = [
     "Proje Kodu",
+    "Proje Adı",
     "İş Tipi",
     "İş Alt Tipi",
     "Zone",
-    "Yapılacak Alan",
+    "Mahal",
     "Resim No",
     "Yapılacak İş",
     "Başlama Tarihi",
@@ -17,6 +18,7 @@ export async function downloadTaskTemplate(): Promise<void> {
 
   const example = [
     "PRJ-001",
+    "Örnek Proje",
     "Boyama",
     "İç Yüzey",
     "A-Zone",
