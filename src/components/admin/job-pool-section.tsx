@@ -1,11 +1,11 @@
 "use client"
 
-import { FileSpreadsheet, Plus, UserPlus, Ban, Check, RotateCcw, Undo2 } from "lucide-react"
+import { Ban, Check, FileSpreadsheet, Plus, RotateCcw, Undo2, UserPlus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { JobPoolDialogs } from "@/components/admin/job-pool/job-pool-dialogs"
 import { useAdminJobPool } from "@/components/admin/job-pool/use-admin-job-pool"
 import { CompactTaskTable } from "@/components/tasks/compact-task-table"
 import { TaskFilterPanel } from "@/components/tasks/task-filter-panel"
-import { Button } from "@/components/ui/button"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 
@@ -61,7 +61,7 @@ export function AdminJobPoolSection() {
         }
         renderActions={(task) => (
           <div className="flex items-center gap-1">
-            {(task.admin_status === ADMIN_STATUS.HAVUZDA || task.admin_status === ADMIN_STATUS.ATANDI) ? (
+            {task.admin_status === ADMIN_STATUS.HAVUZDA || task.admin_status === ADMIN_STATUS.ATANDI ? (
               <Button
                 variant="ghost"
                 size="sm"

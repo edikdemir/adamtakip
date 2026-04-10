@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getSessionFromRequest } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS } from "@/lib/constants"
+import { getSessionFromRequest } from "@/lib/auth/middleware-auth"
+import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionFromRequest(req)
-  if (!user) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 })
+  if (!user) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 })
+  }
 
   const { id } = await params
   const supabase = createServerClient()
@@ -36,18 +38,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Onaylanmış görevde timer başlatılamaz" }, { status: 400 })
   }
 
-  // Kullanıcının başka bir görevde aktif timer'ı var mı?
   const { data: existingTimer } = await supabase
     .from("tasks")
     .select("id, drawing_no")
     .eq("assigned_to", user.id)
     .not("timer_started_at", "is", null)
-    .neq("id", parseInt(id))
+    .neq("id", parseInt(id, 10))
     .maybeSingle()
 
   if (existingTimer) {
     return NextResponse.json(
-      { error: `Zaten aktif bir kronometre var (#${existingTimer.id} — ${existingTimer.drawing_no}). Önce onu durdurun.` },
+      { error: `Zaten aktif bir kronometre var (#${existingTimer.id} - ${existingTimer.drawing_no}). Önce onu durdurun.` },
       { status: 400 }
     )
   }
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       updated_at: now,
     })
     .eq("id", id)
-    .is("timer_started_at", null) // Optimistic lock: IS NULL
+    .is("timer_started_at", null)
     .select()
     .single()
 
@@ -77,9 +78,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Timer başlatılamadı" }, { status: 500 })
   }
 
-  // Log
   await supabase.from("timer_logs").insert({
-    task_id: parseInt(id),
+    task_id: parseInt(id, 10),
     user_id: user.id,
     action: "start",
     elapsed_at_action: task.total_elapsed_seconds,

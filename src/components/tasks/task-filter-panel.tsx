@@ -76,7 +76,7 @@ export function TaskFilterPanel({
 
   const chips = useMemo(
     () => buildTaskFilterChips(filters, projects, users, jobTypes, zones, locations),
-    [filters, jobTypes, locations, projects, users, zones]
+    [filters, projects, users, jobTypes, zones, locations]
   )
 
   const removeChip = (key: string) => {
@@ -143,7 +143,7 @@ export function TaskFilterPanel({
             <Input
               value={filters.search}
               onChange={(event) => onChange("search", event.target.value)}
-              placeholder="Çizim no, açıklama, proje, mahal veya çalışan ara"
+              placeholder="Resim no, yapılacak iş, proje, alan veya çalışan ara"
               className="h-11 rounded-2xl border-zinc-200 bg-zinc-50 pl-10"
             />
           </div>
@@ -405,7 +405,7 @@ export function TaskFilterPanel({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-400">Hedef bitiş</label>
+              <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-400">Termin</label>
               <div className="grid grid-cols-2 gap-2">
                 <Input
                   type="date"

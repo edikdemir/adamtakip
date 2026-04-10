@@ -1,11 +1,13 @@
 "use client"
-import { useState, useEffect, useRef, useCallback } from "react"
-import { Task } from "@/types/task"
-import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
-import { formatDuration } from "@/lib/utils"
-import { TIMER_SYNC_INTERVAL_MS, TIMER_WARNING_HOURS } from "@/lib/constants"
+
+import { useQueryClient } from "@tanstack/react-query"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
+import { TIMER_SYNC_INTERVAL_MS, TIMER_WARNING_HOURS } from "@/lib/constants"
+import { formatDuration } from "@/lib/utils"
+import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
 import { useSharedSecond } from "@/hooks/use-shared-second"
+import { Task } from "@/types/task"
 
 interface UseTaskTimerReturn {
   elapsedSeconds: number
@@ -18,10 +20,8 @@ interface UseTaskTimerReturn {
   isLoading: boolean
 }
 
-export function useTaskTimer(
-  task: Task,
-  onUpdate?: (updatedTask: Partial<Task>) => void
-): UseTaskTimerReturn {
+export function useTaskTimer(task: Task, onUpdate?: (updatedTask: Partial<Task>) => void): UseTaskTimerReturn {
+  const queryClient = useQueryClient()
   const currentSecond = useSharedSecond()
   const [elapsedSeconds, setElapsedSeconds] = useState(() =>
     getEffectiveElapsedSeconds(task.total_elapsed_seconds, task.timer_started_at)
@@ -31,46 +31,48 @@ export function useTaskTimer(
   const [isLoading, setIsLoading] = useState(false)
 
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null)
-
   const isRunning = timerStartedAt !== null
 
-  // Shared second ticker updates all visible timers from one source.
   useEffect(() => {
     if (isRunning) {
       setElapsedSeconds(getEffectiveElapsedSeconds(totalElapsed, timerStartedAt))
     }
   }, [currentSecond, isRunning, timerStartedAt, totalElapsed])
 
-  // Periodic sync every 60s while running
   useEffect(() => {
     if (isRunning) {
       syncIntervalRef.current = setInterval(async () => {
         try {
           await fetch(`/api/tasks/${task.id}/timer/sync`, { method: "POST" })
         } catch {
-          // Silently ignore sync failures
+          // Sync failures are non-blocking for the UI.
         }
       }, TIMER_SYNC_INTERVAL_MS)
     }
+
     return () => {
-      if (syncIntervalRef.current) clearInterval(syncIntervalRef.current)
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current)
+      }
     }
   }, [isRunning, task.id])
 
-  // Heartbeat every 5 minutes while running — server uses this to detect stale timers
   useEffect(() => {
-    if (!isRunning) return
+    if (!isRunning) {
+      return
+    }
+
     const heartbeatInterval = setInterval(async () => {
       try {
         await fetch(`/api/tasks/${task.id}/timer/heartbeat`, { method: "POST" })
       } catch {
-        // Silently ignore — pg_cron will auto-stop after 30 min without heartbeat
+        // pg_cron handles stale timers if heartbeat fails.
       }
     }, 5 * 60 * 1000)
+
     return () => clearInterval(heartbeatInterval)
   }, [isRunning, task.id])
 
-  // Sync state when task prop changes
   useEffect(() => {
     setTimerStartedAt(task.timer_started_at)
     setTotalElapsed(task.total_elapsed_seconds)
@@ -82,50 +84,58 @@ export function useTaskTimer(
       toast.error("Bağımlı görevde kronometre başlatılamaz")
       return
     }
+
     setIsLoading(true)
+
     try {
-      const res = await fetch(`/api/tasks/${task.id}/timer/start`, { method: "POST" })
-      const json = await res.json()
-      if (res.ok) {
-        setTimerStartedAt(json.data.timer_started_at)
-        setTotalElapsed(json.data.total_elapsed_seconds)
-        onUpdate?.(json.data)
+      const response = await fetch(`/api/tasks/${task.id}/timer/start`, { method: "POST" })
+      const payload = await response.json()
+
+      if (response.ok) {
+        setTimerStartedAt(payload.data.timer_started_at)
+        setTotalElapsed(payload.data.total_elapsed_seconds)
+        onUpdate?.(payload.data)
+        await queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
       } else {
-        toast.error(json.error || "Timer başlatılamadı")
+        toast.error(payload.error || "Kronometre başlatılamadı")
       }
     } catch {
-      toast.error("Timer başlatılamadı")
+      toast.error("Kronometre başlatılamadı")
     } finally {
       setIsLoading(false)
     }
-  }, [task.id, onUpdate])
+  }, [onUpdate, queryClient, task.id, task.linked_to_task_id])
 
   const stop = useCallback(async () => {
     setIsLoading(true)
+
     try {
-      const res = await fetch(`/api/tasks/${task.id}/timer/stop`, { method: "POST" })
-      const json = await res.json()
-      if (res.ok) {
+      const response = await fetch(`/api/tasks/${task.id}/timer/stop`, { method: "POST" })
+      const payload = await response.json()
+
+      if (response.ok) {
         setTimerStartedAt(null)
-        setTotalElapsed(json.data.total_elapsed_seconds)
-        setElapsedSeconds(json.data.total_elapsed_seconds)
-        onUpdate?.(json.data)
+        setTotalElapsed(payload.data.total_elapsed_seconds)
+        setElapsedSeconds(payload.data.total_elapsed_seconds)
+        onUpdate?.(payload.data)
+        await queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
       } else {
-        toast.error(json.error || "Timer durdurulamadı")
+        toast.error(payload.error || "Kronometre durdurulamadı")
       }
     } catch {
-      toast.error("Timer durdurulamadı")
+      toast.error("Kronometre durdurulamadı")
     } finally {
       setIsLoading(false)
     }
-  }, [task.id, onUpdate])
+  }, [onUpdate, queryClient, task.id])
 
   const toggle = useCallback(async () => {
     if (isRunning) {
       await stop()
-    } else {
-      await start()
+      return
     }
+
+    await start()
   }, [isRunning, start, stop])
 
   const isWarning = elapsedSeconds / 3600 >= TIMER_WARNING_HOURS

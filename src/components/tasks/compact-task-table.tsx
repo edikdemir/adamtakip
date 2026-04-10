@@ -23,17 +23,29 @@ interface CompactTaskTableProps {
   rowClassName?: (task: Task) => string | undefined
 }
 
+function splitDisplayName(displayName: string) {
+  const parts = displayName.trim().split(/\s+/).filter(Boolean)
+
+  return {
+    firstName: parts[0] ?? displayName,
+    lastName: parts.slice(1).join(" "),
+  }
+}
+
 function AssigneeCell({ task }: { task: Task }) {
   if (!task.assigned_user) {
-    return <span className="text-xs text-zinc-400">—</span>
+    return <span className="block text-center text-xs text-zinc-400">-</span>
   }
 
+  const { firstName, lastName } = splitDisplayName(task.assigned_user.display_name)
+
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="mx-auto flex w-full max-w-[7rem] flex-col items-center justify-center gap-2 text-center">
       <UserAvatar displayName={task.assigned_user.display_name} photoUrl={task.assigned_user.photo_url} size="md" />
-      <span className="text-center text-[11px] font-medium leading-tight text-zinc-700 line-clamp-2">
-        {task.assigned_user.display_name}
-      </span>
+      <div className="min-w-0 space-y-0.5 leading-tight">
+        <span className="block text-[11px] font-semibold text-zinc-700">{firstName}</span>
+        <span className="block text-[11px] text-zinc-500">{lastName || "\u00A0"}</span>
+      </div>
     </div>
   )
 }
@@ -58,8 +70,8 @@ export function CompactTaskTable({
             <TableRow className="bg-zinc-50/90 hover:bg-zinc-50/90">
               <TableHead className="hidden w-16 xl:table-cell">ID</TableHead>
               <TableHead className="hidden w-24 lg:table-cell">Proje</TableHead>
-              <TableHead>Çizim / İş</TableHead>
-              {showAssignedUser ? <TableHead className="hidden w-56 xl:table-cell">Atanan</TableHead> : null}
+              <TableHead>Resim No / İş</TableHead>
+              {showAssignedUser ? <TableHead className="hidden w-40 text-center xl:table-cell">Atanan</TableHead> : null}
               <TableHead className="hidden w-28 lg:table-cell">Durum</TableHead>
               <TableHead className="hidden w-24 lg:table-cell">Öncelik</TableHead>
               <TableHead className="hidden w-28 md:table-cell">Termin</TableHead>
@@ -102,11 +114,11 @@ export function CompactTaskTable({
                     <TableCell className="min-w-0">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-semibold text-zinc-950">{task.drawing_no}</span>
+                          <span className="font-mono text-sm font-semibold text-zinc-950">{task.drawing_no || "-"}</span>
                           <TaskLinkBadge parent={task.linked_to_task} dependents={task.linked_tasks} />
                         </div>
                         <p className="max-w-[560px] truncate text-sm text-zinc-700" title={task.description}>
-                          {task.description}
+                          {task.description || "Yapılacak iş girilmedi"}
                         </p>
                         <div className="flex flex-wrap gap-1.5 text-[11px] text-zinc-500">
                           <span className="rounded-full bg-zinc-100 px-2 py-0.5">{task.job_type?.name || "İş tipi yok"}</span>
@@ -122,7 +134,7 @@ export function CompactTaskTable({
                       </div>
                     </TableCell>
                     {showAssignedUser ? (
-                      <TableCell className="hidden xl:table-cell">
+                      <TableCell className="hidden text-center align-middle xl:table-cell">
                         <AssigneeCell task={task} />
                       </TableCell>
                     ) : null}
@@ -146,7 +158,9 @@ export function CompactTaskTable({
                         {deadlineStatus === "overdue" ? <AlertTriangle className="ml-1 h-3.5 w-3.5" /> : null}
                       </span>
                     </TableCell>
-                    <TableCell onClick={(event) => event.stopPropagation()}>{renderDuration ? renderDuration(task) : <TimeDurationCell task={task} />}</TableCell>
+                    <TableCell onClick={(event) => event.stopPropagation()}>
+                      {renderDuration ? renderDuration(task) : <TimeDurationCell task={task} />}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
                         <TaskNoteButton taskId={task.id} drawingNo={task.drawing_no} />
@@ -169,7 +183,11 @@ export function CompactTaskTable({
         </Table>
       </div>
 
-      <TaskDetailDrawer task={selectedTask} open={selectedTask !== null} onOpenChange={(open) => !open && setSelectedTask(null)} />
+      <TaskDetailDrawer
+        task={selectedTask}
+        open={selectedTask !== null}
+        onOpenChange={(open) => !open && setSelectedTask(null)}
+      />
     </>
   )
 }

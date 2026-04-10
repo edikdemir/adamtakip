@@ -1,7 +1,13 @@
 "use client"
+
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -40,9 +46,9 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
   const { data: existingTasks = [] } = useTasks()
 
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [fileName, setFileName] = useState<string>("")
+  const [fileName, setFileName] = useState("")
   const [parsing, setParsing] = useState(false)
-  const [fileError, setFileError] = useState<string>("")
+  const [fileError, setFileError] = useState("")
   const [rows, setRows] = useState<ParsedRow[]>([])
   const [filter, setFilter] = useState<FilterMode>("all")
 
@@ -52,7 +58,6 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
 
   const bulkImport = useBulkImportTasks()
 
-  // Reset on close
   useEffect(() => {
     if (!open) {
       setFileName("")
@@ -74,11 +79,12 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
         })),
       })),
       zones,
-      existing: existingTasks.map((t) => ({
-        project_id: t.project_id,
-        drawing_no: t.drawing_no,
-        location: t.location ?? null,
-        job_sub_type_id: t.job_sub_type_id,
+      existing: existingTasks.map((task) => ({
+        project_id: task.project_id,
+        drawing_no: task.drawing_no,
+        location: task.location ?? null,
+        job_sub_type_id: task.job_sub_type_id,
+        description: task.description,
       })),
     }),
     [projects, jobTypes, zones, existingTasks]
@@ -89,6 +95,7 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
     setFileError("")
     setRows([])
     setFileName(file.name)
+
     try {
       const result = await parseTasksXlsx(file, lookups)
       if (result.fileError) {
@@ -96,59 +103,63 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
       } else {
         setRows(result.rows)
       }
-    } catch (e) {
-      setFileError((e as Error).message)
+    } catch (error) {
+      setFileError((error as Error).message)
     } finally {
       setParsing(false)
     }
   }
 
-  const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (f) handleFile(f)
+  const onPickFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) handleFile(file)
   }
 
   const summary = useMemo(() => {
-    const s = { total: rows.length, valid: 0, dupDb: 0, dupFile: 0, error: 0, selected: 0 }
-    for (const r of rows) {
-      if (r.status === "valid") s.valid++
-      else if (r.status === "duplicate-db") s.dupDb++
-      else if (r.status === "duplicate-file") s.dupFile++
-      else if (r.status === "error") s.error++
-      if (r.selected && r.status === "valid") s.selected++
+    const value = { total: rows.length, valid: 0, dupDb: 0, dupFile: 0, error: 0, selected: 0 }
+
+    for (const row of rows) {
+      if (row.status === "valid") value.valid++
+      else if (row.status === "duplicate-db") value.dupDb++
+      else if (row.status === "duplicate-file") value.dupFile++
+      else if (row.status === "error") value.error++
+
+      if (row.selected && row.status === "valid") value.selected++
     }
-    return s
+
+    return value
   }, [rows])
 
   const filtered = useMemo(() => {
     if (filter === "all") return rows
-    if (filter === "valid") return rows.filter((r) => r.status === "valid")
-    if (filter === "duplicate") return rows.filter((r) => r.status === "duplicate-db" || r.status === "duplicate-file")
-    if (filter === "error") return rows.filter((r) => r.status === "error")
+    if (filter === "valid") return rows.filter((row) => row.status === "valid")
+    if (filter === "duplicate") return rows.filter((row) => row.status === "duplicate-db" || row.status === "duplicate-file")
+    if (filter === "error") return rows.filter((row) => row.status === "error")
     return rows
   }, [rows, filter])
 
   const toggleRow = (rowNumber: number) => {
-    setRows((prev) =>
-      prev.map((r) => (r.rowNumber === rowNumber ? { ...r, selected: !r.selected } : r))
+    setRows((current) =>
+      current.map((row) => (row.rowNumber === rowNumber ? { ...row, selected: !row.selected } : row))
     )
   }
 
   const toggleAllValid = (checked: boolean) => {
-    setRows((prev) => prev.map((r) => (r.status === "valid" ? { ...r, selected: checked } : r)))
+    setRows((current) => current.map((row) => (row.status === "valid" ? { ...row, selected: checked } : row)))
   }
 
   const handleImport = async () => {
-    const toSend = rows.filter((r) => r.selected && r.status === "valid").map((r) => r.fields)
-    if (toSend.length === 0) {
+    const tasks = rows.filter((row) => row.selected && row.status === "valid").map((row) => row.fields)
+    if (tasks.length === 0) {
       toast.error("Seçili geçerli satır yok")
       return
     }
+
     try {
-      await bulkImport.mutateAsync({ tasks: toSend })
+      await bulkImport.mutateAsync({ tasks })
       onOpenChange(false)
     } catch {
-      // hook zaten toast gösterdi
+      // hook zaten toast gösteriyor
     }
   }
 
@@ -164,8 +175,7 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step 1: File pick + template */}
-        {rows.length === 0 && !parsing && (
+        {rows.length === 0 && !parsing ? (
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3">
               <Button variant="outline" size="sm" onClick={() => downloadTaskTemplate()} className="gap-2">
@@ -176,7 +186,7 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
               </span>
             </div>
 
-            <label className="flex flex-col items-center justify-center gap-2 p-10 border-2 border-dashed border-zinc-300 rounded-lg cursor-pointer hover:bg-zinc-50 transition-colors">
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 p-10 transition-colors hover:bg-zinc-50">
               <Upload className="h-8 w-8 text-zinc-400" />
               <span className="text-sm font-medium text-zinc-700">Excel dosyası seçin</span>
               <span className="text-xs text-zinc-400">.xlsx, .xls veya .csv (max 5MB, 1000 satır)</span>
@@ -189,36 +199,33 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
               />
             </label>
 
-            {fileError && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            {fileError ? (
+              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <span>{fileError}</span>
               </div>
-            )}
+            ) : null}
 
-            <div className="text-xs text-zinc-500 space-y-1">
+            <div className="space-y-1 text-xs text-zinc-500">
               <p className="font-semibold text-zinc-700">Kabul edilen kolonlar:</p>
               <p>
-                <strong>Zorunlu:</strong> Proje Kodu, İş Tipi, İş Alt Tipi, Resim No, Yapılacak İş
+                <strong>Zorunlu:</strong> Proje Kodu, İş Tipi, İş Alt Tipi, Yapılacak Alan
               </p>
               <p>
-                <strong>Opsiyonel:</strong> Zone, Mahal, Başlama Tarihi, Hedef Bitiş Tarihi, Öncelik, Notlar
+                <strong>Opsiyonel:</strong> Zone, Resim No, Yapılacak İş, Başlama Tarihi, Termin, Öncelik, Notlar
               </p>
               <p>
-                <strong>Duplicate kuralı:</strong> Proje + Resim No + Mahal + İş Alt Tipi aynı olan satırlar duplicate sayılır.
+                <strong>Duplicate kuralı:</strong> Proje + Resim No + Yapılacak Alan + İş Alt Tipi aynı olan satırlar duplicate sayılır.
               </p>
             </div>
           </div>
-        )}
+        ) : null}
 
-        {parsing && (
-          <div className="py-12 text-center text-sm text-zinc-500">Dosya işleniyor...</div>
-        )}
+        {parsing ? <div className="py-12 text-center text-sm text-zinc-500">Dosya işleniyor...</div> : null}
 
-        {/* Step 2: Preview */}
-        {rows.length > 0 && !parsing && (
+        {rows.length > 0 && !parsing ? (
           <div className="space-y-3">
-            <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-sm">
                 <FileSpreadsheet className="h-4 w-4 text-zinc-500" />
                 <span className="font-medium text-zinc-800">{fileName}</span>
@@ -236,24 +243,24 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
                 </Button>
               </div>
               <div className="flex items-center gap-1.5">
-                {(["all", "valid", "duplicate", "error"] as FilterMode[]).map((f) => (
+                {(["all", "valid", "duplicate", "error"] as FilterMode[]).map((mode) => (
                   <Button
-                    key={f}
-                    variant={filter === f ? "default" : "outline"}
+                    key={mode}
+                    variant={filter === mode ? "default" : "outline"}
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => setFilter(f)}
+                    onClick={() => setFilter(mode)}
                   >
-                    {f === "all" && "Tümü"}
-                    {f === "valid" && `Geçerli (${summary.valid})`}
-                    {f === "duplicate" && `Duplicate (${summary.dupDb + summary.dupFile})`}
-                    {f === "error" && `Hatalı (${summary.error})`}
+                    {mode === "all" && "Tümü"}
+                    {mode === "valid" && `Geçerli (${summary.valid})`}
+                    {mode === "duplicate" && `Duplicate (${summary.dupDb + summary.dupFile})`}
+                    {mode === "error" && `Hatalı (${summary.error})`}
                   </Button>
                 ))}
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-xs text-zinc-600 px-1">
+            <div className="flex items-center gap-3 px-1 text-xs text-zinc-600">
               <span>Toplam: <strong>{summary.total}</strong></span>
               <span className="text-emerald-700">Geçerli: <strong>{summary.valid}</strong></span>
               <span className="text-yellow-700">Duplicate (DB): <strong>{summary.dupDb}</strong></span>
@@ -262,17 +269,17 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
               <span className="ml-auto">Seçili: <strong>{summary.selected}</strong></span>
             </div>
 
-            <div className="rounded-lg border border-zinc-200 overflow-hidden">
+            <div className="overflow-hidden rounded-lg border border-zinc-200">
               <ScrollArea className="h-[420px]">
                 <Table>
-                  <TableHeader className="sticky top-0 bg-zinc-50 z-10">
+                  <TableHeader className="sticky top-0 z-10 bg-zinc-50">
                     <TableRow>
                       <TableHead className="w-10">
                         <input
                           type="checkbox"
                           aria-label="Tümünü seç"
                           checked={summary.valid > 0 && summary.selected === summary.valid}
-                          onChange={(e) => toggleAllValid(e.target.checked)}
+                          onChange={(event) => toggleAllValid(event.target.checked)}
                           className="h-4 w-4"
                         />
                       </TableHead>
@@ -282,10 +289,10 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
                       <TableHead className="w-28">İş Tipi</TableHead>
                       <TableHead className="w-28">Alt Tip</TableHead>
                       <TableHead className="w-24">Zone</TableHead>
-                      <TableHead className="w-28">Mahal</TableHead>
+                      <TableHead className="w-28">Yapılacak Alan</TableHead>
                       <TableHead className="w-28">Resim No</TableHead>
-                      <TableHead>Açıklama</TableHead>
-                      <TableHead className="w-24">Hedef Bitiş</TableHead>
+                      <TableHead>Yapılacak İş</TableHead>
+                      <TableHead className="w-24">Termin</TableHead>
                       <TableHead className="w-20">Öncelik</TableHead>
                       <TableHead>Hata</TableHead>
                     </TableRow>
@@ -293,48 +300,48 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
                   <TableBody>
                     {filtered.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={13} className="text-center py-8 text-zinc-400">
+                        <TableCell colSpan={13} className="py-8 text-center text-zinc-400">
                           Bu filtrede satır yok
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filtered.map((r) => (
+                      filtered.map((row) => (
                         <TableRow
-                          key={r.rowNumber}
+                          key={row.rowNumber}
                           className={cn(
-                            r.status === "error" && "bg-red-50/40",
-                            r.status === "duplicate-db" && "bg-yellow-50/40",
-                            r.status === "duplicate-file" && "bg-amber-50/40"
+                            row.status === "error" && "bg-red-50/40",
+                            row.status === "duplicate-db" && "bg-yellow-50/40",
+                            row.status === "duplicate-file" && "bg-amber-50/40"
                           )}
                         >
                           <TableCell>
                             <input
                               type="checkbox"
-                              checked={r.selected}
-                              disabled={r.status !== "valid"}
-                              onChange={() => toggleRow(r.rowNumber)}
+                              checked={row.selected}
+                              disabled={row.status !== "valid"}
+                              onChange={() => toggleRow(row.rowNumber)}
                               className="h-4 w-4"
                             />
                           </TableCell>
-                          <TableCell className="font-mono text-xs text-zinc-400">{r.rowNumber}</TableCell>
+                          <TableCell className="font-mono text-xs text-zinc-400">{row.rowNumber}</TableCell>
                           <TableCell>
-                            <span className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium", STATUS_COLORS[r.status])}>
-                              {STATUS_LABELS[r.status]}
+                            <span className={cn("inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium", STATUS_COLORS[row.status])}>
+                              {STATUS_LABELS[row.status]}
                             </span>
                           </TableCell>
-                          <TableCell className="text-xs">{r.display.project_code}</TableCell>
-                          <TableCell className="text-xs">{r.display.job_type_name}</TableCell>
-                          <TableCell className="text-xs">{r.display.job_sub_type_name}</TableCell>
-                          <TableCell className="text-xs">{r.display.zone_name}</TableCell>
-                          <TableCell className="text-xs">{r.display.location}</TableCell>
-                          <TableCell className="font-mono text-xs">{r.display.drawing_no}</TableCell>
-                          <TableCell className="text-xs max-w-[200px] truncate" title={r.display.description}>
-                            {r.display.description}
+                          <TableCell className="text-xs">{row.display.project_code}</TableCell>
+                          <TableCell className="text-xs">{row.display.job_type_name}</TableCell>
+                          <TableCell className="text-xs">{row.display.job_sub_type_name}</TableCell>
+                          <TableCell className="text-xs">{row.display.zone_name}</TableCell>
+                          <TableCell className="text-xs">{row.display.location}</TableCell>
+                          <TableCell className="font-mono text-xs">{row.display.drawing_no}</TableCell>
+                          <TableCell className="max-w-[200px] truncate text-xs" title={row.display.description}>
+                            {row.display.description}
                           </TableCell>
-                          <TableCell className="text-xs">{r.display.planned_end}</TableCell>
-                          <TableCell className="text-xs">{r.display.priority}</TableCell>
+                          <TableCell className="text-xs">{row.display.planned_end}</TableCell>
+                          <TableCell className="text-xs">{row.display.priority}</TableCell>
                           <TableCell className="text-xs text-red-600">
-                            {r.errors.length > 0 ? r.errors.join("; ") : ""}
+                            {row.errors.length > 0 ? row.errors.join("; ") : ""}
                           </TableCell>
                         </TableRow>
                       ))
@@ -344,20 +351,15 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
               </ScrollArea>
             </div>
           </div>
-        )}
+        ) : null}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Kapat</Button>
-          {rows.length > 0 && (
-            <Button
-              onClick={handleImport}
-              disabled={summary.selected === 0 || bulkImport.isPending}
-            >
-              {bulkImport.isPending
-                ? "İçe Aktarılıyor..."
-                : `${summary.selected} Görevi İçe Aktar`}
+          {rows.length > 0 ? (
+            <Button onClick={handleImport} disabled={summary.selected === 0 || bulkImport.isPending}>
+              {bulkImport.isPending ? "İçe Aktarılıyor..." : `${summary.selected} Görevi İçe Aktar`}
             </Button>
-          )}
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { AdminJobPoolState } from "@/components/admin/job-pool/use-admin-job-pool"
 import { ImportTasksDialog } from "@/components/tasks/import-tasks-dialog"
@@ -34,7 +34,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
           <div className="grid gap-3 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Proje</Label>
+                <Label>Proje *</Label>
                 <Select
                   value={state.form.project_id}
                   onValueChange={(value) =>
@@ -48,7 +48,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
                     {state.projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.code}
-                        {project.name ? ` — ${project.name}` : ""}
+                        {project.name ? ` - ${project.name}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -56,7 +56,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label>İş Tipi</Label>
+                <Label>İş Tipi *</Label>
                 <Select
                   value={state.form.job_type_id}
                   onValueChange={(value) =>
@@ -84,7 +84,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>İş Alt Tipi</Label>
+                <Label>İş Alt Tipi *</Label>
                 <Select
                   value={state.form.job_sub_type_id}
                   onValueChange={(value) =>
@@ -155,26 +155,25 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Mahal</Label>
+                <Label>Yapılacak Alan *</Label>
                 <Select
-                  value={state.form.location || "none"}
+                  value={state.form.location}
                   onValueChange={(value) =>
-                    state.setForm((current) => ({ ...current, location: value === "none" ? "" : value }))
+                    state.setForm((current) => ({ ...current, location: value }))
                   }
                   disabled={!state.form.project_id}
                 >
                   <SelectTrigger className="h-9">
-                    <SelectValue placeholder={state.form.project_id ? "Mahal seç (opsiyonel)" : "Önce proje seçin"} />
+                    <SelectValue placeholder={state.form.project_id ? "Alan seç" : "Önce proje seçin"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">— Seçilmedi —</SelectItem>
                     {state.locations.map((location) => (
                       <SelectItem key={location.id} value={location.name}>
                         {location.name}
                       </SelectItem>
                     ))}
                     {state.locations.length === 0 && (
-                      <div className="px-2 py-1.5 text-xs text-zinc-400">Bu projede mahal tanımlı değil</div>
+                      <div className="px-2 py-1.5 text-xs text-zinc-400">Bu projede alan tanımlı değil</div>
                     )}
                   </SelectContent>
                 </Select>
@@ -182,7 +181,9 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Resim No</Label>
+              <Label>
+                Resim No <span className="text-zinc-400">(opsiyonel)</span>
+              </Label>
               <Input
                 value={state.form.drawing_no}
                 onChange={(event) =>
@@ -194,7 +195,9 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Yapılacak İş</Label>
+              <Label>
+                Yapılacak İş <span className="text-zinc-400">(opsiyonel)</span>
+              </Label>
               {state.workItemOptions.length > 0 ? (
                 <Combobox
                   value={state.form.description}
@@ -228,7 +231,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Hedef Bitiş Tarihi</Label>
+                <Label>Termin</Label>
                 <Input
                   type="date"
                   value={state.form.planned_end}
@@ -263,8 +266,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
                 !state.form.project_id ||
                 !state.form.job_type_id ||
                 !state.form.job_sub_type_id ||
-                !state.form.drawing_no ||
-                !state.form.description
+                !state.form.location
               }
             >
               {state.createTask.isPending ? "Kaydediliyor..." : "Oluştur"}
@@ -278,12 +280,12 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
           <DialogHeader>
             <DialogTitle>Görev Ata</DialogTitle>
             <DialogDescription>
-              #{state.assignTask?.id} — {state.assignTask?.drawing_no} — {state.assignTask?.description}
+              #{state.assignTask?.id} - {state.assignTask?.drawing_no || "Resim No yok"} - {state.assignTask?.description || "İş açıklaması yok"}
             </DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <Label className="mb-2 block">Kullanıcı Seç</Label>
-            <div className="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
+            <div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1">
               {state.users.map((user) => {
                 const isSelected = state.selectedUserId === user.id
 
@@ -293,15 +295,17 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
                     onClick={() => state.setSelectedUserId(isSelected ? "" : user.id)}
                     className={cn(
                       "flex items-center gap-2.5 rounded-lg border p-2.5 text-left transition-colors",
-                      isSelected ? "border-indigo-500 bg-indigo-50" : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                      isSelected
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
                     )}
                   >
                     <UserAvatar displayName={user.display_name} photoUrl={user.photo_url} size="sm" />
                     <div className="min-w-0">
-                      <p className={cn("text-xs font-semibold truncate", isSelected ? "text-indigo-700" : "text-zinc-800")}>
+                      <p className={cn("truncate text-xs font-semibold", isSelected ? "text-indigo-700" : "text-zinc-800")}>
                         {user.display_name}
                       </p>
-                      {user.job_title && <p className="text-[10px] text-zinc-500 truncate">{user.job_title}</p>}
+                      {user.job_title && <p className="truncate text-[10px] text-zinc-500">{user.job_title}</p>}
                     </div>
                   </button>
                 )
@@ -326,7 +330,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
           <DialogHeader>
             <DialogTitle>Görevi İptal Et</DialogTitle>
             <DialogDescription>
-              #{state.cancelTask?.id} — {state.cancelTask?.drawing_no} görevi iptal edilecek. Timer çalışıyorsa durdurulur. Daha sonra tekrar açılabilir.
+              #{state.cancelTask?.id} - {state.cancelTask?.drawing_no || "Resim No yok"} görevi iptal edilecek. Timer çalışıyorsa durdurulur. Daha sonra tekrar açılabilir.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
@@ -356,7 +360,7 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
           <DialogHeader>
             <DialogTitle>Revizeye Gönder</DialogTitle>
             <DialogDescription>
-              #{state.rejectTask?.id} — {state.rejectTask?.drawing_no} görevi revizeye gönderilecek. Çalışana e-posta bildirimi gönderilecektir.
+              #{state.rejectTask?.id} - {state.rejectTask?.drawing_no || "Resim No yok"} görevi revizeye gönderilecek. Çalışana e-posta bildirimi gönderilecektir.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
@@ -383,3 +387,4 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
     </>
   )
 }
+

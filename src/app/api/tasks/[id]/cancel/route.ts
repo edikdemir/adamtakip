@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS } from "@/lib/constants"
+import { sendTaskCancelledEmail } from "@/lib/email/graph-mailer"
 import { notifyTaskCancelled } from "@/lib/notifications/create-notification"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -16,7 +17,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("id, assigned_to, drawing_no, admin_status, timer_started_at, total_elapsed_seconds")
+    .select(`
+      id,
+      assigned_to,
+      drawing_no,
+      description,
+      priority,
+      admin_notes,
+      planned_end,
+      admin_status,
+      timer_started_at,
+      total_elapsed_seconds,
+      project:projects(id, code, name),
+      job_type:job_types(id, name),
+      job_sub_type:job_sub_types(id, name)
+    `)
     .eq("id", id)
     .single()
 
@@ -26,7 +41,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Görev zaten iptal edilmiş" }, { status: 400 })
   }
 
-  // Stop running timer if any
   let totalElapsed = task.total_elapsed_seconds
   if (task.timer_started_at) {
     const startTime = new Date(task.timer_started_at).getTime()
@@ -51,12 +65,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await supabase.from("task_notes").insert({
       task_id: parseInt(id),
       user_id: user.id,
-      content: `🚫 İptal Sebebi: ${reason}`,
+      content: `İptal Sebebi: ${reason}`,
     })
   }
 
   if (task.assigned_to) {
+    const { data: assignedUser } = await supabase
+      .from("users")
+      .select("id, email, display_name")
+      .eq("id", task.assigned_to)
+      .single()
+
     notifyTaskCancelled(task.assigned_to, parseInt(id), task.drawing_no, reason).catch(console.error)
+
+    if (assignedUser) {
+      sendTaskCancelledEmail(
+        assignedUser as Parameters<typeof sendTaskCancelledEmail>[0],
+        {
+          ...(task as unknown as Parameters<typeof sendTaskCancelledEmail>[1]),
+          admin_status: ADMIN_STATUS.IPTAL,
+        },
+        reason
+      ).catch(console.error)
+    }
   }
 
   return NextResponse.json({ data: updatedTask })

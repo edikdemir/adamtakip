@@ -187,7 +187,7 @@ export function useAdminJobPool() {
       zone_id: form.zone_id || undefined,
       planned_start: form.planned_start || undefined,
       planned_end: form.planned_end || undefined,
-      location: form.location || undefined,
+      location: form.location.trim(),
       admin_notes: form.admin_notes || undefined,
     }
 

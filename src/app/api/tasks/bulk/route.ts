@@ -10,9 +10,9 @@ const taskSchema = z.object({
   job_type_id: z.string().guid(),
   job_sub_type_id: z.string().guid(),
   zone_id: z.union([emptyToUndefined, z.string().guid()]).optional(),
-  location: z.union([emptyToUndefined, z.string()]).optional(),
-  drawing_no: z.string().min(1),
-  description: z.string().min(1),
+  location: z.string().min(1),
+  drawing_no: z.string(),
+  description: z.string(),
   planned_start: z.union([emptyToUndefined, z.string()]).optional(),
   planned_end: z.union([emptyToUndefined, z.string()]).optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
@@ -23,8 +23,19 @@ const bulkSchema = z.object({
   tasks: z.array(taskSchema).min(1).max(1000),
 })
 
-function dupKey(project_id: string, drawing_no: string, location: string | null, job_sub_type_id: string): string {
-  return `${project_id}|${drawing_no.toLowerCase().trim()}|${(location ?? "").toLowerCase().trim()}|${job_sub_type_id}`
+function dupKey(
+  project_id: string,
+  drawing_no: string,
+  location: string | null,
+  job_sub_type_id: string,
+  description?: string | null
+): string {
+  const normalizedDrawingNo = drawing_no.toLowerCase().trim()
+  const normalizedLocation = (location ?? "").toLowerCase().trim()
+  const normalizedDescription = (description ?? "").toLowerCase().trim()
+  const identity = normalizedDrawingNo || `desc:${normalizedDescription}`
+
+  return `${project_id}|${identity}|${normalizedLocation}|${job_sub_type_id}`
 }
 
 export async function POST(req: NextRequest) {
@@ -40,11 +51,10 @@ export async function POST(req: NextRequest) {
   const supabase = createServerClient()
   const incoming = parsed.data.tasks
 
-  // Race-condition guard: aynı tuple DB'de varsa filtrele
-  const projectIds = Array.from(new Set(incoming.map((t) => t.project_id)))
+  const projectIds = Array.from(new Set(incoming.map((task) => task.project_id)))
   const { data: existing, error: existingErr } = await supabase
     .from("tasks")
-    .select("project_id, drawing_no, location, job_sub_type_id")
+    .select("project_id, drawing_no, location, job_sub_type_id, description")
     .in("project_id", projectIds)
 
   if (existingErr) {
@@ -52,20 +62,30 @@ export async function POST(req: NextRequest) {
   }
 
   const existingKeys = new Set<string>()
-  for (const e of existing || []) {
-    existingKeys.add(dupKey(e.project_id, e.drawing_no, e.location ?? null, e.job_sub_type_id))
+  for (const task of existing || []) {
+    existingKeys.add(
+      dupKey(task.project_id, task.drawing_no, task.location ?? null, task.job_sub_type_id, task.description)
+    )
   }
 
   const toInsert: typeof incoming = []
   let skipped = 0
-  for (const t of incoming) {
-    const key = dupKey(t.project_id, t.drawing_no, t.location ?? null, t.job_sub_type_id)
+  for (const task of incoming) {
+    const key = dupKey(
+      task.project_id,
+      task.drawing_no,
+      task.location ?? null,
+      task.job_sub_type_id,
+      task.description
+    )
+
     if (existingKeys.has(key)) {
       skipped++
       continue
     }
-    existingKeys.add(key) // batch içinde tekrarı da koru
-    toInsert.push(t)
+
+    existingKeys.add(key)
+    toInsert.push(task)
   }
 
   let inserted = 0
@@ -83,6 +103,7 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       )
     }
+
     inserted = insertedRows?.length || 0
   }
 

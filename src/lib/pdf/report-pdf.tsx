@@ -7,27 +7,32 @@ const PAGE_HEIGHT = 841.89
 const FONT_FAMILY = "Effra"
 
 const BRAND = {
-  green: "#63c93d",
-  blue: "#1476cf",
-  navy: "#153456",
-  lightBlue: "#eff6fd",
-  lightGreen: "#f3faed",
-  border: "#d7e4f2",
-  text: "#1f3650",
-  muted: "#66809b",
-  track: "#e6eef7",
+  green: "#2f8f57",
+  greenDeep: "#226840",
+  blue: "#225f97",
+  blueDeep: "#163a5c",
+  navy: "#10263f",
+  lightBlue: "#e8f0f8",
+  lightGreen: "#edf6ef",
+  surface: "#f5f8fb",
+  surfaceAlt: "#edf3f8",
+  border: "#c8d4e1",
+  text: "#1a2f45",
+  muted: "#5b7187",
+  textOnDark: "#f4f8fc",
+  track: "#d9e3ec",
   white: "#ffffff",
 }
 
 const PIE_COLORS = [
+  BRAND.blueDeep,
   BRAND.green,
   BRAND.blue,
-  BRAND.navy,
-  "#5ba2e9",
-  "#85d35b",
-  "#7dc4ff",
-  "#8ab8e6",
-  "#3aa3c2",
+  "#4c7aa3",
+  "#4a9469",
+  "#6f8daa",
+  "#819f50",
+  "#2e6a7d",
 ]
 
 let assetsRegistered = false
@@ -59,7 +64,7 @@ const s = StyleSheet.create({
     paddingRight: 40,
     paddingBottom: 84,
     paddingLeft: 40,
-    backgroundColor: BRAND.white,
+    backgroundColor: BRAND.surface,
   },
   letterhead: {
     position: "absolute",
@@ -72,7 +77,7 @@ const s = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 18,
+    marginBottom: 16,
   },
   heroLogo: {
     width: 168,
@@ -86,32 +91,33 @@ const s = StyleSheet.create({
   },
   heroMeta: {
     alignItems: "flex-end",
-    gap: 6,
   },
   badge: {
     borderRadius: 999,
     paddingVertical: 5,
     paddingHorizontal: 10,
-    backgroundColor: BRAND.lightBlue,
-    color: BRAND.blue,
+    backgroundColor: BRAND.blueDeep,
+    color: BRAND.textOnDark,
     fontSize: 8,
     fontWeight: 700,
+    marginBottom: 6,
   },
   badgeMuted: {
-    backgroundColor: BRAND.lightGreen,
-    color: BRAND.navy,
+    backgroundColor: BRAND.greenDeep,
+    color: BRAND.textOnDark,
+    marginBottom: 0,
   },
   titleCard: {
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.96)",
+    backgroundColor: BRAND.navy,
     borderWidth: 1,
-    borderColor: BRAND.border,
-    padding: 18,
-    marginBottom: 14,
+    borderColor: BRAND.blueDeep,
+    padding: 20,
+    marginBottom: 16,
   },
   eyebrow: {
     fontSize: 8,
-    color: BRAND.blue,
+    color: "#a8d0f4",
     fontWeight: 700,
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -120,32 +126,91 @@ const s = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 700,
-    color: BRAND.navy,
+    color: BRAND.textOnDark,
   },
   subtitle: {
     fontSize: 10,
-    color: BRAND.muted,
+    color: "#d7e4f0",
     marginTop: 5,
   },
   dividerRow: {
     flexDirection: "row",
-    gap: 6,
     marginTop: 14,
   },
   dividerGreen: {
     height: 4,
-    width: 76,
+    width: 78,
     borderRadius: 999,
     backgroundColor: BRAND.green,
+    marginRight: 6,
   },
   dividerBlue: {
     height: 4,
     flex: 1,
     borderRadius: 999,
-    backgroundColor: BRAND.blue,
+    backgroundColor: "#4e86bb",
+  },
+  compactHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: 18,
+    backgroundColor: BRAND.navy,
+    borderWidth: 1,
+    borderColor: BRAND.blueDeep,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  compactHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    marginRight: 12,
+  },
+  compactLogo: {
+    width: 116,
+    height: 20,
+    objectFit: "contain",
+    marginRight: 12,
+  },
+  compactHeaderMeta: {
+    alignItems: "flex-end",
+  },
+  compactEyebrow: {
+    fontSize: 7,
+    color: "#a8d0f4",
+    textTransform: "uppercase",
+    marginBottom: 2,
+    letterSpacing: 0.7,
+    fontWeight: 700,
+  },
+  compactTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: BRAND.textOnDark,
+    marginBottom: 2,
+  },
+  compactSubtitle: {
+    fontSize: 8,
+    color: "#d7e4f0",
+  },
+  compactBadge: {
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: "#204b75",
+    color: BRAND.textOnDark,
+    fontSize: 7,
+    fontWeight: 700,
+    marginBottom: 4,
+  },
+  compactBadgeMuted: {
+    backgroundColor: BRAND.greenDeep,
+    marginBottom: 0,
   },
   sectionCard: {
-    backgroundColor: "rgba(255,255,255,0.98)",
+    backgroundColor: BRAND.white,
     borderWidth: 1,
     borderColor: BRAND.border,
     borderRadius: 18,
@@ -161,13 +226,18 @@ const s = StyleSheet.create({
     width: 6,
     height: 18,
     borderRadius: 999,
-    backgroundColor: BRAND.green,
+    backgroundColor: BRAND.blueDeep,
     marginRight: 8,
   },
   sectionTitle: {
     fontSize: 11,
     fontWeight: 700,
     color: BRAND.navy,
+  },
+  sectionLead: {
+    fontSize: 8,
+    color: BRAND.muted,
+    lineHeight: 1.45,
   },
   filterGrid: {
     flexDirection: "row",
@@ -182,7 +252,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: BRAND.border,
-    backgroundColor: BRAND.white,
+    backgroundColor: BRAND.surfaceAlt,
   },
   filterLabel: {
     fontSize: 7,
@@ -198,17 +268,20 @@ const s = StyleSheet.create({
   },
   summaryRow: {
     flexDirection: "row",
-    gap: 10,
   },
   summaryCard: {
     flex: 1,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: BRAND.border,
-    backgroundColor: BRAND.white,
+    backgroundColor: BRAND.surfaceAlt,
     paddingVertical: 12,
     paddingHorizontal: 10,
     alignItems: "center",
+    marginRight: 10,
+  },
+  summaryCardLast: {
+    marginRight: 0,
   },
   summaryValue: {
     fontSize: 18,
@@ -223,8 +296,7 @@ const s = StyleSheet.create({
   },
   chartRow: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   chartCard: {
     flex: 1,
@@ -233,7 +305,11 @@ const s = StyleSheet.create({
     borderColor: BRAND.border,
     backgroundColor: BRAND.white,
     padding: 12,
-    minHeight: 214,
+    minHeight: 224,
+    marginRight: 10,
+  },
+  chartCardLast: {
+    marginRight: 0,
   },
   chartTitle: {
     fontSize: 9,
@@ -260,10 +336,10 @@ const s = StyleSheet.create({
   pieLayout: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
   },
   pieLegend: {
     flex: 1,
+    marginLeft: 10,
   },
   legendItem: {
     flexDirection: "row",
@@ -286,15 +362,14 @@ const s = StyleSheet.create({
     color: BRAND.muted,
     marginLeft: 4,
   },
-  horizontalChart: {
-    gap: 7,
-  },
+  horizontalChart: {},
   horizontalRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 7,
   },
   horizontalLabel: {
-    width: 68,
+    width: 72,
     marginRight: 6,
     fontSize: 7,
     color: BRAND.text,
@@ -306,8 +381,12 @@ const s = StyleSheet.create({
     backgroundColor: BRAND.track,
     overflow: "hidden",
   },
+  horizontalBar: {
+    height: 8,
+    borderRadius: 999,
+  },
   horizontalValue: {
-    width: 30,
+    width: 32,
     marginLeft: 6,
     fontSize: 7,
     color: BRAND.muted,
@@ -326,13 +405,13 @@ const s = StyleSheet.create({
   },
   thead: {
     flexDirection: "row",
-    backgroundColor: BRAND.navy,
+    backgroundColor: BRAND.blueDeep,
     paddingVertical: 7,
     paddingHorizontal: 10,
   },
   th: {
     fontSize: 8,
-    color: BRAND.white,
+    color: BRAND.textOnDark,
     fontWeight: 700,
   },
   tr: {
@@ -364,7 +443,7 @@ const s = StyleSheet.create({
     right: 42,
     bottom: 17,
     fontSize: 8,
-    color: BRAND.white,
+    color: BRAND.navy,
   },
 })
 
@@ -499,7 +578,29 @@ function ReportHeader({
   filters,
   generatedAt,
   logoUrl,
-}: Pick<ReportPdfProps, "filters" | "logoUrl"> & { generatedAt: string }) {
+  compact = false,
+}: Pick<ReportPdfProps, "filters" | "logoUrl"> & { generatedAt: string; compact?: boolean }) {
+  if (compact) {
+    return (
+      <View style={s.compactHeader}>
+        <View style={s.compactHeaderLeft}>
+          {logoUrl ? <Image src={logoUrl} style={s.compactLogo} /> : null}
+          <View>
+            <Text style={s.compactEyebrow}>İş Takip Sistemi</Text>
+            <Text style={s.compactTitle}>Adam/Saat Raporu</Text>
+            <Text style={s.compactSubtitle}>
+              {filters.projectLabel} | {formatDate(filters.from)} - {formatDate(filters.to)}
+            </Text>
+          </View>
+        </View>
+        <View style={s.compactHeaderMeta}>
+          <Text style={s.compactBadge}>{filters.adminStatusLabel}</Text>
+          <Text style={[s.compactBadge, s.compactBadgeMuted]}>Oluşturulma: {generatedAt}</Text>
+        </View>
+      </View>
+    )
+  }
+
   return (
     <>
       <View style={s.hero}>
@@ -537,6 +638,78 @@ function SectionHeader({ title }: { title: string }) {
   )
 }
 
+function FiltersSection({ filters, totalTasks }: { filters: ReportPdfProps["filters"]; totalTasks: number }) {
+  return (
+    <View style={s.sectionCard}>
+      <SectionHeader title="Uygulanan Filtreler" />
+      <View style={s.filterGrid}>
+        <View style={s.filterCard}>
+          <Text style={s.filterLabel}>Proje</Text>
+          <Text style={s.filterValue}>{filters.projectLabel}</Text>
+        </View>
+        <View style={s.filterCard}>
+          <Text style={s.filterLabel}>Tarih Aralığı</Text>
+          <Text style={s.filterValue}>
+            {formatDate(filters.from)} - {formatDate(filters.to)}
+          </Text>
+        </View>
+        <View style={s.filterCard}>
+          <Text style={s.filterLabel}>Onay Durumu</Text>
+          <Text style={s.filterValue}>{filters.adminStatusLabel}</Text>
+        </View>
+        <View style={s.filterCard}>
+          <Text style={s.filterLabel}>Çalışan</Text>
+          <Text style={s.filterValue}>{filters.userLabel}</Text>
+        </View>
+        <View style={s.filterCard}>
+          <Text style={s.filterLabel}>İş Tipi</Text>
+          <Text style={s.filterValue}>{filters.jobTypeLabel}</Text>
+        </View>
+        <View style={s.filterCard}>
+          <Text style={s.filterLabel}>Toplam Kayıt</Text>
+          <Text style={s.filterValue}>{totalTasks} görev</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function SummarySection({
+  totalHours,
+  totalTasks,
+  approvedTasks,
+  completionRate,
+}: {
+  totalHours: number
+  totalTasks: number
+  approvedTasks: number
+  completionRate: number
+}) {
+  return (
+    <View style={s.sectionCard}>
+      <SectionHeader title="Genel Özet" />
+      <View style={s.summaryRow}>
+        <View style={s.summaryCard}>
+          <Text style={s.summaryValue}>{formatHours(totalHours)}</Text>
+          <Text style={s.summaryLabel}>Toplam Adam/Saat</Text>
+        </View>
+        <View style={s.summaryCard}>
+          <Text style={s.summaryValue}>{totalTasks}</Text>
+          <Text style={s.summaryLabel}>Toplam Görev</Text>
+        </View>
+        <View style={s.summaryCard}>
+          <Text style={s.summaryValue}>{approvedTasks}</Text>
+          <Text style={s.summaryLabel}>Onaylanan</Text>
+        </View>
+        <View style={[s.summaryCard, s.summaryCardLast]}>
+          <Text style={s.summaryValue}>%{completionRate}</Text>
+          <Text style={s.summaryLabel}>Tamamlanma</Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
 function VerticalBarChart({ data, color }: { data: MonthlyDatum[]; color: string }) {
   if (data.length === 0) {
     return <Text style={s.chartEmpty}>Bu filtrede grafik verisi yok.</Text>
@@ -553,8 +726,8 @@ function VerticalBarChart({ data, color }: { data: MonthlyDatum[]; color: string
     <View>
       <Svg width={width} height={height}>
         <Line x1={8} y1={baseline} x2={width - 8} y2={baseline} stroke={BRAND.border} strokeWidth={1} />
-        <Line x1={8} y1={20} x2={width - 8} y2={20} stroke={BRAND.border} strokeWidth={0.8} />
-        <Line x1={8} y1={61} x2={width - 8} y2={61} stroke={BRAND.border} strokeWidth={0.8} />
+        <Line x1={8} y1={20} x2={width - 8} y2={20} stroke={BRAND.track} strokeWidth={0.8} />
+        <Line x1={8} y1={61} x2={width - 8} y2={61} stroke={BRAND.track} strokeWidth={0.8} />
         {data.map((item, index) => {
           const x = slotWidth * index + (slotWidth - barWidth) / 2
           const barHeight = Math.max(4, (item.hours / maxValue) * 78)
@@ -622,12 +795,13 @@ function HorizontalBarChart({ data, color, limit = 8 }: { data: HoursDatum[]; co
           <Text style={s.horizontalLabel}>{item.name}</Text>
           <View style={s.horizontalTrack}>
             <View
-              style={{
-                width: `${Math.max(6, (item.hours / maxValue) * 100)}%`,
-                height: 8,
-                backgroundColor: color,
-                borderRadius: 999,
-              }}
+              style={[
+                s.horizontalBar,
+                {
+                  width: `${Math.max(6, (item.hours / maxValue) * 100)}%`,
+                  backgroundColor: color,
+                },
+              ]}
             />
           </View>
           <Text style={s.horizontalValue}>{formatHours(item.hours)}</Text>
@@ -702,77 +876,46 @@ export function ReportPdf({
         <PageBackground letterheadUrl={letterheadUrl} />
         <ReportHeader filters={filters} generatedAt={generatedAt} logoUrl={logoUrl} />
 
-        <View style={s.sectionCard}>
-          <SectionHeader title="Uygulanan Filtreler" />
-          <View style={s.filterGrid}>
-            <View style={s.filterCard}>
-              <Text style={s.filterLabel}>Proje</Text>
-              <Text style={s.filterValue}>{filters.projectLabel}</Text>
-            </View>
-            <View style={s.filterCard}>
-              <Text style={s.filterLabel}>Tarih Aralığı</Text>
-              <Text style={s.filterValue}>
-                {formatDate(filters.from)} - {formatDate(filters.to)}
-              </Text>
-            </View>
-            <View style={s.filterCard}>
-              <Text style={s.filterLabel}>Onay Durumu</Text>
-              <Text style={s.filterValue}>{filters.adminStatusLabel}</Text>
-            </View>
-            <View style={s.filterCard}>
-              <Text style={s.filterLabel}>Çalışan</Text>
-              <Text style={s.filterValue}>{filters.userLabel}</Text>
-            </View>
-            <View style={s.filterCard}>
-              <Text style={s.filterLabel}>İş Tipi</Text>
-              <Text style={s.filterValue}>{filters.jobTypeLabel}</Text>
-            </View>
-            <View style={s.filterCard}>
-              <Text style={s.filterLabel}>Toplam Kayıt</Text>
-              <Text style={s.filterValue}>{totalTasks} görev</Text>
-            </View>
-          </View>
-        </View>
+        <FiltersSection filters={filters} totalTasks={totalTasks} />
+        <SummarySection
+          totalHours={totalHours}
+          totalTasks={totalTasks}
+          approvedTasks={approvedTasks}
+          completionRate={completionRate}
+        />
 
-        <View style={s.sectionCard}>
-          <SectionHeader title="Genel Özet" />
-          <View style={s.summaryRow}>
-            <View style={s.summaryCard}>
-              <Text style={s.summaryValue}>{formatHours(totalHours)}</Text>
-              <Text style={s.summaryLabel}>Toplam Adam/Saat</Text>
-            </View>
-            <View style={s.summaryCard}>
-              <Text style={s.summaryValue}>{totalTasks}</Text>
-              <Text style={s.summaryLabel}>Toplam Görev</Text>
-            </View>
-            <View style={s.summaryCard}>
-              <Text style={s.summaryValue}>{approvedTasks}</Text>
-              <Text style={s.summaryLabel}>Onaylanan</Text>
-            </View>
-            <View style={s.summaryCard}>
-              <Text style={s.summaryValue}>%{completionRate}</Text>
-              <Text style={s.summaryLabel}>Tamamlanma</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={s.chartRow}>
+        <View style={s.chartRow} wrap={false}>
           <View style={s.chartCard}>
             <Text style={s.chartTitle}>Aylık Adam/Saat</Text>
-            <VerticalBarChart data={monthlyData} color={BRAND.blue} />
+            <VerticalBarChart data={monthlyData} color={BRAND.blueDeep} />
           </View>
-          <View style={s.chartCard}>
+          <View style={[s.chartCard, s.chartCardLast]}>
             <Text style={s.chartTitle}>İş Tipine Göre Dağılım</Text>
             <PieChart data={jobTypePieData} />
           </View>
         </View>
 
-        <View style={s.chartRow}>
+        <PageNumber />
+      </Page>
+
+      <Page size="A4" style={s.page}>
+        <PageBackground letterheadUrl={letterheadUrl} />
+        <ReportHeader filters={filters} generatedAt={generatedAt} logoUrl={logoUrl} compact />
+
+        <View style={s.sectionCard}>
+          <SectionHeader title="Operasyonel Dağılım" />
+          <Text style={s.sectionLead}>
+            Tüm grafikler aynı proje, çalışan, iş tipi ve tarih aralığı filtresine göre hazırlanmıştır. Bu sayfa,
+            iş yükünün ekip ve alt tip bazındaki dağılımını daha net göstermek için ayrı düzenlendi.
+          </Text>
+        </View>
+
+        <View style={s.chartRow} wrap={false}>
           <View style={s.chartCard}>
             <Text style={s.chartTitle}>Çalışan Bazlı Adam/Saat</Text>
-            <HorizontalBarChart data={workerData} color={BRAND.green} />
+            <HorizontalBarChart data={workerData} color={BRAND.greenDeep} />
           </View>
-          <View style={s.chartCard}>
+          <View style={[s.chartCard, s.chartCardLast]}>
             <Text style={s.chartTitle}>Alt Tip Bazlı Adam/Saat</Text>
             <HorizontalBarChart data={subTypeData} color={BRAND.blue} />
           </View>
@@ -783,7 +926,7 @@ export function ReportPdf({
 
       <Page size="A4" style={s.page}>
         <PageBackground letterheadUrl={letterheadUrl} />
-        <ReportHeader filters={filters} generatedAt={generatedAt} logoUrl={logoUrl} />
+        <ReportHeader filters={filters} generatedAt={generatedAt} logoUrl={logoUrl} compact />
 
         <BreakdownTable title="İş Tipi Kırılımı" rows={jobTypeRows} totalHours={totalHours} />
         <BreakdownTable title="Alt Tip Kırılımı" rows={subTypeRows} totalHours={totalHours} />

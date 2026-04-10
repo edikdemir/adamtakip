@@ -1,8 +1,11 @@
 "use client"
+
+import Image from "next/image"
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import cemreLoginLogo from "./cemre-login-logo.png"
 
 const ERROR_MESSAGES: Record<string, string> = {
   no_code: "Yetkilendirme kodu alınamadı.",
@@ -21,8 +24,10 @@ function LoginForm() {
   const errorMessage = error ? (ERROR_MESSAGES[error] || "Giriş sırasında bir hata oluştu.") : null
 
   useEffect(() => {
-    fetch("/api/auth/me").then((res) => {
-      if (res.ok) router.replace("/dashboard")
+    fetch("/api/auth/me").then((response) => {
+      if (response.ok) {
+        router.replace("/dashboard")
+      }
     })
   }, [router])
 
@@ -35,26 +40,19 @@ function LoginForm() {
     <Card className="border-zinc-200 shadow-sm">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">Giriş Yap</CardTitle>
-        <CardDescription>
-          Kurumsal Microsoft hesabınızla giriş yapın.
-        </CardDescription>
+        <CardDescription>Kurumsal Microsoft hesabınızla giriş yapın.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {errorMessage && (
-          <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+        {errorMessage ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {errorMessage}
           </div>
-        )}
+        ) : null}
 
-        <Button
-          onClick={handleLogin}
-          disabled={isLoading}
-          className="w-full h-11 text-sm font-medium"
-          size="lg"
-        >
+        <Button onClick={handleLogin} disabled={isLoading} className="h-11 w-full text-sm font-medium" size="lg">
           {isLoading ? (
             <span className="flex items-center gap-2">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
@@ -73,9 +71,10 @@ function LoginForm() {
           )}
         </Button>
 
-        <p className="text-xs text-zinc-500 text-center">
+        <p className="text-center text-xs text-zinc-500">
           Kurumsal @cemreshipyard.com hesabınızla giriş yapınız.
-          <br />Sorun yaşıyorsanız Bilgi İşlem Birimiyle iletişime geçin.
+          <br />
+          Sorun yaşıyorsanız Bilgi İşlem Birimiyle iletişime geçin.
         </p>
       </CardContent>
     </Card>
@@ -84,27 +83,34 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-28 h-28 mb-4 rounded-2xl bg-white border border-zinc-200 shadow-md p-2">
-            <img src="/logo_cemre.png" alt="Cemre Logo" className="w-full h-full object-contain" />
+        <div className="mb-8 text-center">
+          <div className="inline-flex items-center justify-center rounded-[28px] border border-zinc-200 bg-white px-4 py-4 shadow-md">
+            <Image
+              src={cemreLoginLogo}
+              alt="Cemre Shipyard"
+              priority
+              className="h-auto w-[260px] max-w-full rounded-xl object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-zinc-900">Adam Takip</h1>
-          <p className="text-zinc-500 text-sm mt-1">Cemre Tersanesi | Dizayn Departmanı İş Takip Sistemi</p>
+          <h1 className="mt-5 text-2xl font-bold text-zinc-900">Adam Takip</h1>
+          <p className="mt-1 text-sm text-zinc-500">Cemre Tersanesi | Dizayn Departmanı İş Takip Sistemi</p>
         </div>
 
-        <Suspense fallback={
-          <Card className="border-zinc-200 shadow-sm">
-            <CardContent className="p-6">
-              <div className="h-10 bg-zinc-100 rounded animate-pulse" />
-            </CardContent>
-          </Card>
-        }>
+        <Suspense
+          fallback={
+            <Card className="border-zinc-200 shadow-sm">
+              <CardContent className="p-6">
+                <div className="h-10 animate-pulse rounded bg-zinc-100" />
+              </CardContent>
+            </Card>
+          }
+        >
           <LoginForm />
         </Suspense>
 
-        <p className="text-center text-xs text-zinc-400 mt-6">
+        <p className="mt-6 text-center text-xs text-zinc-400">
           © 2026 Cemre Tersanesi Bilgi İşlem Birimi. Tüm hakları saklıdır.
         </p>
       </div>

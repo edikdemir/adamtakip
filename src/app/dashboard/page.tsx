@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { AlertTriangle, Link2, SendHorizonal, Timer, ClipboardList, CheckCircle2 } from "lucide-react"
+import { AlertTriangle, CheckCircle2, ClipboardList, Link2, SendHorizonal, Timer } from "lucide-react"
+import { toast } from "sonner"
 import { CompactTaskTable } from "@/components/tasks/compact-task-table"
 import { LinkTasksDialog } from "@/components/tasks/link-tasks-dialog"
 import { PageHeader } from "@/components/layout/page-header"
@@ -16,11 +17,10 @@ import { useCurrentUser } from "@/hooks/use-current-user"
 import { useJobTypes, useProjects, useZones } from "@/hooks/use-reference-data"
 import { useLocations } from "@/hooks/use-locations"
 import { createTaskFilters, STATUS_FILTER_OPTIONS, TaskFilterState } from "@/lib/tasks/task-filters"
-import { ADMIN_STATUS, ADMIN_STATUS_LABELS, WORKER_STATUS } from "@/lib/constants"
+import { ADMIN_STATUS, WORKER_STATUS } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { useTimerGuard } from "@/hooks/use-timer-guard"
 import { Task } from "@/types/task"
-import { toast } from "sonner"
 
 function normalizeDashboardFilters(filters: TaskFilterState) {
   return {
@@ -52,6 +52,12 @@ export default function DashboardPage() {
   const [linkPrimary, setLinkPrimary] = useState<Task | null>(null)
 
   const { data: tasks = [], isLoading, refetch } = useTasks(normalizeDashboardFilters(filters))
+  const { data: activeTimers = [] } = useTasks({
+    my_tasks: true,
+    timer_state: "running",
+    include_links: true,
+    limit: 10,
+  })
   const { data: projects = [] } = useProjects()
   const { data: jobTypes = [] } = useJobTypes()
   const { data: zones = [] } = useZones(filters.project_id !== "all" ? filters.project_id : "")
@@ -59,8 +65,8 @@ export default function DashboardPage() {
   const updateTask = useUpdateTask()
 
   const runningTimers = useMemo(
-    () => tasks.filter((task) => task.timer_started_at !== null && task.assigned_to === currentUser?.id),
-    [currentUser?.id, tasks]
+    () => activeTimers.filter((task) => task.assigned_to === currentUser?.id),
+    [activeTimers, currentUser?.id]
   )
 
   useTimerGuard(runningTimers.length > 0)
@@ -109,27 +115,39 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
+      {runningTimers.length > 0 ? (
+        <div className="sticky top-0 z-30 -mx-1 rounded-2xl border border-red-200 bg-red-50/95 px-4 py-3 shadow-sm backdrop-blur">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
+              <div className="space-y-1 text-sm text-red-900">
+                <p className="font-semibold">Aktif kronometre çalışıyor.</p>
+                <p>
+                  {runningTimers.length === 1
+                    ? `"${runningTimers[0].drawing_no}" görevinin süresi devam ediyor. Tarayıcıyı kapatmadan veya sayfadan ayrılmadan önce kontrol edin.`
+                    : `${runningTimers.length} görevde aktif kronometre var. Tarayıcıyı kapatmadan veya sayfadan ayrılmadan önce sürelerinizi kontrol edin.`}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {runningTimers.map((task) => (
+                <span
+                  key={task.id}
+                  className="rounded-full border border-red-200 bg-white/90 px-3 py-1 text-xs font-medium text-red-700"
+                >
+                  {task.drawing_no || `Görev #${task.id}`}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <PageHeader
         eyebrow="Çalışan Görünümü"
         title="Görevlerim"
         description="Kendi iş listenizi filtreleyin, kronometrelerinizi yönetin ve görevleri onaya hazırlayın."
       />
-
-      {runningTimers.length > 0 ? (
-        <div className="rounded-[24px] border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-800 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-3 w-3 flex-shrink-0">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-            </span>
-            <span>
-              {runningTimers.length === 1
-                ? `Aktif kronometre var: "${runningTimers[0].drawing_no}". Sayfadan ayrılmadan önce durdurmayı unutmayın.`
-                : `${runningTimers.length} aktif kronometre çalışıyor. Sayfadan ayrılmadan önce sürelerinizi kontrol edin.`}
-            </span>
-          </div>
-        </div>
-      ) : null}
 
       <MetricCardStrip
         items={[
@@ -179,7 +197,10 @@ export default function DashboardPage() {
         }
         renderActions={(task) => {
           const canSubmit = task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR && task.assigned_to === currentUser?.id
-          const canLink = task.linked_to_task_id == null && task.assigned_to === currentUser?.id && task.admin_status !== ADMIN_STATUS.ONAYLANDI
+          const canLink =
+            task.linked_to_task_id == null &&
+            task.assigned_to === currentUser?.id &&
+            task.admin_status !== ADMIN_STATUS.ONAYLANDI
 
           return (
             <div className="flex items-center gap-1">

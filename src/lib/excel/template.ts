@@ -6,11 +6,11 @@ export async function downloadTaskTemplate(): Promise<void> {
     "İş Tipi",
     "İş Alt Tipi",
     "Zone",
-    "Mahal",
+    "Yapılacak Alan",
     "Resim No",
     "Yapılacak İş",
     "Başlama Tarihi",
-    "Hedef Bitiş Tarihi",
+    "Termin",
     "Öncelik",
     "Notlar",
   ]
@@ -30,8 +30,7 @@ export async function downloadTaskTemplate(): Promise<void> {
   ]
 
   const worksheet = XLSX.utils.aoa_to_sheet([headers, example])
-  // Sütun genişlikleri
-  worksheet["!cols"] = headers.map((h) => ({ wch: Math.max(h.length + 2, 14) }))
+  worksheet["!cols"] = headers.map((header) => ({ wch: Math.max(header.length + 2, 14) }))
 
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, "Görevler")
@@ -39,11 +38,11 @@ export async function downloadTaskTemplate(): Promise<void> {
   const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
   const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = "gorev-import-sablon.xlsx"
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = "gorev-import-sablon.xlsx"
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
   URL.revokeObjectURL(url)
 }

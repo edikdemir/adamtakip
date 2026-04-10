@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { use, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
@@ -388,12 +388,12 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                   <TableRow className="bg-zinc-50/80">
                     <TableHead className="w-24">Proje</TableHead>
                     <TableHead>İş Tipi</TableHead>
-                    <TableHead className="w-28">Çizim No</TableHead>
-                    <TableHead>Açıklama</TableHead>
+                    <TableHead className="w-28">Resim No</TableHead>
+                    <TableHead>Yapılacak İş</TableHead>
                     <TableHead className="w-28">Durum</TableHead>
                     <TableHead className="w-20">Öncelik</TableHead>
                     <TableHead className="w-24 text-right">Süre</TableHead>
-                    <TableHead className="w-24">Hedef Bitiş</TableHead>
+                    <TableHead className="w-24">Termin</TableHead>
                     <TableHead className="w-24">Kesin Bitiş</TableHead>
                     <TableHead className="w-24">Onay Tarihi</TableHead>
                   </TableRow>
@@ -486,8 +486,8 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                       <TableHead className="w-40">Tarih / Saat</TableHead>
                       <TableHead className="w-24">İşlem</TableHead>
                       <TableHead className="w-24">Proje</TableHead>
-                      <TableHead className="w-28">Çizim No</TableHead>
-                      <TableHead>Açıklama</TableHead>
+                      <TableHead className="w-28">Resim No</TableHead>
+                      <TableHead>Yapılacak İş</TableHead>
                       <TableHead className="w-28 text-right">O Andaki Süre</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -521,24 +521,24 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                           )}
                           {log.action === "sync" && (
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
-                              ↻ Sync
+                              Sync
                             </span>
                           )}
                           {log.action === "reset" && (
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
-                              ✕ Sıfırla
+                              Sıfırla
                             </span>
                           )}
                         </TableCell>
                         <TableCell className="font-medium text-zinc-700 text-sm">
-                          {log.task?.project?.code ?? "—"}
+                          {log.task?.project?.code ?? "-"}
                         </TableCell>
                         <TableCell className="font-mono text-sm">
-                          {log.task?.drawing_no ?? "—"}
+                          {log.task?.drawing_no ?? "-"}
                         </TableCell>
                         <TableCell className="max-w-[200px]">
                           <p className="text-sm truncate text-zinc-600" title={log.task?.description}>
-                            {log.task?.description ?? "—"}
+                            {log.task?.description ?? "-"}
                           </p>
                         </TableCell>
                         <TableCell className="text-right font-mono text-sm font-semibold text-zinc-700">
@@ -556,3 +556,4 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     </div>
   )
 }
+

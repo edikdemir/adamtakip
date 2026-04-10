@@ -64,9 +64,7 @@ export function buildMonthlyData(tasks: ReportTask[]) {
 
   for (const task of tasks) {
     const date = task.completion_date ?? task.planned_end
-    if (!date) {
-      continue
-    }
+    if (!date) continue
 
     const month = date.slice(0, 7)
     monthlyHours[month] = (monthlyHours[month] ?? 0) + getAdamSaat(task)
@@ -108,9 +106,7 @@ export function buildWorkerData(tasks: ReportTask[]) {
 
   for (const task of tasks) {
     const user = task.assigned_user
-    if (!user) {
-      continue
-    }
+    if (!user) continue
 
     if (!workerHours[user.id]) {
       workerHours[user.id] = { name: user.display_name, hours: 0 }
@@ -147,9 +143,7 @@ export function buildUserReports(tasks: ReportTask[]): UserReport[] {
 
   for (const task of tasks) {
     const user = task.assigned_user
-    if (!user) {
-      continue
-    }
+    if (!user) continue
 
     if (!reportsByUser[user.id]) {
       reportsByUser[user.id] = { user, tasks: [], totalHours: 0 }
@@ -164,7 +158,7 @@ export function buildUserReports(tasks: ReportTask[]): UserReport[] {
 
 export function downloadCSV(tasks: ReportTask[]) {
   const rows = [
-    ["Çalışan", "E-posta", "Proje", "Çizim No", "İş Tipi", "Alt Tip", "Kronometrik (sa)", "Manuel (sa)", "Toplam AdamxSaat (sa)", "Durum", "Tamamlanma"].join(","),
+    ["Çalışan", "E-posta", "Proje", "Resim No", "İş Tipi", "Alt Tip", "Kronometrik (sa)", "Manuel (sa)", "Toplam AdamxSaat (sa)", "Durum", "Tamamlanma"].join(","),
   ]
 
   for (const task of tasks) {

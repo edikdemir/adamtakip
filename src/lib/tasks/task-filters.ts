@@ -84,7 +84,7 @@ export const SORT_OPTIONS = [
   { value: "deadline_desc", label: "Termin en geç" },
   { value: "priority_desc", label: "Öncelik yüksek" },
   { value: "duration_desc", label: "Süre yüksek" },
-  { value: "drawing_asc", label: "Çizim no A-Z" },
+  { value: "drawing_asc", label: "Resim no A-Z" },
 ]
 
 export function createTaskFilters(initial?: Partial<TaskFilterState>): TaskFilterState {
@@ -230,7 +230,7 @@ export function buildTaskFilterChips(
   if (filters.planned_end_from || filters.planned_end_to) {
     chips.push({
       key: "planned_end_range",
-      label: "Hedef bitiş",
+      label: "Termin",
       value: `${filters.planned_end_from || "?"} - ${filters.planned_end_to || "?"}`,
     })
   }

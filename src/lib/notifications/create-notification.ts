@@ -70,7 +70,7 @@ export async function notifyDeadlineWarning(
     user_id: userId,
     type: NOTIFICATION_TYPES.DEADLINE_WARNING,
     title: "Görev Süresi Geçti",
-    body: `${drawingNo} görevinin hedef bitiş tarihi ${daysOverdue} gün önce geçti.`,
+    body: `${drawingNo} görevinin termini ${daysOverdue} gün önce geçti.`,
     task_id: taskId,
   })
 }

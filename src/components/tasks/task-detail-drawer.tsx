@@ -128,7 +128,7 @@ export function TaskDetailDrawer({
                 Takvim
               </div>
               <InfoRow label="Başlangıç" value={formatDate(task.planned_start)} />
-              <InfoRow label="Hedef bitiş" value={formatDate(task.planned_end)} />
+              <InfoRow label="Termin" value={formatDate(task.planned_end)} />
               <InfoRow label="Tamamlanma" value={formatDate(task.completion_date)} />
               <InfoRow label="Onay" value={formatDate(task.approved_at)} />
               <InfoRow label="Oluşturulma" value={formatDateTime(task.created_at)} />

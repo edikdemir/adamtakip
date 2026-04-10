@@ -28,6 +28,7 @@ export interface ExistingTaskKey {
   drawing_no: string
   location: string | null
   job_sub_type_id: string
+  description?: string | null
 }
 
 export interface Lookups {
