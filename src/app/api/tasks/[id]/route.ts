@@ -4,6 +4,7 @@ import { getSessionFromRequest, requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS, USER_ROLES, WORKER_STATUS } from "@/lib/constants"
 import { notifyTaskCompleted } from "@/lib/notifications/create-notification"
 import { sendTaskCompletedEmail } from "@/lib/email/graph-mailer"
+import type { Task } from "@/types/task"
 import { z } from "zod"
 
 const updateSchema = z.object({
@@ -73,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .from("tasks")
     .select(`
       id, assigned_to, assigned_by, admin_status, drawing_no, description,
-      timer_started_at, total_elapsed_seconds,
+      timer_started_at, total_elapsed_seconds, manual_hours, planned_end, priority,
       project:projects(id, code, name),
       job_type:job_types(id, name),
       job_sub_type:job_sub_types(id, name)
@@ -106,6 +107,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.timer_started_at = null
     }
 
+    const emailTask: Task = {
+      ...(task as unknown as Task),
+      ...updates,
+      total_elapsed_seconds:
+        typeof updates.total_elapsed_seconds === "number" ? updates.total_elapsed_seconds : task.total_elapsed_seconds,
+      manual_hours: updates.manual_hours !== undefined ? (updates.manual_hours as number | null) : task.manual_hours,
+      planned_end: updates.planned_end !== undefined ? (updates.planned_end as string | null) : task.planned_end,
+      priority: typeof updates.priority === "string" ? updates.priority : task.priority,
+      timer_started_at: updates.timer_started_at === null ? null : task.timer_started_at,
+    }
+
     // Notify all super_admins
     const { data: admins } = await supabase
       .from("users")
@@ -117,7 +129,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (admins) {
       for (const admin of admins) {
         notifyTaskCompleted(admin.id, parseInt(id), task.drawing_no, assignerName).catch(console.error)
-        sendTaskCompletedEmail(admin.email, admin.display_name, task as unknown as import("@/types/task").Task, assignerName).catch(console.error)
+        sendTaskCompletedEmail(admin.email, admin.display_name, emailTask, assignerName).catch(console.error)
       }
     }
   }

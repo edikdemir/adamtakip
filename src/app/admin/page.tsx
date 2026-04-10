@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { AdminJobPoolSection } from "@/components/admin/job-pool-section"
 import { MetricCardStrip } from "@/components/layout/metric-card-strip"
-import { PageHeader } from "@/components/layout/page-header"
 import { CompactTaskTable } from "@/components/tasks/compact-task-table"
 import { useApproveTask, useCancelTask, useRejectTask, useTasks } from "@/hooks/use-tasks"
 import { useSharedSecond } from "@/hooks/use-shared-second"
@@ -78,17 +77,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        eyebrow="Operasyon Merkezi"
-        title="Admin Genel Bakış"
-        description="İş havuzu, onay bekleyenler ve aktif kronometreleri aynı operasyon akışı içinde yönetin."
-        actions={
-          <Button asChild size="sm" className="rounded-full">
-            <a href="/admin/reports">Raporlara Git</a>
-          </Button>
-        }
-      />
-
       <MetricCardStrip
         items={[
           { label: "İş havuzunda", value: isLoading ? "-" : stats.havuzda, icon: ClipboardList, tone: "slate" },

@@ -50,6 +50,18 @@ function AssigneeCell({ task }: { task: Task }) {
   )
 }
 
+function ProjectCell({ task }: { task: Task }) {
+  return (
+    <div className="space-y-2">
+      <PriorityBadge priority={task.priority} />
+      <div className="space-y-0.5 leading-tight">
+        <span className="block text-sm font-semibold text-zinc-900">{task.project?.code || "-"}</span>
+        {task.project?.name ? <span className="block text-xs text-zinc-500">{task.project.name}</span> : null}
+      </div>
+    </div>
+  )
+}
+
 export function CompactTaskTable({
   tasks,
   isLoading = false,
@@ -69,11 +81,10 @@ export function CompactTaskTable({
           <TableHeader>
             <TableRow className="bg-zinc-50/90 hover:bg-zinc-50/90">
               <TableHead className="hidden w-16 xl:table-cell">ID</TableHead>
-              <TableHead className="hidden w-24 lg:table-cell">Proje</TableHead>
+              <TableHead className="hidden w-36 lg:table-cell">Proje</TableHead>
               <TableHead>Resim No / İş</TableHead>
               {showAssignedUser ? <TableHead className="hidden w-40 text-center xl:table-cell">Atanan</TableHead> : null}
               <TableHead className="hidden w-28 lg:table-cell">Durum</TableHead>
-              <TableHead className="hidden w-24 lg:table-cell">Öncelik</TableHead>
               <TableHead className="hidden w-28 md:table-cell">Termin</TableHead>
               <TableHead className="w-40">Süre / Kronometre</TableHead>
               <TableHead className="w-36 text-right">İşlem</TableHead>
@@ -82,13 +93,13 @@ export function CompactTaskTable({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={showAssignedUser ? 9 : 8} className="py-14 text-center text-zinc-400">
+                <TableCell colSpan={showAssignedUser ? 8 : 7} className="py-14 text-center text-zinc-400">
                   Yükleniyor...
                 </TableCell>
               </TableRow>
             ) : tasks.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={showAssignedUser ? 9 : 8} className="py-14">
+                <TableCell colSpan={showAssignedUser ? 8 : 7} className="py-14">
                   <div className="text-center">
                     <p className="text-sm font-medium text-zinc-600">{emptyTitle}</p>
                     <p className="mt-1 text-sm text-zinc-400">{emptyDescription}</p>
@@ -108,8 +119,8 @@ export function CompactTaskTable({
                     <TableCell className="hidden xl:table-cell">
                       <span className="font-mono text-xs text-zinc-400">#{task.id}</span>
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <span className="font-medium text-zinc-900">{task.project?.code || "-"}</span>
+                    <TableCell className="hidden align-top lg:table-cell">
+                      <ProjectCell task={task} />
                     </TableCell>
                     <TableCell className="min-w-0">
                       <div className="space-y-2">
@@ -121,6 +132,9 @@ export function CompactTaskTable({
                           {task.description || "Yapılacak iş girilmedi"}
                         </p>
                         <div className="flex flex-wrap gap-1.5 text-[11px] text-zinc-500">
+                          <span className="lg:hidden">
+                            <PriorityBadge priority={task.priority} />
+                          </span>
                           <span className="rounded-full bg-zinc-100 px-2 py-0.5">{task.job_type?.name || "İş tipi yok"}</span>
                           {task.job_sub_type?.name ? (
                             <span className="rounded-full bg-zinc-100 px-2 py-0.5">{task.job_sub_type.name}</span>
@@ -140,9 +154,6 @@ export function CompactTaskTable({
                     ) : null}
                     <TableCell className="hidden lg:table-cell">
                       <AdminStatusBadge status={task.admin_status} />
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <PriorityBadge priority={task.priority} />
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <span
