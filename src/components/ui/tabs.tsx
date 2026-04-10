@@ -14,7 +14,6 @@ const TabsList = React.forwardRef<
     ref={ref}
     className={cn(
       "inline-flex h-10 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100/90 p-1 text-zinc-500 shadow-sm",
-      "dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400",
       className
     )}
     {...props}
@@ -32,8 +31,7 @@ const TabsTrigger = React.forwardRef<
       "inline-flex items-center justify-center whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-medium ring-offset-white transition-all",
       "hover:bg-white/80 hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
       "disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-blue-950 data-[state=active]:shadow-sm",
-      "data-[state=active]:ring-1 data-[state=active]:ring-blue-200 dark:ring-offset-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-200",
-      "dark:focus-visible:ring-blue-300 dark:data-[state=active]:bg-zinc-950 dark:data-[state=active]:text-zinc-50 dark:data-[state=active]:ring-zinc-700",
+      "data-[state=active]:ring-1 data-[state=active]:ring-blue-200",
       className
     )}
     {...props}
@@ -49,7 +47,6 @@ const TabsContent = React.forwardRef<
     ref={ref}
     className={cn(
       "mt-2 ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
-      "dark:ring-offset-zinc-950 dark:focus-visible:ring-blue-300",
       className
     )}
     {...props}
