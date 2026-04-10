@@ -42,9 +42,8 @@ export function TaskDetailDrawer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="left-auto right-0 top-0 h-screen max-w-[560px] translate-x-0 translate-y-0 rounded-none border-l border-zinc-200 p-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right">
-        <div className="flex h-full flex-col bg-white">
-          <DialogHeader className="border-b border-zinc-100 px-6 py-5 text-left">
+      <DialogContent className="left-auto right-0 top-0 flex h-screen max-w-[560px] translate-x-0 translate-y-0 flex-col overflow-hidden rounded-none border-l border-zinc-200 p-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right">
+          <DialogHeader className="flex-shrink-0 border-b border-zinc-100 px-6 py-5 pr-14 text-left">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700">
@@ -71,7 +70,7 @@ export function TaskDetailDrawer({
             </div>
           </DialogHeader>
 
-          <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
             <section className="rounded-[24px] border border-zinc-200 bg-zinc-50/70 p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-900">
                 <Timer className="h-4 w-4 text-blue-700" />
@@ -182,7 +181,6 @@ export function TaskDetailDrawer({
               )}
             </section>
           </div>
-        </div>
       </DialogContent>
     </Dialog>
   )

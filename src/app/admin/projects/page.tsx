@@ -120,7 +120,7 @@ export default function ProjectsPage() {
       />
 
       <Tabs defaultValue="projects" className="space-y-4">
-        <div className="rounded-[28px] border border-white/80 bg-white/90 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
           <TabsList className="h-auto flex-wrap gap-2 bg-transparent p-0">
             <TabsTrigger value="projects" className="rounded-full px-4 py-2">
               Projeler
@@ -132,7 +132,7 @@ export default function ProjectsPage() {
         </div>
 
         <TabsContent value="projects">
-          <div className="overflow-hidden rounded-[28px] border border-white/80 bg-white/92 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+          <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow className="bg-zinc-50/90 hover:bg-zinc-50/90">
@@ -263,7 +263,7 @@ function ZonesMahalTab({
   const activeProjects = projects.filter((project) => !project.is_archived)
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-white/80 bg-white/92 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
       <Table>
         <TableHeader>
           <TableRow className="bg-zinc-50/90 hover:bg-zinc-50/90">

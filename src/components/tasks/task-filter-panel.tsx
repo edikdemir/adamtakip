@@ -99,7 +99,7 @@ export function TaskFilterPanel({
   }
 
   return (
-    <section className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+    <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
@@ -176,7 +176,7 @@ export function TaskFilterPanel({
             </SelectContent>
           </Select>
 
-          {!hideAssignedFilter ? (
+          {!hideAssignedFilter && workerHighlights.length === 0 ? (
             <Select value={filters.assigned_to} onValueChange={(value) => onChange("assigned_to", value)}>
               <SelectTrigger className="h-11 rounded-2xl border-zinc-200 bg-zinc-50">
                 <SelectValue placeholder="Çalışan" />

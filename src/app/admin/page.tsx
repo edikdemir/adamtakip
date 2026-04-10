@@ -1,12 +1,12 @@
 "use client"
 
 import { useMemo } from "react"
-import { Activity, BadgeCheck, CheckSquare, ClipboardList, Layers, Timer, UserCheck } from "lucide-react"
+import { BadgeCheck, CheckSquare, ClipboardList, Layers, Timer, UserCheck } from "lucide-react"
 import { AdminJobPoolSection } from "@/components/admin/job-pool-section"
 import { MetricCardStrip } from "@/components/layout/metric-card-strip"
 import { PageHeader } from "@/components/layout/page-header"
 import { CompactTaskTable } from "@/components/tasks/compact-task-table"
-import { PriorityBadge } from "@/components/tasks/task-status-badge"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import { useTasks } from "@/hooks/use-tasks"
 import { useSharedSecond } from "@/hooks/use-shared-second"
 import { ADMIN_STATUS } from "@/lib/constants"
@@ -48,6 +48,33 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-5">
+      {activeTimerTasks.length > 0 && (
+        <div className="sticky top-0 z-20 -mx-1 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 shadow-sm">
+          <div className="flex items-center gap-3 overflow-x-auto">
+            <div className="flex items-center gap-2 text-xs font-semibold text-indigo-700">
+              <Timer className="h-4 w-4" />
+              <span>{activeTimerTasks.length} aktif</span>
+            </div>
+            <div className="h-4 w-px bg-indigo-200" />
+            <div className="flex gap-2">
+              {activeTimerTasks.map((task) => (
+                <div key={task.id} className="flex items-center gap-2 rounded-xl bg-white/80 px-2.5 py-1.5">
+                  {task.assigned_user && (
+                    <UserAvatar displayName={task.assigned_user.display_name} photoUrl={task.assigned_user.photo_url} size="sm" />
+                  )}
+                  <div className="text-xs">
+                    <span className="font-medium text-zinc-700">{task.drawing_no}</span>
+                    <span className="ml-1.5 font-mono font-semibold text-indigo-700">
+                      <LiveElapsed totalElapsedSeconds={task.total_elapsed_seconds} startedAt={task.timer_started_at} />
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <PageHeader
         eyebrow="Operasyon Merkezi"
         title="Admin Genel Bakış"
@@ -71,7 +98,7 @@ export default function AdminDashboardPage() {
       />
 
       <Tabs defaultValue="job-pool" className="space-y-4">
-        <div className="rounded-[28px] border border-white/80 bg-white/90 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
           <TabsList className="h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
             <TabsTrigger value="job-pool" className="rounded-full px-4 py-2">
               İş Havuzu
@@ -116,10 +143,7 @@ export default function AdminDashboardPage() {
             emptyTitle="Aktif kronometre bulunmuyor"
             emptyDescription="Çalışanlar bir görev üzerinde süre başlattığında burada görünür."
             renderDuration={(task) => (
-              <div className="space-y-1">
-                <LiveElapsed totalElapsedSeconds={task.total_elapsed_seconds} startedAt={task.timer_started_at} />
-                <PriorityBadge priority={task.priority} />
-              </div>
+              <LiveElapsed totalElapsedSeconds={task.total_elapsed_seconds} startedAt={task.timer_started_at} />
             )}
           />
         </TabsContent>

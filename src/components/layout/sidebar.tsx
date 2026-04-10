@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import {
   BarChart3,
   Building2,
-  ClipboardCheck,
   FolderKanban,
   LayoutDashboard,
   Settings,
@@ -28,8 +27,6 @@ const userNavItems: NavItem[] = [{ href: "/dashboard", label: "Görevlerim", ico
 
 const adminNavItems: NavItem[] = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard },
-  { href: "/admin/approvals", label: "Onaylar", icon: ClipboardCheck },
-  { href: "/admin/assignments", label: "Atamalar", icon: ClipboardCheck },
   { href: "/admin/users", label: "Kullanıcılar", icon: Users, roles: [USER_ROLES.SUPER_ADMIN] },
   { href: "/admin/projects", label: "Projeler", icon: FolderKanban, roles: [USER_ROLES.SUPER_ADMIN] },
   { href: "/admin/job-types", label: "İş Tipleri", icon: Wrench, roles: [USER_ROLES.SUPER_ADMIN] },
@@ -60,7 +57,7 @@ export function Sidebar() {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/80 bg-white/92 shadow-[0_24px_80px_rgba(15,23,42,0.14)] backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 lg:shadow-none",
+          "fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-zinc-200 bg-white transition-transform duration-300 lg:translate-x-0 lg:shadow-none",
           widthClass,
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}

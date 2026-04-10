@@ -132,7 +132,7 @@ export default function AssignmentsPage() {
         resultCount={assignableTasks.length}
       />
 
-      <section className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-zinc-900">
           <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
             <Users className="h-4 w-4" />

@@ -14,7 +14,7 @@ export function AdminJobPoolSection() {
 
   return (
     <section className="space-y-4">
-      <div className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-blue-700">Ana Operasyon Alanı</p>

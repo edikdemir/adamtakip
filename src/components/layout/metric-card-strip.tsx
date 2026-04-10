@@ -29,7 +29,7 @@ export function MetricCardStrip({ items }: { items: MetricItem[] }) {
         return (
           <div
             key={item.label}
-            className="rounded-[24px] border border-white/80 bg-white/90 p-4 shadow-[0_18px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+            className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

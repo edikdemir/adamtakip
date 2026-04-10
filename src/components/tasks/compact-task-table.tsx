@@ -25,16 +25,15 @@ interface CompactTaskTableProps {
 
 function AssigneeCell({ task }: { task: Task }) {
   if (!task.assigned_user) {
-    return <span className="text-sm text-zinc-400">Atanmamış</span>
+    return <span className="text-xs text-zinc-400">—</span>
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <UserAvatar displayName={task.assigned_user.display_name} photoUrl={task.assigned_user.photo_url} size="sm" />
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-zinc-800">{task.assigned_user.display_name}</p>
-        <p className="truncate text-xs text-zinc-400">{task.assigned_user.email}</p>
-      </div>
+    <div className="flex flex-col items-center gap-1">
+      <UserAvatar displayName={task.assigned_user.display_name} photoUrl={task.assigned_user.photo_url} size="md" />
+      <span className="text-center text-[11px] font-medium leading-tight text-zinc-700 line-clamp-2">
+        {task.assigned_user.display_name}
+      </span>
     </div>
   )
 }
@@ -53,7 +52,7 @@ export function CompactTaskTable({
 
   return (
     <>
-      <div className="overflow-hidden rounded-[28px] border border-white/80 bg-white/92 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="bg-zinc-50/90 hover:bg-zinc-50/90">
@@ -147,7 +146,7 @@ export function CompactTaskTable({
                         {deadlineStatus === "overdue" ? <AlertTriangle className="ml-1 h-3.5 w-3.5" /> : null}
                       </span>
                     </TableCell>
-                    <TableCell>{renderDuration ? renderDuration(task) : <TimeDurationCell task={task} />}</TableCell>
+                    <TableCell onClick={(event) => event.stopPropagation()}>{renderDuration ? renderDuration(task) : <TimeDurationCell task={task} />}</TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-2" onClick={(event) => event.stopPropagation()}>
                         <TaskNoteButton taskId={task.id} drawingNo={task.drawing_no} />
