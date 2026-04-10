@@ -2,7 +2,7 @@
 
 import type { JobType, Project } from "@/types/task"
 import type { ReferenceUser } from "@/hooks/use-reference-data"
-import { ReportPdf, type ReportTask } from "@/lib/pdf/report-pdf"
+import { ReportPdf, registerReportPdfAssets, type ReportTask } from "@/lib/pdf/report-pdf"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { formatDate } from "@/lib/utils"
 
@@ -212,6 +212,9 @@ export async function downloadPdf(
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { pdf } = (await import("@react-pdf/renderer")) as any
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
+  registerReportPdfAssets(baseUrl)
 
   const pdfDocument = (
     <ReportPdf
