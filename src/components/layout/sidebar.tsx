@@ -57,7 +57,7 @@ export function Sidebar() {
       >
         <div
           className={cn(
-            "flex h-[5.25rem] items-center border-b border-zinc-200/80 px-4",
+            "flex h-28 items-center border-b border-zinc-200/80 px-4",
             collapsed ? "justify-center lg:px-3" : "gap-3"
           )}
         >
@@ -65,7 +65,7 @@ export function Sidebar() {
             href={isAdminArea ? "/admin" : "/dashboard"}
             onClick={closeMobileSidebar}
             className={cn(
-              "flex min-w-0 items-center overflow-hidden px-1 py-2 transition-opacity hover:opacity-90",
+              "flex min-w-0 flex-col items-center overflow-hidden px-1 py-2 text-center transition-opacity hover:opacity-90",
               collapsed ? "justify-center lg:h-14 lg:w-14 lg:px-0" : "w-full justify-center"
             )}
             title="Cemre Tersanesi"
@@ -78,6 +78,9 @@ export function Sidebar() {
               priority
               className={cn("h-11 w-auto max-w-full object-contain", collapsed && "lg:h-10 lg:w-auto lg:max-w-none")}
             />
+            <span className={cn("mt-2 text-[11px] font-medium tracking-[0.14em] text-zinc-500", collapsed && "lg:hidden")}>
+              Dizayn Departmanı İş Takip Sistemi
+            </span>
           </Link>
         </div>
 
