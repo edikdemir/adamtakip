@@ -4,6 +4,7 @@ import { getSessionFromRequest } from "@/lib/auth/middleware-auth"
 import { USER_ROLES } from "@/lib/constants"
 import { notifyTaskNote } from "@/lib/notifications/create-notification"
 import { sendTaskNoteEmail } from "@/lib/email/graph-mailer"
+import { TASK_EMAIL_SELECT, toEmailUser, toTaskEmailPayload } from "@/lib/email/task-email-payload"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getSessionFromRequest(req)
@@ -37,10 +38,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: task } = await supabase
     .from("tasks")
     .select(`
-      id, drawing_no, assigned_to, assigned_by,
-      project:projects(id, code, name),
-      job_type:job_types(id, name),
-      job_sub_type:job_sub_types(id, name),
+      ${TASK_EMAIL_SELECT},
+      assigned_to,
+      assigned_by,
       assigned_user:users!assigned_to(id, email, display_name)
     `)
     .eq("id", parseInt(id))
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Notify the other party
-  const assignedUser = task.assigned_user as unknown as { id: string; email: string; display_name: string } | null
+  const assignedUser = toEmailUser(task.assigned_user)
 
   if (user.role === USER_ROLES.USER) {
     // Worker added note → notify all admins
@@ -74,14 +74,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (admins) {
       for (const admin of admins) {
         notifyTaskNote(admin.id, parseInt(id), task.drawing_no, user.display_name).catch(console.error)
-        sendTaskNoteEmail(admin.email, admin.display_name, task as unknown as import("@/types/task").Task, user.display_name, content).catch(console.error)
+        sendTaskNoteEmail(admin.email, admin.display_name, toTaskEmailPayload(task), user.display_name, content).catch(console.error)
       }
     }
   } else {
     // Admin added note → notify worker
     if (assignedUser) {
       notifyTaskNote(assignedUser.id, parseInt(id), task.drawing_no, user.display_name).catch(console.error)
-      sendTaskNoteEmail(assignedUser.email, assignedUser.display_name, task as unknown as import("@/types/task").Task, user.display_name, content).catch(console.error)
+      sendTaskNoteEmail(assignedUser.email, assignedUser.display_name, toTaskEmailPayload(task), user.display_name, content).catch(console.error)
     }
   }
 

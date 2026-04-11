@@ -4,6 +4,7 @@ import { useState } from "react"
 import { AlertTriangle, ChevronRight } from "lucide-react"
 import { Task } from "@/types/task"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 import { AdminStatusBadge, PriorityBadge } from "@/components/tasks/task-status-badge"
 import { TaskDetailDrawer } from "@/components/tasks/task-detail-drawer"
 import { TaskLinkBadge } from "@/components/tasks/task-link-badge"
@@ -21,6 +22,13 @@ interface CompactTaskTableProps {
   renderActions?: (task: Task) => React.ReactNode
   renderDuration?: (task: Task) => React.ReactNode
   rowClassName?: (task: Task) => string | undefined
+  pagination?: {
+    total: number
+    offset: number
+    limit: number
+    hasMore: boolean
+    onOffsetChange: (offset: number) => void
+  }
 }
 
 function splitDisplayName(displayName: string) {
@@ -71,8 +79,11 @@ export function CompactTaskTable({
   renderActions,
   renderDuration,
   rowClassName,
+  pagination,
 }: CompactTaskTableProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const shownStart = pagination && tasks.length > 0 ? pagination.offset + 1 : 0
+  const shownEnd = pagination ? Math.min(pagination.offset + tasks.length, pagination.total) : tasks.length
 
   return (
     <>
@@ -192,6 +203,35 @@ export function CompactTaskTable({
             )}
           </TableBody>
         </Table>
+        {pagination ? (
+          <div className="flex flex-col gap-3 border-t border-zinc-200 bg-zinc-50/70 px-4 py-3 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {pagination.total === 0
+                ? "Görev bulunamadı"
+                : `${shownStart}-${shownEnd} / ${pagination.total} görev gösteriliyor`}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pagination.offset === 0 || isLoading}
+                onClick={() => pagination.onOffsetChange(Math.max(0, pagination.offset - pagination.limit))}
+              >
+                Önceki
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!pagination.hasMore || isLoading}
+                onClick={() => pagination.onOffsetChange(pagination.offset + pagination.limit)}
+              >
+                Sonraki
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <TaskDetailDrawer

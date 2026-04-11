@@ -46,13 +46,20 @@ export function AdminJobPoolSection() {
         jobTypes={state.jobTypes}
         zones={state.zones}
         locations={state.locations}
-        resultCount={state.tasks.length}
+        resultCount={state.taskMeta.total}
         workerHighlights={state.workerHighlights}
       />
 
       <CompactTaskTable
         tasks={state.tasks}
         isLoading={state.isLoading}
+        pagination={{
+          total: state.taskMeta.total,
+          offset: state.taskMeta.offset,
+          limit: state.taskMeta.limit ?? 100,
+          hasMore: state.taskMeta.has_more,
+          onOffsetChange: state.setOffset,
+        }}
         rowClassName={(task) =>
           cn(
             task.admin_status === ADMIN_STATUS.TAMAMLANDI && "bg-amber-50/50",

@@ -3,6 +3,7 @@
 import { keepPreviousData, QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CreateTaskInput, Task } from "@/types/task"
 import { toast } from "sonner"
+import type { TaskListResponse, TaskSummary } from "@/lib/tasks/task-api"
 
 export interface UseTasksParams {
   status?: string
@@ -43,7 +44,7 @@ type TaskMutationConfig<TVariables, TResult> = {
   mutationFn: (variables: TVariables) => Promise<TResult>
   successMessage?: string | ((result: TResult) => string | null)
   updateTaskCaches?: (queryClient: QueryClient, result: TResult) => void
-  invalidateTasks?: boolean
+  invalidateTasks?: boolean | "affected"
   invalidateReports?: boolean
 }
 
@@ -125,8 +126,81 @@ async function readApiPayload<T>(response: Response, fallbackMessage: string): P
   return (payload?.data ?? payload) as T
 }
 
+async function readTaskListPayload(response: Response): Promise<TaskListResponse> {
+  const payload = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(payload?.error || "Görevler yüklenemedi")
+  }
+
+  const data = (payload?.data ?? []) as Task[]
+  const meta = payload?.meta ?? {}
+
+  return {
+    data,
+    meta: {
+      total: Number(meta.total ?? data.length),
+      offset: Number(meta.offset ?? 0),
+      limit: meta.limit == null ? null : Number(meta.limit),
+      has_more: Boolean(meta.has_more),
+    },
+  }
+}
+
+function extractTasksFromCache(value: unknown): Task[] | null {
+  if (Array.isArray(value)) {
+    return value as Task[]
+  }
+
+  if (value && typeof value === "object" && Array.isArray((value as TaskListResponse).data)) {
+    return (value as TaskListResponse).data
+  }
+
+  return null
+}
+
+function writeTasksToCache(currentValue: unknown, nextTasks: Task[]) {
+  if (Array.isArray(currentValue)) {
+    return nextTasks
+  }
+
+  if (currentValue && typeof currentValue === "object" && Array.isArray((currentValue as TaskListResponse).data)) {
+    return {
+      ...(currentValue as TaskListResponse),
+      data: nextTasks,
+    }
+  }
+
+  return currentValue
+}
+
+function isTaskResult(result: unknown): result is Task {
+  return Boolean(result && typeof result === "object" && typeof (result as Task).id === "number")
+}
+
 function taskMatchesQuery(task: Task, params?: UseTasksParams) {
-  if (params?.status && task.admin_status !== params.status) {
+  if (
+    params?.status === "active_work" &&
+    task.admin_status !== "atandi" &&
+    task.admin_status !== "devam_ediyor"
+  ) {
+    return false
+  }
+
+  if (
+    params?.status === "assignable" &&
+    task.admin_status !== "havuzda" &&
+    task.admin_status !== "atandi"
+  ) {
+    return false
+  }
+
+  if (
+    params?.status &&
+    params.status !== "active_work" &&
+    params.status !== "assignable" &&
+    task.admin_status !== params.status
+  ) {
     return false
   }
 
@@ -204,9 +278,10 @@ function mergeTaskIntoCachedLists(queryClient: QueryClient, updatedTask: Task) {
   const taskQueries = queryClient.getQueryCache().findAll({ queryKey: ["tasks"] })
 
   for (const query of taskQueries) {
-    const currentTasks = query.state.data
+    const currentValue = query.state.data
+    const currentTasks = extractTasksFromCache(currentValue)
 
-    if (!Array.isArray(currentTasks)) {
+    if (!currentTasks) {
       continue
     }
 
@@ -220,25 +295,66 @@ function mergeTaskIntoCachedLists(queryClient: QueryClient, updatedTask: Task) {
     const mergedTask = { ...currentTasks[taskIndex], ...updatedTask }
 
     if (!taskMatchesQuery(mergedTask, params)) {
-      queryClient.setQueryData<Task[]>(
+      queryClient.setQueryData(
         query.queryKey,
-        currentTasks.filter((task) => task.id !== updatedTask.id)
+        writeTasksToCache(currentValue, currentTasks.filter((task) => task.id !== updatedTask.id))
       )
       continue
     }
 
     const nextTasks = currentTasks.slice()
     nextTasks[taskIndex] = mergedTask
-    queryClient.setQueryData<Task[]>(query.queryKey, nextTasks)
+    queryClient.setQueryData(query.queryKey, writeTasksToCache(currentValue, nextTasks))
   }
 }
 
-function invalidateActiveTaskQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
+function cacheContainsTask(value: unknown, taskId: number) {
+  return extractTasksFromCache(value)?.some((task) => task.id === taskId) ?? false
+}
+
+function getAffectedTaskQueryHashes(queryClient: QueryClient, affectedTask: Task) {
+  const hashes = new Set<string>()
+  const taskQueries = queryClient.getQueryCache().findAll({ queryKey: ["tasks"] })
+
+  for (const query of taskQueries) {
+    const [, params] = query.queryKey as TaskListQueryKey
+    if (cacheContainsTask(query.state.data, affectedTask.id) || taskMatchesQuery(affectedTask, params)) {
+      hashes.add(query.queryHash)
+    }
+  }
+
+  return hashes
+}
+
+function invalidateActiveTaskQueries(
+  queryClient: QueryClient,
+  affectedTask?: Task,
+  affectedQueryHashes?: Set<string>
+) {
+  if (!affectedTask) {
+    return queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
+  }
+
+  return queryClient.invalidateQueries({
+    queryKey: ["tasks"],
+    refetchType: "active",
+    predicate: (query) => {
+      const [, params] = query.queryKey as TaskListQueryKey
+      return (
+        affectedQueryHashes?.has(query.queryHash) ||
+        cacheContainsTask(query.state.data, affectedTask.id) ||
+        taskMatchesQuery(affectedTask, params)
+      )
+    },
+  })
 }
 
 function invalidateActiveReportQueries(queryClient: QueryClient) {
   return queryClient.invalidateQueries({ queryKey: ["reports"], refetchType: "active" })
+}
+
+function invalidateActiveTaskSummaryQueries(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: ["tasks-summary"], refetchType: "active" })
 }
 
 function useTaskMutation<TVariables, TResult>({
@@ -253,10 +369,14 @@ function useTaskMutation<TVariables, TResult>({
   return useMutation({
     mutationFn,
     onSuccess: async (result) => {
+      const affectedTask = invalidateTasks === "affected" && isTaskResult(result) ? result : undefined
+      const affectedQueryHashes = affectedTask ? getAffectedTaskQueryHashes(queryClient, affectedTask) : undefined
+
       updateTaskCaches?.(queryClient, result)
 
       if (invalidateTasks) {
-        await invalidateActiveTaskQueries(queryClient)
+        await invalidateActiveTaskQueries(queryClient, affectedTask, affectedQueryHashes)
+        await invalidateActiveTaskSummaryQueries(queryClient)
       }
 
       if (invalidateReports) {
@@ -278,11 +398,40 @@ export function useTasks(params?: UseTasksParams) {
   const searchParams = buildTaskSearchParams(params)
   const normalizedParams = normalizeTaskParams(params)
 
-  return useQuery<Task[]>({
+  return useQuery<TaskListResponse, Error, Task[]>({
     queryKey: ["tasks", normalizedParams],
     queryFn: async () => {
       const response = await fetch(`/api/tasks?${searchParams.toString()}`)
-      return readApiPayload<Task[]>(response, "Görevler yüklenemedi")
+      return readTaskListPayload(response)
+    },
+    select: (payload) => payload.data,
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useTaskList(params?: UseTasksParams) {
+  const searchParams = buildTaskSearchParams(params)
+  const normalizedParams = normalizeTaskParams(params)
+
+  return useQuery<TaskListResponse>({
+    queryKey: ["tasks", normalizedParams],
+    queryFn: async () => {
+      const response = await fetch(`/api/tasks?${searchParams.toString()}`)
+      return readTaskListPayload(response)
+    },
+    placeholderData: keepPreviousData,
+  })
+}
+
+export function useTaskSummary(params?: UseTasksParams) {
+  const searchParams = buildTaskSearchParams(params)
+  const normalizedParams = normalizeTaskParams(params)
+
+  return useQuery<TaskSummary>({
+    queryKey: ["tasks-summary", normalizedParams],
+    queryFn: async () => {
+      const response = await fetch(`/api/tasks/summary?${searchParams.toString()}`)
+      return readApiPayload<TaskSummary>(response, "Görev özeti yüklenemedi")
     },
     placeholderData: keepPreviousData,
   })
@@ -317,7 +466,7 @@ export function useAssignTask() {
     },
     successMessage: "Görev atandı",
     updateTaskCaches: mergeTaskIntoCachedLists,
-    invalidateTasks: true,
+    invalidateTasks: "affected",
   })
 }
 
@@ -329,7 +478,7 @@ export function useApproveTask() {
     },
     successMessage: "Görev onaylandı",
     updateTaskCaches: mergeTaskIntoCachedLists,
-    invalidateTasks: true,
+    invalidateTasks: "affected",
     invalidateReports: true,
   })
 }
@@ -347,7 +496,7 @@ export function useRejectTask() {
     },
     successMessage: "Görev revizeye gönderildi",
     updateTaskCaches: mergeTaskIntoCachedLists,
-    invalidateTasks: true,
+    invalidateTasks: "affected",
     invalidateReports: true,
   })
 }
@@ -365,7 +514,7 @@ export function useCancelTask() {
     },
     successMessage: "Görev iptal edildi",
     updateTaskCaches: mergeTaskIntoCachedLists,
-    invalidateTasks: true,
+    invalidateTasks: "affected",
     invalidateReports: true,
   })
 }
@@ -378,7 +527,7 @@ export function useReopenTask() {
     },
     successMessage: "Görev tekrar açıldı",
     updateTaskCaches: mergeTaskIntoCachedLists,
-    invalidateTasks: true,
+    invalidateTasks: "affected",
   })
 }
 
@@ -449,7 +598,7 @@ export function useUpdateTask() {
       return readApiPayload<Task>(response, "Görev güncellenemedi")
     },
     updateTaskCaches: mergeTaskIntoCachedLists,
-    invalidateTasks: true,
+    invalidateTasks: "affected",
     invalidateReports: true,
   })
 }

@@ -11,11 +11,13 @@ import {
   useCreateTask,
   useRejectTask,
   useReopenTask,
-  useTasks,
+  useTaskList,
 } from "@/hooks/use-tasks"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { createTaskFilters, TaskFilterState } from "@/lib/tasks/task-filters"
 import { CreateTaskInput, Task } from "@/types/task"
+
+const TASK_PAGE_SIZE = 100
 
 export interface JobPoolFormState {
   project_id: string
@@ -55,7 +57,7 @@ function createEmptyForm(today: string): JobPoolFormState {
   }
 }
 
-function normalizeTaskFilters(filters: TaskFilterState, deferredSearch: string): UseTasksParams {
+function normalizeTaskFilters(filters: TaskFilterState, deferredSearch: string, offset: number): UseTasksParams {
   return {
     status: filters.status !== "all" ? filters.status : undefined,
     project_id: filters.project_id !== "all" ? filters.project_id : undefined,
@@ -76,6 +78,8 @@ function normalizeTaskFilters(filters: TaskFilterState, deferredSearch: string):
     search: deferredSearch || undefined,
     sort: filters.sort,
     include_links: true,
+    limit: TASK_PAGE_SIZE,
+    offset,
   }
 }
 
@@ -91,11 +95,14 @@ export function useAdminJobPool() {
   const [cancelReason, setCancelReason] = useState("")
   const [selectedUserId, setSelectedUserId] = useState("")
   const [form, setForm] = useState<JobPoolFormState>(() => createEmptyForm(today))
+  const [offset, setOffset] = useState(0)
 
   const deferredSearch = useDeferredValue(filters.search.trim())
-  const queryParams = useMemo(() => normalizeTaskFilters(filters, deferredSearch), [deferredSearch, filters])
+  const queryParams = useMemo(() => normalizeTaskFilters(filters, deferredSearch, offset), [deferredSearch, filters, offset])
 
-  const { data: tasks = [], isLoading } = useTasks(queryParams)
+  const { data: taskList, isLoading } = useTaskList(queryParams)
+  const tasks = taskList?.data ?? []
+  const taskMeta = taskList?.meta ?? { total: 0, offset, limit: TASK_PAGE_SIZE, has_more: false }
   const { data: projects = [] } = useProjects()
   const { data: jobTypes = [] } = useJobTypes()
   const { data: users = [] } = useUsers()
@@ -163,6 +170,7 @@ export function useAdminJobPool() {
   const resetForm = () => setForm(createEmptyForm(today))
 
   const updateFilter = (key: keyof TaskFilterState, value: string) => {
+    setOffset(0)
     setFilters((current) => {
       const next = { ...current, [key]: value }
 
@@ -179,7 +187,10 @@ export function useAdminJobPool() {
     })
   }
 
-  const resetFilters = () => setFilters(createTaskFilters())
+  const resetFilters = () => {
+    setOffset(0)
+    setFilters(createTaskFilters())
+  }
 
   const handleCreate = async () => {
     const payload: CreateTaskInput = {
@@ -246,6 +257,7 @@ export function useAdminJobPool() {
     selectedUserId,
     form,
     tasks,
+    taskMeta,
     projects,
     jobTypes,
     users,
@@ -274,6 +286,7 @@ export function useAdminJobPool() {
     setSelectedUserId,
     setForm,
     setFilters,
+    setOffset,
     setFilter: updateFilter,
     resetFilters,
     handleCreate,

@@ -14,11 +14,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Download, Upload, FileSpreadsheet, AlertCircle, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { parseTasksXlsx } from "@/lib/excel/parse-tasks"
+import { buildTaskDuplicateKey, parseTasksXlsx } from "@/lib/excel/parse-tasks"
 import { downloadTaskTemplate } from "@/lib/excel/template"
 import type { Lookups, ParsedRow, RowStatus } from "@/lib/excel/types"
 import { useAllZones, useJobTypes, useProjects } from "@/hooks/use-reference-data"
-import { useBulkImportTasks, useTasks } from "@/hooks/use-tasks"
+import { useBulkImportTasks } from "@/hooks/use-tasks"
 import { toast } from "sonner"
 
 interface ImportTasksDialogProps {
@@ -43,8 +43,6 @@ const STATUS_COLORS: Record<RowStatus, string> = {
 }
 
 export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps) {
-  const { data: existingTasks = [] } = useTasks()
-
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [fileName, setFileName] = useState("")
   const [parsing, setParsing] = useState(false)
@@ -79,16 +77,33 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
         })),
       })),
       zones,
-      existing: existingTasks.map((task) => ({
-        project_id: task.project_id,
-        drawing_no: task.drawing_no,
-        location: task.location ?? null,
-        job_sub_type_id: task.job_sub_type_id,
-        description: task.description,
-      })),
     }),
-    [projects, jobTypes, zones, existingTasks]
+    [projects, jobTypes, zones]
   )
+
+  const findDbDuplicateKeys = async (parsedRows: ParsedRow[]) => {
+    const tasks = parsedRows
+      .filter((row) => row.status === "valid")
+      .map((row) => row.fields)
+      .filter((fields) => fields.project_id && fields.job_sub_type_id && fields.description)
+
+    if (tasks.length === 0) {
+      return new Set<string>()
+    }
+
+    const response = await fetch("/api/tasks/duplicates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tasks }),
+    })
+    const payload = await response.json()
+
+    if (!response.ok) {
+      throw new Error(payload?.error || "Duplicate kontrolü yapılamadı")
+    }
+
+    return new Set<string>(payload?.data?.duplicate_keys ?? [])
+  }
 
   const handleFile = async (file: File) => {
     setParsing(true)
@@ -101,7 +116,24 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
       if (result.fileError) {
         setFileError(result.fileError)
       } else {
-        setRows(result.rows)
+        const duplicateKeys = await findDbDuplicateKeys(result.rows)
+        setRows(
+          result.rows.map((row) => {
+            if (row.status !== "valid" || !row.fields.project_id || !row.fields.job_sub_type_id) {
+              return row
+            }
+
+            const key = buildTaskDuplicateKey(
+              row.fields.project_id,
+              row.fields.drawing_no ?? "",
+              row.fields.location,
+              row.fields.job_sub_type_id,
+              row.fields.description
+            )
+
+            return duplicateKeys.has(key) ? { ...row, status: "duplicate-db", selected: false } : row
+          })
+        )
       }
     } catch (error) {
       setFileError((error as Error).message)

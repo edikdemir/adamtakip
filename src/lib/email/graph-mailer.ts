@@ -1,6 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server"
-import { Task } from "@/types/task"
-import { User } from "@/types/user"
+import type { EmailUser, TaskEmailPayload } from "@/lib/email/task-email-payload"
 
 type EmailSettings = {
   enabled: boolean
@@ -161,7 +160,7 @@ function taskDetailTable(rows: Array<[string, string | null | undefined]>): stri
 </table>`
 }
 
-function withTaskIdRow(task: Task, rows: Array<[string, string | null | undefined]>) {
+function withTaskIdRow(task: TaskEmailPayload, rows: Array<[string, string | null | undefined]>) {
   return [["ID", `#${task.id}`], ...rows] as Array<[string, string | null | undefined]>
 }
 
@@ -196,7 +195,7 @@ function greeting(name: string): string {
   return `<p style="color:#18181b;font-size:15px;margin:0 0 20px;">Merhaba <strong>${escapeHtml(name)}</strong>,</p>`
 }
 
-function getProjectLabel(task: Task): string | null {
+function getProjectLabel(task: TaskEmailPayload): string | null {
   if (!task.project?.code) {
     return null
   }
@@ -204,16 +203,16 @@ function getProjectLabel(task: Task): string | null {
   return task.project.name ? `${task.project.code} | ${task.project.name}` : task.project.code
 }
 
-function getTaskLabel(task: Task): string {
+function getTaskLabel(task: TaskEmailPayload): string {
   return task.drawing_no?.trim() || `Görev #${task.id}`
 }
 
-function getTaskHours(task: Task): string | null {
+function getTaskHours(task: TaskEmailPayload): string | null {
   const totalHours = ((task.total_elapsed_seconds || 0) / 3600 + (task.manual_hours || 0)).toFixed(1)
   return totalHours !== "0.0" ? `${totalHours} saat` : null
 }
 
-export async function sendTaskAssignedEmail(user: User, task: Task): Promise<void> {
+export async function sendTaskAssignedEmail(user: EmailUser, task: TaskEmailPayload): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings.send_on_assign) {
     return
@@ -243,7 +242,7 @@ export async function sendTaskAssignedEmail(user: User, task: Task): Promise<voi
   )
 }
 
-export async function sendTaskApprovedEmail(user: User, task: Task): Promise<void> {
+export async function sendTaskApprovedEmail(user: EmailUser, task: TaskEmailPayload): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings.send_on_approve) {
     return
@@ -271,7 +270,7 @@ export async function sendTaskApprovedEmail(user: User, task: Task): Promise<voi
   )
 }
 
-export async function sendTaskRejectedEmail(user: User, task: Task, reason?: string): Promise<void> {
+export async function sendTaskRejectedEmail(user: EmailUser, task: TaskEmailPayload, reason?: string): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || !settings.send_on_reject) {
     return
@@ -305,7 +304,7 @@ export async function sendTaskRejectedEmail(user: User, task: Task, reason?: str
   )
 }
 
-export async function sendTaskCancelledEmail(user: User, task: Task, reason?: string): Promise<void> {
+export async function sendTaskCancelledEmail(user: EmailUser, task: TaskEmailPayload, reason?: string): Promise<void> {
   const settings = await getEmailSettings()
   if (!settings?.enabled || settings.send_on_cancel === false) {
     return
@@ -341,7 +340,7 @@ export async function sendTaskCancelledEmail(user: User, task: Task, reason?: st
 export async function sendOverdueEmail(
   recipientEmail: string,
   recipientName: string,
-  task: Task,
+  task: TaskEmailPayload,
   daysOverdue: number,
   recipientRole: "user" | "admin"
 ): Promise<void> {
@@ -394,7 +393,7 @@ export async function sendOverdueEmail(
 export async function sendTaskNoteEmail(
   recipientEmail: string,
   recipientName: string,
-  task: Task,
+  task: TaskEmailPayload,
   senderName: string,
   noteContent: string
 ): Promise<void> {
@@ -432,7 +431,7 @@ export async function sendTaskNoteEmail(
 export async function sendTaskCompletedEmail(
   adminEmail: string,
   adminName: string,
-  task: Task,
+  task: TaskEmailPayload,
   workerName: string
 ): Promise<void> {
   const settings = await getEmailSettings()

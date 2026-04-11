@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TaskRowTimer } from "@/components/tasks/task-row-timer"
 import { TimeDurationCell } from "@/components/tasks/time-duration-cell"
-import { useTasks, useUpdateTask } from "@/hooks/use-tasks"
+import { useTaskList, useTasks, useTaskSummary, useUpdateTask } from "@/hooks/use-tasks"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { useJobTypes, useProjects, useZones } from "@/hooks/use-reference-data"
 import { useLocations } from "@/hooks/use-locations"
@@ -21,7 +21,9 @@ import { cn } from "@/lib/utils"
 import { useTimerGuard } from "@/hooks/use-timer-guard"
 import { Task } from "@/types/task"
 
-function normalizeDashboardFilters(filters: TaskFilterState) {
+const TASK_PAGE_SIZE = 100
+
+function normalizeDashboardFilters(filters: TaskFilterState, offset: number) {
   return {
     my_tasks: true,
     include_links: true,
@@ -41,47 +43,9 @@ function normalizeDashboardFilters(filters: TaskFilterState) {
     planned_end_to: filters.planned_end_to || undefined,
     search: filters.search || undefined,
     sort: filters.sort,
+    limit: TASK_PAGE_SIZE,
+    offset,
   }
-}
-
-function isToday(dateValue?: string | null) {
-  if (!dateValue) {
-    return false
-  }
-
-  const date = new Date(dateValue)
-  if (Number.isNaN(date.getTime())) {
-    return false
-  }
-
-  const now = new Date()
-
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  )
-}
-
-function isOverdue(task: Task) {
-  if (!task.planned_end) {
-    return false
-  }
-
-  if (
-    task.admin_status === ADMIN_STATUS.ONAYLANDI ||
-    task.admin_status === ADMIN_STATUS.IPTAL ||
-    task.admin_status === ADMIN_STATUS.TAMAMLANDI
-  ) {
-    return false
-  }
-
-  const plannedEnd = new Date(task.planned_end)
-  if (Number.isNaN(plannedEnd.getTime())) {
-    return false
-  }
-
-  return plannedEnd.getTime() < Date.now()
 }
 
 export default function DashboardPage() {
@@ -89,14 +53,31 @@ export default function DashboardPage() {
   const [filters, setFilters] = useState<TaskFilterState>(() => createTaskFilters())
   const [completionTask, setCompletionTask] = useState<Task | null>(null)
   const [linkPrimary, setLinkPrimary] = useState<Task | null>(null)
+  const [activeOffset, setActiveOffset] = useState(0)
+  const [approvalOffset, setApprovalOffset] = useState(0)
+  const [allOffset, setAllOffset] = useState(0)
 
-  const { data: baseTasks = [], isLoading: isBaseLoading, refetch: refetchBaseTasks } = useTasks({
+  const { data: dashboardSummary } = useTaskSummary({
+    my_tasks: true,
+  })
+  const { data: activeList, isLoading: isActiveLoading, refetch: refetchActiveTasks } = useTaskList({
     my_tasks: true,
     include_links: true,
+    status: "active_work",
+    limit: TASK_PAGE_SIZE,
+    offset: activeOffset,
   })
-  const { data: filteredTasks = [], isLoading: isFilteredLoading, refetch: refetchFilteredTasks } = useTasks(
-    normalizeDashboardFilters(filters)
+  const { data: approvalList, isLoading: isApprovalLoading, refetch: refetchApprovalTasks } = useTaskList({
+    my_tasks: true,
+    include_links: true,
+    status: ADMIN_STATUS.TAMAMLANDI,
+    limit: TASK_PAGE_SIZE,
+    offset: approvalOffset,
+  })
+  const { data: filteredList, isLoading: isFilteredLoading, refetch: refetchFilteredTasks } = useTaskList(
+    normalizeDashboardFilters(filters, allOffset)
   )
+  const { data: filteredSummary } = useTaskSummary(normalizeDashboardFilters(filters, 0))
   const { data: activeTimers = [] } = useTasks({
     my_tasks: true,
     timer_state: "running",
@@ -108,32 +89,28 @@ export default function DashboardPage() {
   const { data: zones = [] } = useZones(filters.project_id !== "all" ? filters.project_id : "")
   const { data: locations = [] } = useLocations(filters.project_id !== "all" ? filters.project_id : undefined)
   const updateTask = useUpdateTask()
+  const activeWorkTasks = activeList?.data ?? []
+  const waitingApprovalTasks = approvalList?.data ?? []
+  const filteredTasks = filteredList?.data ?? []
+  const allUserTasksForLink = [...activeWorkTasks, ...waitingApprovalTasks, ...filteredTasks]
 
   const runningTimers = useMemo(
     () => activeTimers.filter((task) => task.assigned_to === currentUser?.id),
     [activeTimers, currentUser?.id]
   )
 
-  const activeWorkTasks = useMemo(
-    () =>
-      baseTasks.filter(
-        (task) => task.admin_status === ADMIN_STATUS.ATANDI || task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR
-      ),
-    [baseTasks]
-  )
-
-  const waitingApprovalTasks = useMemo(
-    () => baseTasks.filter((task) => task.admin_status === ADMIN_STATUS.TAMAMLANDI),
-    [baseTasks]
-  )
-
-  const updatedTodayCount = useMemo(() => baseTasks.filter((task) => isToday(task.updated_at)).length, [baseTasks])
-
-  const overdueFilteredCount = useMemo(() => filteredTasks.filter(isOverdue).length, [filteredTasks])
+  const updatedTodayCount = dashboardSummary?.updated_today_count ?? 0
+  const waitingApprovalCount = dashboardSummary?.by_status?.[ADMIN_STATUS.TAMAMLANDI] ?? 0
+  const activeWorkCount =
+    (dashboardSummary?.by_status?.[ADMIN_STATUS.ATANDI] ?? 0) +
+    (dashboardSummary?.by_status?.[ADMIN_STATUS.DEVAM_EDIYOR] ?? 0)
+  const filteredTotal = filteredList?.meta.total ?? 0
+  const overdueFilteredCount = filteredSummary?.overdue_count ?? 0
 
   useTimerGuard(runningTimers.length > 0)
 
   const handleFilterChange = (key: keyof TaskFilterState, value: string) => {
+    setAllOffset(0)
     setFilters((current) => {
       const next = { ...current, [key]: value }
 
@@ -151,7 +128,8 @@ export default function DashboardPage() {
   }
 
   const refetchDashboardTasks = () => {
-    void refetchBaseTasks()
+    void refetchActiveTasks()
+    void refetchApprovalTasks()
     void refetchFilteredTasks()
   }
 
@@ -255,7 +233,7 @@ export default function DashboardPage() {
 
         <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">Onay Akışı</p>
-          <p className="mt-2 text-sm font-semibold text-amber-700">{waitingApprovalTasks.length} görev onay bekliyor</p>
+          <p className="mt-2 text-sm font-semibold text-amber-700">{waitingApprovalCount} görev onay bekliyor</p>
           <p className="mt-1 text-xs text-zinc-500">Tamamlayıp gönderdiğiniz işler bu sekmede izlenir.</p>
         </div>
 
@@ -270,13 +248,13 @@ export default function DashboardPage() {
         <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
           <TabsList className="h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
             <TabsTrigger value="active" className="rounded-full px-4 py-2">
-              Aktif İşler ({activeWorkTasks.length})
+              Aktif İşler ({activeWorkCount})
             </TabsTrigger>
             <TabsTrigger value="approval" className="rounded-full px-4 py-2">
-              Onay Bekliyor ({waitingApprovalTasks.length})
+              Onay Bekliyor ({waitingApprovalCount})
             </TabsTrigger>
             <TabsTrigger value="all" className="rounded-full px-4 py-2">
-              Tüm Görevler ({filteredTasks.length})
+              Tüm Görevler ({filteredTotal})
             </TabsTrigger>
           </TabsList>
         </div>
@@ -284,8 +262,15 @@ export default function DashboardPage() {
         <TabsContent value="active" className="space-y-4">
           <CompactTaskTable
             tasks={activeWorkTasks}
-            isLoading={isBaseLoading}
+            isLoading={isActiveLoading}
             showAssignedUser={false}
+            pagination={{
+              total: activeList?.meta.total ?? 0,
+              offset: activeList?.meta.offset ?? activeOffset,
+              limit: activeList?.meta.limit ?? TASK_PAGE_SIZE,
+              hasMore: activeList?.meta.has_more ?? false,
+              onOffsetChange: setActiveOffset,
+            }}
             emptyTitle="Aktif iş bulunamadı"
             emptyDescription="Atanan veya devam eden görevleriniz burada görünecek."
             rowClassName={(task) =>
@@ -302,8 +287,15 @@ export default function DashboardPage() {
         <TabsContent value="approval" className="space-y-4">
           <CompactTaskTable
             tasks={waitingApprovalTasks}
-            isLoading={isBaseLoading}
+            isLoading={isApprovalLoading}
             showAssignedUser={false}
+            pagination={{
+              total: approvalList?.meta.total ?? 0,
+              offset: approvalList?.meta.offset ?? approvalOffset,
+              limit: approvalList?.meta.limit ?? TASK_PAGE_SIZE,
+              hasMore: approvalList?.meta.has_more ?? false,
+              onOffsetChange: setApprovalOffset,
+            }}
             emptyTitle="Onay bekleyen görev bulunmuyor"
             emptyDescription="Tamamlayıp onaya gönderdiğiniz görevler burada listelenecek."
             rowClassName={() => "bg-amber-50/40"}
@@ -314,20 +306,23 @@ export default function DashboardPage() {
           <TaskFilterPanel
             filters={filters}
             onChange={handleFilterChange}
-            onReset={() => setFilters(createTaskFilters())}
+            onReset={() => {
+              setAllOffset(0)
+              setFilters(createTaskFilters())
+            }}
             projects={projects}
             users={[]}
             jobTypes={jobTypes}
             zones={zones}
             locations={locations}
-            resultCount={filteredTasks.length}
+            resultCount={filteredTotal}
             statusOptions={statusOptions}
             hideAssignedFilter
           />
 
           <div className="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-zinc-900">{filteredTasks.length} görev bulundu</p>
+              <p className="text-sm font-semibold text-zinc-900">{filteredTotal} görev bulundu</p>
               <p className="text-xs text-zinc-500">Filtreler yalnızca bu sekmedeki görev listesini etkiler.</p>
             </div>
             <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
@@ -339,6 +334,13 @@ export default function DashboardPage() {
             tasks={filteredTasks}
             isLoading={isFilteredLoading}
             showAssignedUser={false}
+            pagination={{
+              total: filteredList?.meta.total ?? 0,
+              offset: filteredList?.meta.offset ?? allOffset,
+              limit: filteredList?.meta.limit ?? TASK_PAGE_SIZE,
+              hasMore: filteredList?.meta.has_more ?? false,
+              onOffsetChange: setAllOffset,
+            }}
             emptyTitle="Görev bulunamadı"
             emptyDescription="Filtreleri değiştirerek farklı görevleri görebilirsiniz."
             rowClassName={(task) =>
@@ -377,7 +379,7 @@ export default function DashboardPage() {
         open={!!linkPrimary}
         onOpenChange={(open) => !open && setLinkPrimary(null)}
         primary={linkPrimary}
-        allUserTasks={baseTasks.filter((task) => task.assigned_to === currentUser?.id)}
+        allUserTasks={allUserTasksForLink.filter((task) => task.assigned_to === currentUser?.id)}
       />
     </div>
   )

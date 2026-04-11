@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { ADMIN_STATUS, USER_ROLES } from "@/lib/constants"
 import { notifyDeadlineWarning } from "@/lib/notifications/create-notification"
 import { sendOverdueEmail } from "@/lib/email/graph-mailer"
-import { Task } from "@/types/task"
+import { TASK_EMAIL_SELECT, toEmailUser, toTaskEmailPayload } from "@/lib/email/task-email-payload"
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization")
@@ -18,10 +18,7 @@ export async function GET(req: NextRequest) {
   const { data: tasks, error } = await supabase
     .from("tasks")
     .select(`
-      *,
-      project:projects(id, code, name),
-      job_type:job_types(id, name),
-      job_sub_type:job_sub_types(id, name),
+      ${TASK_EMAIL_SELECT},
       assigned_user:users!assigned_to(id, email, display_name)
     `)
     .lt("planned_end", today)
@@ -42,16 +39,17 @@ export async function GET(req: NextRequest) {
   const checked = tasks?.length || 0
 
   for (const task of tasks || []) {
-    const t = task as unknown as Task & { assigned_user: { id: string; email: string; display_name: string } | null }
+    const t = toTaskEmailPayload(task)
+    const assignedUser = toEmailUser(task.assigned_user)
     const dueDate = new Date(t.planned_end!)
     const daysOverdue = Math.max(1, Math.floor((Date.now() - dueDate.getTime()) / 86400000))
 
     const userOnly = t.admin_status !== ADMIN_STATUS.TAMAMLANDI
 
     // Notify assigned user (only if not already submitted for approval)
-    if (userOnly && t.assigned_user) {
-      notifyDeadlineWarning(t.assigned_user.id, t.id, t.drawing_no, daysOverdue).catch(console.error)
-      sendOverdueEmail(t.assigned_user.email, t.assigned_user.display_name, t, daysOverdue, "user").catch(console.error)
+    if (userOnly && assignedUser) {
+      notifyDeadlineWarning(assignedUser.id, t.id, t.drawing_no, daysOverdue).catch(console.error)
+      sendOverdueEmail(assignedUser.email, assignedUser.display_name, t, daysOverdue, "user").catch(console.error)
     }
 
     // Notify all super_admins

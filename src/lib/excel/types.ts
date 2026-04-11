@@ -35,7 +35,7 @@ export interface Lookups {
   projects: LookupProject[]
   jobTypes: LookupJobType[]
   zones: LookupZone[]
-  existing: ExistingTaskKey[]
+  existing?: ExistingTaskKey[]
 }
 
 export interface ParsedRowFields extends Record<string, unknown> {

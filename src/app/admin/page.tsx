@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { BadgeCheck, Ban, Check, CheckSquare, ClipboardList, Layers, RotateCcw, Timer, UserCheck } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -9,12 +9,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AdminJobPoolSection } from "@/components/admin/job-pool-section"
 import { MetricCardStrip } from "@/components/layout/metric-card-strip"
 import { CompactTaskTable } from "@/components/tasks/compact-task-table"
-import { useApproveTask, useCancelTask, useRejectTask, useTasks } from "@/hooks/use-tasks"
+import { useApproveTask, useCancelTask, useRejectTask, useTaskList, useTaskSummary } from "@/hooks/use-tasks"
 import { useSharedSecond } from "@/hooks/use-shared-second"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
 import { formatDuration } from "@/lib/utils"
 import { Task } from "@/types/task"
+
+const TASK_PAGE_SIZE = 100
 
 function LiveElapsed({ totalElapsedSeconds, startedAt }: { totalElapsedSeconds: number; startedAt: string | null }) {
   useSharedSecond()
@@ -27,7 +29,21 @@ function LiveElapsed({ totalElapsedSeconds, startedAt }: { totalElapsedSeconds: 
 }
 
 export default function AdminDashboardPage() {
-  const { data: tasks = [], isLoading } = useTasks({ include_links: true })
+  const [approvalsOffset, setApprovalsOffset] = useState(0)
+  const [timersOffset, setTimersOffset] = useState(0)
+  const { data: summary, isLoading: isSummaryLoading } = useTaskSummary()
+  const { data: approvalsList, isLoading: isApprovalsLoading } = useTaskList({
+    status: ADMIN_STATUS.TAMAMLANDI,
+    include_links: true,
+    limit: TASK_PAGE_SIZE,
+    offset: approvalsOffset,
+  })
+  const { data: timersList, isLoading: isTimersLoading } = useTaskList({
+    timer_state: "running",
+    include_links: true,
+    limit: TASK_PAGE_SIZE,
+    offset: timersOffset,
+  })
   const approveTask = useApproveTask()
   const rejectTaskMutation = useRejectTask()
   const cancelTaskMutation = useCancelTask()
@@ -37,23 +53,16 @@ export default function AdminDashboardPage() {
   const [cancelTask, setCancelTask] = useState<Task | null>(null)
   const [cancelReason, setCancelReason] = useState("")
 
-  const stats = useMemo(
-    () => ({
-      havuzda: tasks.filter((task) => task.admin_status === ADMIN_STATUS.HAVUZDA).length,
-      atandi: tasks.filter((task) => task.admin_status === ADMIN_STATUS.ATANDI).length,
-      devamEdiyor: tasks.filter((task) => task.admin_status === ADMIN_STATUS.DEVAM_EDIYOR).length,
-      tamamlandi: tasks.filter((task) => task.admin_status === ADMIN_STATUS.TAMAMLANDI).length,
-      onaylandi: tasks.filter((task) => task.admin_status === ADMIN_STATUS.ONAYLANDI).length,
-      aktifTimer: tasks.filter((task) => task.timer_started_at !== null).length,
-    }),
-    [tasks]
-  )
-
-  const activeTimerTasks = useMemo(() => tasks.filter((task) => task.timer_started_at !== null), [tasks])
-  const pendingApprovalTasks = useMemo(
-    () => tasks.filter((task) => task.admin_status === ADMIN_STATUS.TAMAMLANDI),
-    [tasks]
-  )
+  const stats = {
+    havuzda: summary?.by_status?.[ADMIN_STATUS.HAVUZDA] ?? 0,
+    atandi: summary?.by_status?.[ADMIN_STATUS.ATANDI] ?? 0,
+    devamEdiyor: summary?.by_status?.[ADMIN_STATUS.DEVAM_EDIYOR] ?? 0,
+    tamamlandi: summary?.by_status?.[ADMIN_STATUS.TAMAMLANDI] ?? 0,
+    onaylandi: summary?.by_status?.[ADMIN_STATUS.ONAYLANDI] ?? 0,
+    aktifTimer: summary?.active_timer_count ?? 0,
+  }
+  const activeTimerTasks = timersList?.data ?? []
+  const pendingApprovalTasks = approvalsList?.data ?? []
 
   const handleReject = async () => {
     if (!rejectTask) {
@@ -79,12 +88,12 @@ export default function AdminDashboardPage() {
     <div className="space-y-5">
       <MetricCardStrip
         items={[
-          { label: "İş havuzunda", value: isLoading ? "-" : stats.havuzda, icon: ClipboardList, tone: "slate" },
-          { label: "Atandı", value: isLoading ? "-" : stats.atandi, icon: UserCheck, tone: "blue" },
-          { label: "Devam ediyor", value: isLoading ? "-" : stats.devamEdiyor, icon: Layers, tone: "blue" },
-          { label: "Onay bekleyen", value: isLoading ? "-" : stats.tamamlandi, icon: CheckSquare, tone: "amber" },
-          { label: "Hazır", value: isLoading ? "-" : stats.onaylandi, icon: BadgeCheck, tone: "green" },
-          { label: "Aktif kronometre", value: isLoading ? "-" : stats.aktifTimer, icon: Timer, tone: "rose" },
+          { label: "İş havuzunda", value: isSummaryLoading ? "-" : stats.havuzda, icon: ClipboardList, tone: "slate" },
+          { label: "Atandı", value: isSummaryLoading ? "-" : stats.atandi, icon: UserCheck, tone: "blue" },
+          { label: "Devam ediyor", value: isSummaryLoading ? "-" : stats.devamEdiyor, icon: Layers, tone: "blue" },
+          { label: "Onay bekleyen", value: isSummaryLoading ? "-" : stats.tamamlandi, icon: CheckSquare, tone: "amber" },
+          { label: "Hazır", value: isSummaryLoading ? "-" : stats.onaylandi, icon: BadgeCheck, tone: "green" },
+          { label: "Aktif kronometre", value: isSummaryLoading ? "-" : stats.aktifTimer, icon: Timer, tone: "rose" },
         ]}
       />
 
@@ -95,10 +104,10 @@ export default function AdminDashboardPage() {
               İş Havuzu
             </TabsTrigger>
             <TabsTrigger value="approvals" className="rounded-full px-4 py-2">
-              Onay Bekleyenler ({pendingApprovalTasks.length})
+              Onay Bekleyenler ({stats.tamamlandi})
             </TabsTrigger>
             <TabsTrigger value="timers" className="rounded-full px-4 py-2">
-              Aktif Kronometreler ({activeTimerTasks.length})
+              Aktif Kronometreler ({stats.aktifTimer})
             </TabsTrigger>
           </TabsList>
         </div>
@@ -110,7 +119,14 @@ export default function AdminDashboardPage() {
         <TabsContent value="approvals" className="space-y-4">
           <CompactTaskTable
             tasks={pendingApprovalTasks}
-            isLoading={isLoading}
+            isLoading={isApprovalsLoading}
+            pagination={{
+              total: approvalsList?.meta.total ?? 0,
+              offset: approvalsList?.meta.offset ?? approvalsOffset,
+              limit: approvalsList?.meta.limit ?? TASK_PAGE_SIZE,
+              hasMore: approvalsList?.meta.has_more ?? false,
+              onOffsetChange: setApprovalsOffset,
+            }}
             rowClassName={() => "bg-amber-50/40"}
             emptyTitle="Onay bekleyen görev yok"
             emptyDescription="Tamamlanan görevler burada görünecek."
@@ -158,7 +174,14 @@ export default function AdminDashboardPage() {
         <TabsContent value="timers" className="space-y-4">
           <CompactTaskTable
             tasks={activeTimerTasks}
-            isLoading={isLoading}
+            isLoading={isTimersLoading}
+            pagination={{
+              total: timersList?.meta.total ?? 0,
+              offset: timersList?.meta.offset ?? timersOffset,
+              limit: timersList?.meta.limit ?? TASK_PAGE_SIZE,
+              hasMore: timersList?.meta.has_more ?? false,
+              onOffsetChange: setTimersOffset,
+            }}
             rowClassName={() => "bg-indigo-50/30"}
             emptyTitle="Aktif kronometre bulunmuyor"
             emptyDescription="Çalışanlar bir görev üzerinde süre başlattığında burada görünür."

@@ -10,12 +10,14 @@ import { UserAvatar } from "@/components/ui/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAssignTask, useTasks } from "@/hooks/use-tasks"
+import { useAssignTask, useTaskList } from "@/hooks/use-tasks"
 import { useJobTypes, useProjects, useUsers, useZones } from "@/hooks/use-reference-data"
 import { useLocations } from "@/hooks/use-locations"
 import { createTaskFilters, TaskFilterState } from "@/lib/tasks/task-filters"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { Task } from "@/types/task"
+
+const TASK_PAGE_SIZE = 100
 
 function normalizeFilters(filters: TaskFilterState) {
   return {
@@ -42,8 +44,17 @@ export default function AssignmentsPage() {
   )
   const [assignTask, setAssignTask] = useState<Task | null>(null)
   const [selectedUserId, setSelectedUserId] = useState("")
+  const [offset, setOffset] = useState(0)
 
-  const { data: tasks = [], isLoading } = useTasks(normalizeFilters(filters))
+  const normalizedFilters = normalizeFilters(filters)
+  const queryParams = {
+    ...normalizedFilters,
+    status: normalizedFilters.status ?? "assignable",
+    limit: TASK_PAGE_SIZE,
+    offset,
+  }
+  const { data: taskList, isLoading } = useTaskList(queryParams)
+  const tasks = taskList?.data ?? []
   const { data: users = [] } = useUsers()
   const { data: projects = [] } = useProjects()
   const { data: jobTypes = [] } = useJobTypes()
@@ -82,6 +93,7 @@ export default function AssignmentsPage() {
   )
 
   const handleFilterChange = (key: keyof TaskFilterState, value: string) => {
+    setOffset(0)
     setFilters((current) => {
       const next = { ...current, [key]: value }
       if (key === "project_id") {
@@ -123,13 +135,16 @@ export default function AssignmentsPage() {
       <TaskFilterPanel
         filters={filters}
         onChange={handleFilterChange}
-        onReset={() => setFilters(createTaskFilters())}
+        onReset={() => {
+          setOffset(0)
+          setFilters(createTaskFilters())
+        }}
         projects={projects}
         users={users}
         jobTypes={jobTypes}
         zones={zones}
         locations={locations}
-        resultCount={assignableTasks.length}
+        resultCount={taskList?.meta.total ?? 0}
       />
 
       <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -167,6 +182,13 @@ export default function AssignmentsPage() {
       <CompactTaskTable
         tasks={assignableTasks}
         isLoading={isLoading}
+        pagination={{
+          total: taskList?.meta.total ?? 0,
+          offset: taskList?.meta.offset ?? offset,
+          limit: taskList?.meta.limit ?? TASK_PAGE_SIZE,
+          hasMore: taskList?.meta.has_more ?? false,
+          onOffsetChange: setOffset,
+        }}
         emptyTitle="Atanabilir görev yok"
         emptyDescription="Havuzdaki veya yeniden dağıtılacak görevler burada görünecek."
         renderActions={(task) => (

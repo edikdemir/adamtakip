@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { notifyTaskApproved } from "@/lib/notifications/create-notification"
 import { sendTaskApprovedEmail } from "@/lib/email/graph-mailer"
+import { TASK_EMAIL_SELECT, toEmailUser, toTaskEmailPayload } from "@/lib/email/task-email-payload"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdmin(req)
@@ -15,10 +16,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: task } = await supabase
     .from("tasks")
     .select(`
-      *,
-      project:projects(id, code, name),
-      job_type:job_types(id, name),
-      job_sub_type:job_sub_types(id, name),
+      ${TASK_EMAIL_SELECT},
+      assigned_to,
       assigned_user:users!assigned_to(id, email, display_name)
     `)
     .eq("id", id)
@@ -39,10 +38,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .single()
 
   if (task.assigned_to) {
-    const assignedUser = task.assigned_user as { id: string; email: string; display_name: string } | null
+    const assignedUser = toEmailUser(task.assigned_user)
     if (assignedUser) {
       notifyTaskApproved(assignedUser.id, parseInt(id), task.drawing_no).catch(console.error)
-      sendTaskApprovedEmail(assignedUser as Parameters<typeof sendTaskApprovedEmail>[0], { ...task, approved_at: updatedTask?.approved_at ?? task.approved_at } as unknown as import("@/types/task").Task).catch(console.error)
+      sendTaskApprovedEmail(
+        assignedUser,
+        toTaskEmailPayload(task, { approved_at: updatedTask?.approved_at ?? task.approved_at })
+      ).catch(console.error)
     }
   }
 

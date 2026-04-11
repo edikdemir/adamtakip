@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { notifyTaskAssigned } from "@/lib/notifications/create-notification"
 import { sendTaskAssignedEmail } from "@/lib/email/graph-mailer"
+import { TASK_EMAIL_SELECT, toTaskEmailPayload } from "@/lib/email/task-email-payload"
 import { z } from "zod"
 
 const schema = z.object({ assigned_to: z.string().guid() })
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: task, error: fetchError } = await supabase
     .from("tasks")
-    .select("*, project:projects(id, code, name), job_type:job_types(id, name), job_sub_type:job_sub_types(id, name)")
+    .select(TASK_EMAIL_SELECT)
     .eq("id", id)
     .single()
 
@@ -58,9 +59,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   // In-app notification + email (fire and forget)
-  const projectCode = (task.project as { code: string } | null)?.code || ""
-  notifyTaskAssigned(assignedUser.id, parseInt(id), task.drawing_no, projectCode).catch(console.error)
-  sendTaskAssignedEmail(assignedUser as Parameters<typeof sendTaskAssignedEmail>[0], task as unknown as import("@/types/task").Task).catch(console.error)
+  const emailTask = toTaskEmailPayload(task)
+  notifyTaskAssigned(assignedUser.id, parseInt(id), emailTask.drawing_no, emailTask.project?.code ?? "").catch(console.error)
+  sendTaskAssignedEmail(assignedUser, emailTask).catch(console.error)
 
   return NextResponse.json({ data: updatedTask })
 }

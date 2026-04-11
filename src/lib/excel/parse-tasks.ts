@@ -75,7 +75,7 @@ function toIsoDate(value: unknown): { ok: true; iso?: string } | { ok: false; er
   return { ok: false, error: "tarih formatı tanınmadı (YYYY-MM-DD veya DD.MM.YYYY)" }
 }
 
-function dupKey(
+export function buildTaskDuplicateKey(
   project_id: string,
   drawing_no: string,
   location: string | null | undefined,
@@ -175,8 +175,8 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
   }
 
   const dbKeys = new Set<string>()
-  for (const task of lookups.existing) {
-    dbKeys.add(dupKey(task.project_id, task.drawing_no, task.location, task.job_sub_type_id, task.description))
+  for (const task of lookups.existing ?? []) {
+    dbKeys.add(buildTaskDuplicateKey(task.project_id, task.drawing_no, task.location, task.job_sub_type_id, task.description))
   }
 
   const fileKeyCount = new Map<string, number>()
@@ -292,7 +292,7 @@ export async function parseTasksXlsx(file: File, lookups: Lookups): Promise<Pars
     if (errors.length > 0) {
       status = "error"
     } else if (fields.project_id && fields.job_sub_type_id) {
-      const key = dupKey(
+      const key = buildTaskDuplicateKey(
         fields.project_id,
         fields.drawing_no ?? "",
         fields.location,

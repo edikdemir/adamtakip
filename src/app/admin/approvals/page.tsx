@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { Check, CheckCircle2, Clock, RotateCcw } from "lucide-react"
 import { CompactTaskTable } from "@/components/tasks/compact-task-table"
 import { MetricCardStrip } from "@/components/layout/metric-card-strip"
@@ -9,12 +9,14 @@ import { TaskFilterPanel } from "@/components/tasks/task-filter-panel"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { useApproveTask, useRejectTask, useTasks } from "@/hooks/use-tasks"
+import { useApproveTask, useRejectTask, useTaskList, useTaskSummary } from "@/hooks/use-tasks"
 import { useJobTypes, useProjects, useUsers, useZones } from "@/hooks/use-reference-data"
 import { useLocations } from "@/hooks/use-locations"
 import { createTaskFilters, TaskFilterState } from "@/lib/tasks/task-filters"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { Task } from "@/types/task"
+
+const TASK_PAGE_SIZE = 100
 
 function normalizeFilters(filters: TaskFilterState) {
   return {
@@ -43,8 +45,12 @@ export default function ApprovalsPage() {
   const [filters, setFilters] = useState<TaskFilterState>(() => createTaskFilters({ status: ADMIN_STATUS.TAMAMLANDI }))
   const [rejectTask, setRejectTask] = useState<Task | null>(null)
   const [rejectReason, setRejectReason] = useState("")
+  const [offset, setOffset] = useState(0)
 
-  const { data: tasks = [], isLoading } = useTasks(normalizeFilters(filters))
+  const queryParams = { ...normalizeFilters(filters), limit: TASK_PAGE_SIZE, offset }
+  const { data: taskList, isLoading } = useTaskList(queryParams)
+  const { data: summary } = useTaskSummary(normalizeFilters(filters))
+  const tasks = taskList?.data ?? []
   const { data: projects = [] } = useProjects()
   const { data: jobTypes = [] } = useJobTypes()
   const { data: users = [] } = useUsers()
@@ -53,12 +59,10 @@ export default function ApprovalsPage() {
   const approveTask = useApproveTask()
   const rejectTaskMutation = useRejectTask()
 
-  const totalPendingHours = useMemo(
-    () => tasks.reduce((total, task) => total + task.total_elapsed_seconds / 3600 + (task.manual_hours ?? 0), 0),
-    [tasks]
-  )
+  const totalPendingHours = (summary?.total_duration_seconds ?? 0) / 3600
 
   const handleFilterChange = (key: keyof TaskFilterState, value: string) => {
+    setOffset(0)
     setFilters((current) => {
       const next = { ...current, [key]: value }
       if (key === "project_id") {
@@ -92,7 +96,7 @@ export default function ApprovalsPage() {
 
       <MetricCardStrip
         items={[
-          { label: "Bekleyen görev", value: tasks.length, icon: Clock, tone: "amber" },
+          { label: "Bekleyen görev", value: summary?.total ?? taskList?.meta.total ?? 0, icon: Clock, tone: "amber" },
           { label: "Toplam saat", value: `${totalPendingHours.toFixed(1)} sa`, icon: CheckCircle2, tone: "blue" },
         ]}
       />
@@ -100,19 +104,29 @@ export default function ApprovalsPage() {
       <TaskFilterPanel
         filters={filters}
         onChange={handleFilterChange}
-        onReset={() => setFilters(createTaskFilters({ status: ADMIN_STATUS.TAMAMLANDI }))}
+        onReset={() => {
+          setOffset(0)
+          setFilters(createTaskFilters({ status: ADMIN_STATUS.TAMAMLANDI }))
+        }}
         projects={projects}
         users={users}
         jobTypes={jobTypes}
         zones={zones}
         locations={locations}
-        resultCount={tasks.length}
+        resultCount={taskList?.meta.total ?? 0}
         statusOptions={[{ value: ADMIN_STATUS.TAMAMLANDI, label: "Onay bekleyen" }]}
       />
 
       <CompactTaskTable
         tasks={tasks}
         isLoading={isLoading}
+        pagination={{
+          total: taskList?.meta.total ?? 0,
+          offset: taskList?.meta.offset ?? offset,
+          limit: taskList?.meta.limit ?? TASK_PAGE_SIZE,
+          hasMore: taskList?.meta.has_more ?? false,
+          onOffsetChange: setOffset,
+        }}
         rowClassName={() => "bg-amber-50/40"}
         emptyTitle="Onay bekleyen görev yok"
         emptyDescription="Yeni tamamlanan görevler burada listelenecek."

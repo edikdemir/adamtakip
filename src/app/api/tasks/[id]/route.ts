@@ -4,7 +4,7 @@ import { getSessionFromRequest, requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS, USER_ROLES, WORKER_STATUS } from "@/lib/constants"
 import { notifyTaskCompleted } from "@/lib/notifications/create-notification"
 import { sendTaskCompletedEmail } from "@/lib/email/graph-mailer"
-import type { Task } from "@/types/task"
+import { TASK_EMAIL_SELECT, toTaskEmailPayload, type TaskEmailPayload } from "@/lib/email/task-email-payload"
 import { z } from "zod"
 
 const updateSchema = z.object({
@@ -74,11 +74,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { data: task } = await supabase
     .from("tasks")
     .select(`
-      id, assigned_to, assigned_by, admin_status, drawing_no, description,
-      timer_started_at, total_elapsed_seconds, manual_hours, planned_end, priority,
-      project:projects(id, code, name),
-      job_type:job_types(id, name),
-      job_sub_type:job_sub_types(id, name)
+      ${TASK_EMAIL_SELECT},
+      assigned_to,
+      assigned_by,
+      timer_started_at
     `)
     .eq("id", id)
     .single()
@@ -108,16 +107,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       updates.timer_started_at = null
     }
 
-    const emailTask: Task = {
-      ...(task as unknown as Task),
-      ...updates,
+    const emailTask = toTaskEmailPayload(task, {
+      admin_status: ADMIN_STATUS.TAMAMLANDI,
       total_elapsed_seconds:
         typeof updates.total_elapsed_seconds === "number" ? updates.total_elapsed_seconds : task.total_elapsed_seconds,
       manual_hours: updates.manual_hours !== undefined ? (updates.manual_hours as number | null) : task.manual_hours,
       planned_end: updates.planned_end !== undefined ? (updates.planned_end as string | null) : task.planned_end,
-      priority: typeof updates.priority === "string" ? updates.priority : task.priority,
-      timer_started_at: updates.timer_started_at === null ? null : task.timer_started_at,
-    }
+      priority:
+        typeof updates.priority === "string" ? (updates.priority as TaskEmailPayload["priority"]) : task.priority,
+    })
 
     // Notify all super_admins
     const { data: admins } = await supabase

@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/middleware-auth"
 import { ADMIN_STATUS } from "@/lib/constants"
 import { sendTaskCancelledEmail } from "@/lib/email/graph-mailer"
 import { notifyTaskCancelled } from "@/lib/notifications/create-notification"
+import { TASK_EMAIL_SELECT, toTaskEmailPayload } from "@/lib/email/task-email-payload"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireAdmin(req)
@@ -18,19 +19,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: task } = await supabase
     .from("tasks")
     .select(`
-      id,
+      ${TASK_EMAIL_SELECT},
       assigned_to,
-      drawing_no,
-      description,
-      priority,
-      admin_notes,
-      planned_end,
-      admin_status,
-      timer_started_at,
-      total_elapsed_seconds,
-      project:projects(id, code, name),
-      job_type:job_types(id, name),
-      job_sub_type:job_sub_types(id, name)
+      timer_started_at
     `)
     .eq("id", id)
     .single()
@@ -80,11 +71,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     if (assignedUser) {
       sendTaskCancelledEmail(
-        assignedUser as Parameters<typeof sendTaskCancelledEmail>[0],
-        {
-          ...(task as unknown as Parameters<typeof sendTaskCancelledEmail>[1]),
-          admin_status: ADMIN_STATUS.IPTAL,
-        },
+        assignedUser,
+        toTaskEmailPayload(task, { admin_status: ADMIN_STATUS.IPTAL, total_elapsed_seconds: totalElapsed }),
         reason
       ).catch(console.error)
     }
