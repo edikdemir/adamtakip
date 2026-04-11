@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
-import { SESSION_COOKIE_NAME, SESSION_DURATION_HOURS } from "@/lib/constants"
+import { AUTH_STATE_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_DURATION_HOURS } from "@/lib/constants"
 import { SessionUser } from "@/types/user"
+
+const AUTH_STATE_MAX_AGE_SECONDS = 10 * 60
 
 function getSecretKey(): Uint8Array {
   const secret = process.env.SESSION_SECRET
@@ -62,4 +64,25 @@ export async function setSessionCookie(token: string): Promise<void> {
 export async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete(SESSION_COOKIE_NAME)
+}
+
+export async function setAuthStateCookie(state: string): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.set(AUTH_STATE_COOKIE_NAME, state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: AUTH_STATE_MAX_AGE_SECONDS,
+    path: "/",
+  })
+}
+
+export async function getAuthStateCookie(): Promise<string | null> {
+  const cookieStore = await cookies()
+  return cookieStore.get(AUTH_STATE_COOKIE_NAME)?.value ?? null
+}
+
+export async function clearAuthStateCookie(): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.delete(AUTH_STATE_COOKIE_NAME)
 }

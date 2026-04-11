@@ -4,6 +4,7 @@ import { keepPreviousData, QueryClient, useMutation, useQuery, useQueryClient } 
 import { CreateTaskInput, Task } from "@/types/task"
 import { toast } from "sonner"
 import type { TaskListResponse, TaskSummary } from "@/lib/tasks/task-api"
+import { ApiSessionExpiredError, readApiData, readApiEnvelope } from "@/lib/api-client"
 
 export interface UseTasksParams {
   status?: string
@@ -111,30 +112,14 @@ function normalizeTaskParams(params?: UseTasksParams): UseTasksParams | undefine
 }
 
 async function readApiPayload<T>(response: Response, fallbackMessage: string): Promise<T> {
-  let payload: { data?: T; error?: string } | null = null
-
-  try {
-    payload = await response.json()
-  } catch {
-    payload = null
-  }
-
-  if (!response.ok) {
-    throw new Error(payload?.error || fallbackMessage)
-  }
-
-  return (payload?.data ?? payload) as T
+  return readApiData<T>(response, fallbackMessage)
 }
 
 async function readTaskListPayload(response: Response): Promise<TaskListResponse> {
-  const payload = await response.json().catch(() => null)
+  const payload = await readApiEnvelope<Task[]>(response, "Görevler yüklenemedi")
 
-  if (!response.ok) {
-    throw new Error(payload?.error || "Görevler yüklenemedi")
-  }
-
-  const data = (payload?.data ?? []) as Task[]
-  const meta = payload?.meta ?? {}
+  const data = Array.isArray(payload.data) ? payload.data : []
+  const meta = (payload.meta ?? {}) as Partial<TaskListResponse["meta"]>
 
   return {
     data,
@@ -390,7 +375,11 @@ function useTaskMutation<TVariables, TResult>({
         }
       }
     },
-    onError: (error: Error) => toast.error(error.message),
+    onError: (error: Error) => {
+      if (!(error instanceof ApiSessionExpiredError)) {
+        toast.error(error.message)
+      }
+    },
   })
 }
 
@@ -559,13 +548,7 @@ export function useBulkImportTasks() {
         body: JSON.stringify(input),
       })
 
-      const payload = await response.json()
-
-      if (!response.ok) {
-        throw new Error(payload.error || "İçe aktarma başarısız")
-      }
-
-      return payload as BulkImportResult
+      return readApiPayload<BulkImportResult>(response, "İçe aktarma başarısız")
     },
     successMessage: (result) => {
       if (result.inserted > 0 && result.skipped_duplicates > 0) {

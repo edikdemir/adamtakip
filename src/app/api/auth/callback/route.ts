@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { ConfidentialClientApplication } from "@azure/msal-node"
 import { createServerClient } from "@/lib/supabase/server"
-import { createSession, setSessionCookie } from "@/lib/auth/session"
+import { clearAuthStateCookie, createSession, getAuthStateCookie, setSessionCookie } from "@/lib/auth/session"
 import { SessionUser } from "@/types/user"
 
 function getMsalApp() {
@@ -18,6 +18,14 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const code = searchParams.get("code")
   const error = searchParams.get("error")
+  const state = searchParams.get("state")
+  const expectedState = await getAuthStateCookie()
+
+  await clearAuthStateCookie()
+
+  if (!state || !expectedState || state !== expectedState) {
+    return NextResponse.redirect(new URL("/login?error=invalid_state", req.url))
+  }
 
   if (error) {
     console.error("Auth error:", error, searchParams.get("error_description"))

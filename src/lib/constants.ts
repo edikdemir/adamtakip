@@ -75,4 +75,5 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const TIMER_SYNC_INTERVAL_MS = 60000 // 60 saniye
 export const TIMER_WARNING_HOURS = 8
 export const SESSION_COOKIE_NAME = "adamtakip-session"
+export const AUTH_STATE_COOKIE_NAME = "adamtakip-auth-state"
 export const SESSION_DURATION_HOURS = 12

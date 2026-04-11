@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import type { ReportTask } from "@/lib/reports/report-utils"
 import type { ReportFilters } from "@/lib/reports/report-utils"
+import { readApiArray } from "@/lib/api-client"
 
 function buildReportSearchParams(filters: ReportFilters) {
   const params = new URLSearchParams()
@@ -24,12 +25,7 @@ export function useReports(filters: ReportFilters) {
     queryKey: ["reports", filters],
     queryFn: async () => {
       const response = await fetch(`/api/reports?${params.toString()}`)
-      if (!response.ok) {
-        throw new Error("Rapor verileri yüklenemedi")
-      }
-
-      const payload = await response.json()
-      return payload.data || []
+      return readApiArray<ReportTask>(response, "Rapor verileri yüklenemedi")
     },
   })
 }

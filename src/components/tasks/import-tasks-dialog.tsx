@@ -19,6 +19,7 @@ import { downloadTaskTemplate } from "@/lib/excel/template"
 import type { Lookups, ParsedRow, RowStatus } from "@/lib/excel/types"
 import { useAllZones, useJobTypes, useProjects } from "@/hooks/use-reference-data"
 import { useBulkImportTasks } from "@/hooks/use-tasks"
+import { readApiData } from "@/lib/api-client"
 import { toast } from "sonner"
 
 interface ImportTasksDialogProps {
@@ -96,13 +97,9 @@ export function ImportTasksDialog({ open, onOpenChange }: ImportTasksDialogProps
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tasks }),
     })
-    const payload = await response.json()
+    const payload = await readApiData<{ duplicate_keys?: string[] }>(response, "Duplicate kontrolü yapılamadı")
 
-    if (!response.ok) {
-      throw new Error(payload?.error || "Duplicate kontrolü yapılamadı")
-    }
-
-    return new Set<string>(payload?.data?.duplicate_keys ?? [])
+    return new Set<string>(payload.duplicate_keys ?? [])
   }
 
   const handleFile = async (file: File) => {

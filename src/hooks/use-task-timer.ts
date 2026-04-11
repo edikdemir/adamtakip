@@ -8,6 +8,7 @@ import { formatDuration } from "@/lib/utils"
 import { getEffectiveElapsedSeconds } from "@/lib/timer-utils"
 import { useSharedSecond } from "@/hooks/use-shared-second"
 import { Task } from "@/types/task"
+import { ApiSessionExpiredError, readApiData } from "@/lib/api-client"
 
 interface UseTaskTimerReturn {
   elapsedSeconds: number
@@ -43,7 +44,8 @@ export function useTaskTimer(task: Task, onUpdate?: (updatedTask: Partial<Task>)
     if (isRunning) {
       syncIntervalRef.current = setInterval(async () => {
         try {
-          await fetch(`/api/tasks/${task.id}/timer/sync`, { method: "POST" })
+          const response = await fetch(`/api/tasks/${task.id}/timer/sync`, { method: "POST" })
+          await readApiData(response, "Kronometre senkronize edilemedi")
         } catch {
           // Sync failures are non-blocking for the UI.
         }
@@ -64,7 +66,8 @@ export function useTaskTimer(task: Task, onUpdate?: (updatedTask: Partial<Task>)
 
     const heartbeatInterval = setInterval(async () => {
       try {
-        await fetch(`/api/tasks/${task.id}/timer/heartbeat`, { method: "POST" })
+        const response = await fetch(`/api/tasks/${task.id}/timer/heartbeat`, { method: "POST" })
+        await readApiData(response, "Kronometre heartbeat güncellenemedi")
       } catch {
         // pg_cron handles stale timers if heartbeat fails.
       }
@@ -89,18 +92,16 @@ export function useTaskTimer(task: Task, onUpdate?: (updatedTask: Partial<Task>)
 
     try {
       const response = await fetch(`/api/tasks/${task.id}/timer/start`, { method: "POST" })
-      const payload = await response.json()
+      const updatedTask = await readApiData<Partial<Task>>(response, "Kronometre başlatılamadı")
 
-      if (response.ok) {
-        setTimerStartedAt(payload.data.timer_started_at)
-        setTotalElapsed(payload.data.total_elapsed_seconds)
-        onUpdate?.(payload.data)
-        await queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
-      } else {
-        toast.error(payload.error || "Kronometre başlatılamadı")
+      setTimerStartedAt(updatedTask.timer_started_at ?? null)
+      setTotalElapsed(updatedTask.total_elapsed_seconds ?? 0)
+      onUpdate?.(updatedTask)
+      await queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
+    } catch (error) {
+      if (!(error instanceof ApiSessionExpiredError)) {
+        toast.error("Kronometre başlatılamadı")
       }
-    } catch {
-      toast.error("Kronometre başlatılamadı")
     } finally {
       setIsLoading(false)
     }
@@ -111,19 +112,18 @@ export function useTaskTimer(task: Task, onUpdate?: (updatedTask: Partial<Task>)
 
     try {
       const response = await fetch(`/api/tasks/${task.id}/timer/stop`, { method: "POST" })
-      const payload = await response.json()
+      const updatedTask = await readApiData<Partial<Task>>(response, "Kronometre durdurulamadı")
+      const nextElapsed = updatedTask.total_elapsed_seconds ?? 0
 
-      if (response.ok) {
-        setTimerStartedAt(null)
-        setTotalElapsed(payload.data.total_elapsed_seconds)
-        setElapsedSeconds(payload.data.total_elapsed_seconds)
-        onUpdate?.(payload.data)
-        await queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
-      } else {
-        toast.error(payload.error || "Kronometre durdurulamadı")
+      setTimerStartedAt(null)
+      setTotalElapsed(nextElapsed)
+      setElapsedSeconds(nextElapsed)
+      onUpdate?.(updatedTask)
+      await queryClient.invalidateQueries({ queryKey: ["tasks"], refetchType: "active" })
+    } catch (error) {
+      if (!(error instanceof ApiSessionExpiredError)) {
+        toast.error("Kronometre durdurulamadı")
       }
-    } catch {
-      toast.error("Kronometre durdurulamadı")
     } finally {
       setIsLoading(false)
     }

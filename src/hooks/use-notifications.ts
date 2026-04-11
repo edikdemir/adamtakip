@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react"
 import { createClient } from "@supabase/supabase-js"
 import { Notification } from "@/types/notification"
 import { useCurrentUser } from "@/hooks/use-current-user"
+import { readApiData, readApiEnvelope } from "@/lib/api-client"
 
 function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -20,11 +21,12 @@ export function useNotifications() {
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications")
-      if (res.ok) {
-        const { data, unreadCount } = await res.json()
-        setNotifications(data || [])
-        setUnreadCount(unreadCount || 0)
-      }
+      const payload = await readApiEnvelope<Notification[]>(res, "Bildirimler yüklenemedi")
+      setNotifications(Array.isArray(payload.data) ? payload.data : [])
+      setUnreadCount(Number(payload.unreadCount ?? 0))
+    } catch {
+      setNotifications([])
+      setUnreadCount(0)
     } finally {
       setIsLoading(false)
     }
@@ -66,7 +68,8 @@ export function useNotifications() {
   }, [user])
 
   const markAsRead = useCallback(async (id: string) => {
-    await fetch(`/api/notifications/${id}/read`, { method: "PATCH" })
+    const response = await fetch(`/api/notifications/${id}/read`, { method: "PATCH" })
+    await readApiData(response, "Bildirim okundu olarak işaretlenemedi")
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     )
@@ -74,7 +77,8 @@ export function useNotifications() {
   }, [])
 
   const markAllAsRead = useCallback(async () => {
-    await fetch("/api/notifications/read-all", { method: "POST" })
+    const response = await fetch("/api/notifications/read-all", { method: "POST" })
+    await readApiData(response, "Bildirimler okundu olarak işaretlenemedi")
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
     setUnreadCount(0)
   }, [])

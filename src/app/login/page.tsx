@@ -12,6 +12,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   no_account: "Hesap bilgisi alınamadı.",
   account_disabled: "Hesabınız devre dışı bırakılmış. Yöneticinizle iletişime geçin.",
   user_creation_failed: "Hesap oluşturulamadı. Lütfen tekrar deneyin.",
+  invalid_state: "Oturum doğrulaması geçersiz. Lütfen tekrar deneyin.",
+  session_expired: "Oturum süreniz doldu. Lütfen tekrar giriş yapın.",
   internal: "Bir hata oluştu. Lütfen tekrar deneyin.",
 }
 

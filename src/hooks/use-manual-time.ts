@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { ManualTimeEntry } from "@/types/task"
+import { ApiSessionExpiredError, readApiArray, readApiData } from "@/lib/api-client"
 
 export function useAddManualTime(taskId: number, onSuccess?: () => void) {
   const queryClient = useQueryClient()
@@ -14,13 +15,7 @@ export function useAddManualTime(taskId: number, onSuccess?: () => void) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hours, reason }),
       })
-      const payload = await response.json()
-
-      if (!response.ok) {
-        throw new Error(payload.error || "Manuel süre eklenemedi")
-      }
-
-      return payload.data as ManualTimeEntry
+      return readApiData<ManualTimeEntry>(response, "Manuel süre eklenemedi")
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
@@ -29,7 +24,9 @@ export function useAddManualTime(taskId: number, onSuccess?: () => void) {
       onSuccess?.()
     },
     onError: (error: Error) => {
-      toast.error(error.message)
+      if (!(error instanceof ApiSessionExpiredError)) {
+        toast.error(error.message)
+      }
     },
   })
 }
@@ -39,13 +36,7 @@ export function useManualTimeEntries(taskId: number, enabled = false) {
     queryKey: ["manual-time", taskId],
     queryFn: async () => {
       const response = await fetch(`/api/tasks/${taskId}/manual-time`)
-      const payload = await response.json()
-
-      if (!response.ok) {
-        throw new Error(payload.error)
-      }
-
-      return payload.data as ManualTimeEntry[]
+      return readApiArray<ManualTimeEntry>(response, "Manuel süreler yüklenemedi")
     },
     enabled,
   })

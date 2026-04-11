@@ -1,6 +1,7 @@
 "use client"
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { SessionUser } from "@/types/user"
+import { readApiData } from "@/lib/api-client"
 
 interface AuthContextValue {
   user: SessionUser | null
@@ -21,12 +22,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchUser = async () => {
     try {
       const res = await fetch("/api/auth/me")
-      if (res.ok) {
-        const { data } = await res.json()
-        setUser(data)
-      } else {
-        setUser(null)
-      }
+      const data = await readApiData<SessionUser>(res, "Oturum bilgisi alınamadı")
+      setUser(data)
     } catch {
       setUser(null)
     } finally {

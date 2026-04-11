@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { JobType, Project, Zone } from "@/types/task"
 import { UserRole } from "@/lib/constants"
+import { readApiArray } from "@/lib/api-client"
 
 export interface ReferenceUser {
   id: string
@@ -15,14 +16,9 @@ export interface ReferenceUser {
   created_at: string
 }
 
-async function fetchReferenceData<T>(url: string, errorMessage: string): Promise<T> {
+async function fetchReferenceData<T>(url: string, errorMessage: string): Promise<T[]> {
   const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(errorMessage)
-  }
-
-  const payload = await response.json()
-  return payload.data || []
+  return readApiArray<T>(response, errorMessage)
 }
 
 function sortZones(zones: Zone[]) {
@@ -48,21 +44,21 @@ export function useProjects(options?: UseProjectsOptions) {
 
   return useQuery<Project[]>({
     queryKey: includeArchived ? ["projects-all"] : ["projects"],
-    queryFn: () => fetchReferenceData<Project[]>(endpoint, "Projeler yüklenemedi"),
+    queryFn: () => fetchReferenceData<Project>(endpoint, "Projeler yüklenemedi"),
   })
 }
 
 export function useJobTypes() {
   return useQuery<JobType[]>({
     queryKey: ["job-types"],
-    queryFn: () => fetchReferenceData<JobType[]>("/api/job-types", "İş tipleri yüklenemedi"),
+    queryFn: () => fetchReferenceData<JobType>("/api/job-types", "İş tipleri yüklenemedi"),
   })
 }
 
 export function useUsers() {
   return useQuery<ReferenceUser[]>({
     queryKey: ["users"],
-    queryFn: () => fetchReferenceData<ReferenceUser[]>("/api/users", "Kullanıcılar yüklenemedi"),
+    queryFn: () => fetchReferenceData<ReferenceUser>("/api/users", "Kullanıcılar yüklenemedi"),
   })
 }
 
@@ -70,7 +66,7 @@ export function useZones(projectId: string) {
   return useQuery<Zone[]>({
     queryKey: ["zones", projectId],
     queryFn: async () => {
-      const zones = await fetchReferenceData<Zone[]>(`/api/zones?project_id=${projectId}`, "Zone'lar yüklenemedi")
+      const zones = await fetchReferenceData<Zone>(`/api/zones?project_id=${projectId}`, "Zone'lar yüklenemedi")
       return sortZones(zones)
     },
     enabled: !!projectId,
@@ -80,6 +76,6 @@ export function useZones(projectId: string) {
 export function useAllZones() {
   return useQuery<Zone[]>({
     queryKey: ["zones-all"],
-    queryFn: () => fetchReferenceData<Zone[]>("/api/zones", "Zone'lar yüklenemedi"),
+    queryFn: () => fetchReferenceData<Zone>("/api/zones", "Zone'lar yüklenemedi"),
   })
 }
