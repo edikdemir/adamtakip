@@ -1,16 +1,9 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  BarChart3,
-  Building2,
-  FolderKanban,
-  LayoutDashboard,
-  Settings,
-  Users,
-  Wrench,
-} from "lucide-react"
+import { BarChart3, FolderKanban, LayoutDashboard, Settings, Users, Wrench } from "lucide-react"
 import { useAppShell } from "@/components/layout/app-shell-context"
 import { useCurrentUser } from "@/hooks/use-current-user"
 import { USER_ROLES } from "@/lib/constants"
@@ -64,17 +57,28 @@ export function Sidebar() {
       >
         <div
           className={cn(
-            "flex h-[4.5rem] items-center border-b border-zinc-200/80 px-4",
-            collapsed ? "justify-center lg:px-0" : "gap-3"
+            "flex h-[5.25rem] items-center border-b border-zinc-200/80 px-4",
+            collapsed ? "justify-center lg:px-3" : "gap-3"
           )}
         >
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1476cf,#63c93d)] text-white shadow-lg shadow-blue-500/20">
-            <Building2 className="h-5 w-5" />
-          </div>
-          <div className={cn("min-w-0", collapsed && "lg:hidden")}>
-            <p className="truncate text-sm font-bold tracking-[0.18em] text-zinc-950">ADAM TAKİP</p>
-            <p className="truncate text-[11px] text-zinc-500">Cemre Tersanesi</p>
-          </div>
+          <Link
+            href={isAdminArea ? "/admin" : "/dashboard"}
+            onClick={closeMobileSidebar}
+            className={cn(
+              "flex min-w-0 items-center rounded-[22px] border border-zinc-200/80 bg-white px-3 py-2 shadow-sm transition-colors hover:bg-zinc-50",
+              collapsed ? "justify-center lg:h-14 lg:w-14 lg:px-2" : "w-full justify-center"
+            )}
+            title="Cemre Tersanesi"
+          >
+            <Image
+              src="/brand/cemre-shipyard-horizontal.png"
+              alt="Cemre Tersanesi"
+              width={180}
+              height={48}
+              priority
+              className={cn("h-10 w-auto max-w-full object-contain", collapsed && "lg:h-9 lg:w-10")}
+            />
+          </Link>
         </div>
 
         <nav className="flex-1 space-y-1 px-3 py-4">

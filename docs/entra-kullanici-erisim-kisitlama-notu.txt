@@ -1,0 +1,52 @@
+Microsoft Entra Kullanici Erisim Kisitlama Notu
+==============================================
+
+Ozet
+----
+Uygulama Azure/Entra tarafinda "single tenant" ise baska tenant'lardan login zaten engellenir. Ancak bu ayar, ayni tenant icindeki tum kullanicilari otomatik engellemez.
+
+Ayni tenant icinde yalniz belirli kisilerin girebilmesi icin en temiz yol Enterprise Application uzerinden kullanici/grup atamasini zorunlu hale getirmektir.
+
+Onerilen ayar
+-------------
+1. Microsoft Entra admin center'a gir.
+2. Enterprise applications bolumunden Adam Takip uygulamasini ac.
+3. Properties ekraninda "Assignment required?" ayarini "Yes" yap.
+4. Users and groups bolumunden yalniz izin verilen kullanicilari veya bir grubu ata.
+5. Uygun ise "AdamTakip_Users" gibi tek bir guvenlik grubu kullan.
+
+Bu ayar sonrasinda atanmayan tenant kullanicilari uygulamaya token alamaz veya uygulamaya erisemez. Boylece kullanicilar uygulama tarafina dusmeden once Entra tarafinda elenmis olur.
+
+Grup ve lisans notu
+-------------------
+- Direkt kullanici atamak en basit yoldur.
+- Grup atamasi daha temiz yonetilir; ancak Entra planina gore grup bazli uygulama atamasi icin P1/P2 lisans gereksinimi olabilir.
+- Lisans veya yetki nedeniyle grup atamasi kullanilamiyorsa ilk fazda direkt kullanici atamasi yeterlidir.
+
+Alternatif: Conditional Access
+-------------------------------
+Conditional Access ile de uygulama bazli erisim politikasi kurulabilir. Bu yol daha esnektir; ornegin belirli grup, cihaz, lokasyon veya risk kosuluna gore izin verilebilir.
+
+Ancak Adam Takip icin baslangicta "Assignment required = Yes + kullanici/grup atamasi" daha sade ve daha az karmasiktir.
+
+Uygulama ici ikinci savunma
+--------------------------
+Entra tarafinda kisitlama yapilsa bile uygulama icindeki users tablosunda "is_active" kontrolu korunmali. Boylece:
+- Entra atamasi ilk kapidir.
+- Uygulamadaki aktif/pasif kullanici kontrolu ikinci kapidir.
+
+Bu ikili yapi hem yonetilebilir hem de hatali atama durumunda uygulama tarafinda ek guvenlik saglar.
+
+Dikkat edilmesi gerekenler
+--------------------------
+- App registrations ekranindaki "single tenant" ayari tenant disini engeller.
+- Enterprise applications ekranindaki "Assignment required?" ayari tenant icindeki kullanicilari sinirlamak icindir.
+- Kullaniciyi Entra'da tamamen disable etmek tum Microsoft 365 erisimini etkileyebilir; sadece Adam Takip icin engellemek istiyorsak uygulama atamasi daha dogru yoldur.
+- Logout davranisini degistirmek gerekmez; bu ayarlar login/token alma asamasinda etkili olur.
+
+Kaynaklar
+---------
+- Microsoft Learn - Assign users and groups to an application:
+  https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/assign-user-or-group-access-portal
+- Microsoft Learn - Conditional Access overview:
+  https://learn.microsoft.com/en-us/entra/identity/conditional-access/overview
