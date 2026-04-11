@@ -230,13 +230,13 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-zinc-600">
               <div className="rounded-[20px] border border-zinc-100 bg-zinc-50 p-4">
-                -.
+                Kullanıcı başına tek aktif timer çalışır; bağımlı, iptal veya onaylı görevlerde başlatılamaz.
               </div>
               <div className="rounded-[20px] border border-zinc-100 bg-zinc-50 p-4">
-                Timer verileri her 60 saniyede bir eşitlenir;
+                Timer her 60 saniyede bir sync, her 5 dakikada bir heartbeat gönderir.
               </div>
               <div className="rounded-[20px] border border-zinc-100 bg-zinc-50 p-4">
-                Oturum kapatma sırasında aktif timer varsa kullanıcı ayrıca bilgilendirilir.
+                Sekme kapanırken uyarı çıkar; kapanışta aktif timer otomatik durdurulmaya çalışılır.
               </div>
             </CardContent>
           </Card>

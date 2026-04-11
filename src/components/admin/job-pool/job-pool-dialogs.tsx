@@ -24,6 +24,8 @@ interface JobPoolDialogsProps {
 }
 
 export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
+  const assignableUsers = state.users.filter((user) => user.is_active)
+
   return (
     <>
       <Dialog open={state.createOpen} onOpenChange={state.setCreateOpen}>
@@ -280,13 +282,44 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
           <DialogHeader>
             <DialogTitle>Görev Ata</DialogTitle>
             <DialogDescription>
-              #{state.assignTask?.id} - {state.assignTask?.drawing_no || "Resim No yok"} - {state.assignTask?.description || "İş açıklaması yok"}
+              Atama yapılacak görev özetini kontrol edip aktif kullanıcı seçin.
             </DialogDescription>
+            {state.assignTask ? (
+              <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50/80 p-3 text-xs text-zinc-600">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-zinc-900 px-2 py-0.5 font-mono font-semibold text-white">
+                    #{state.assignTask.id}
+                  </span>
+                  <span className="font-semibold text-zinc-900">
+                    {state.assignTask.project?.code || "Proje yok"}
+                    {state.assignTask.project?.name ? ` - ${state.assignTask.project.name}` : ""}
+                  </span>
+                </div>
+                <div className="grid gap-1.5">
+                  <p>
+                    <span className="font-semibold text-zinc-700">Resim No:</span>{" "}
+                    {state.assignTask.drawing_no || "Yok"}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-zinc-700">Yapılacak İş:</span>{" "}
+                    {state.assignTask.description || "İş açıklaması yok"}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-zinc-700">İş Tipi:</span>{" "}
+                    {[state.assignTask.job_type?.name, state.assignTask.job_sub_type?.name].filter(Boolean).join(" / ") || "-"}
+                  </p>
+                  <p>
+                    <span className="font-semibold text-zinc-700">Termin:</span>{" "}
+                    {state.assignTask.planned_end || "-"}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </DialogHeader>
           <div className="py-2">
             <Label className="mb-2 block">Kullanıcı Seç</Label>
             <div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1">
-              {state.users.map((user) => {
+              {assignableUsers.map((user) => {
                 const isSelected = state.selectedUserId === user.id
 
                 return (
@@ -310,6 +343,11 @@ export function JobPoolDialogs({ state }: JobPoolDialogsProps) {
                   </button>
                 )
               })}
+              {assignableUsers.length === 0 ? (
+                <div className="col-span-2 rounded-lg border border-dashed border-zinc-200 p-4 text-center text-xs text-zinc-400">
+                  Atanabilir aktif kullanıcı bulunamadı.
+                </div>
+              ) : null}
             </div>
           </div>
           <DialogFooter>

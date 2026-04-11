@@ -74,7 +74,8 @@ export interface Task {
   job_sub_type?: JobSubType
   zone?: Zone
   assigned_user?: { id: string; display_name: string; email: string; photo_url?: string | null }
-  assigned_by_user?: { id: string; display_name: string; email: string }
+  assigned_by_user?: { id: string; display_name: string; email: string; photo_url?: string | null }
+  approved_by_user?: { id: string; display_name: string; email: string; photo_url?: string | null }
   linked_to_task?: { id: number; drawing_no: string; description: string; admin_status: AdminStatus } | null
   linked_tasks?: Array<{ id: number; drawing_no: string; description: string; admin_status: AdminStatus; assigned_to: string | null }>
 }

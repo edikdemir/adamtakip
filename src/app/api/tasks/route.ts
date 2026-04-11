@@ -28,7 +28,8 @@ const taskListSelect = `
   job_sub_type:job_sub_types(id, name),
   zone:zones(id, name),
   assigned_user:users!assigned_to(id, display_name, email, photo_url),
-  assigned_by_user:users!assigned_by(id, display_name, email)
+  assigned_by_user:users!assigned_by(id, display_name, email, photo_url),
+  approved_by_user:users!approved_by(id, display_name, email, photo_url)
 `
 
 function parseNonNegativeNumber(value: string | null) {

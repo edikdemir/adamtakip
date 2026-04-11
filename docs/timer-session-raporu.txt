@@ -1,0 +1,40 @@
+Timer ve Session Davranisi Raporu
+================================
+
+Timer davranisi
+---------------
+- Kullanici basina tek aktif kronometre calisabilir.
+- Bagimli gorevlerde, iptal edilmis gorevlerde ve onaylanmis gorevlerde timer baslatilamaz.
+- Timer baslayinca gorev durumu "atandi" ise "devam_ediyor" durumuna gecer.
+- Ekrandaki sure ortak 1 saniyelik ticker ile canli guncellenir.
+- Calisan timer sunucuya her 60 saniyede bir sync gonderir; bu veri kaybini yaklasik 60 saniye ile sinirlar.
+- Calisan timer ayrica her 5 dakikada bir heartbeat gonderir.
+- Sayfa veya tarayici kapanirken aktif timer varsa kullanici uyarilir; kapanis gerceklesirse aktif timer sendBeacon ile durdurulmaya calisilir.
+- Heartbeat 30 dakikadan eskiyse Supabase tarafindaki stop_stale_timers fonksiyonu timeri otomatik durduracak sekilde tasarlanmistir.
+
+Session ve token davranisi
+--------------------------
+- Login Microsoft Entra ID uzerinden yapilir.
+- Callback asamasinda Microsoft access token yalnizca Graph uzerinden jobTitle ve profil fotografi almak icin kullanilir.
+- Microsoft access token uygulama veritabaninda veya cookie'de saklanmaz.
+- Uygulama kendi imzali JWT session tokenini uretir.
+- Cookie adi: adamtakip-session.
+- Session suresi: 12 saat.
+- Cookie httpOnly, sameSite=lax ve production ortaminda secure olarak set edilir.
+- Middleware her korumali istekte session tokeni dogrular.
+- Session suresi dolarsa veya token dogrulanamazsa kullanici login ekranina yonlendirilir.
+- Kodda sliding session yorumu olsa da middleware su an cookie'yi yenileyerek oturumu uzatmiyor; mevcut davranis sabit 12 saatlik oturumdur.
+
+Ilgili kaynak dosyalar
+----------------------
+- src/hooks/use-task-timer.ts
+- src/hooks/use-timer-guard.ts
+- src/hooks/use-shared-second.ts
+- src/app/api/tasks/[id]/timer/start/route.ts
+- src/app/api/tasks/[id]/timer/stop/route.ts
+- src/app/api/tasks/[id]/timer/sync/route.ts
+- src/app/api/tasks/[id]/timer/heartbeat/route.ts
+- src/app/api/tasks/timer/stop-active/route.ts
+- src/lib/auth/session.ts
+- src/middleware.ts
+- supabase/migrations/00006_heartbeat_autostop.sql

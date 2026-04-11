@@ -86,7 +86,7 @@ export function CompactTaskTable({
               {showAssignedUser ? <TableHead className="hidden w-40 text-center xl:table-cell">Atanan</TableHead> : null}
               <TableHead className="hidden w-28 lg:table-cell">Durum</TableHead>
               <TableHead className="hidden w-28 md:table-cell">Termin</TableHead>
-              <TableHead className="w-40">Süre / Kronometre</TableHead>
+              <TableHead className="w-40">Süre</TableHead>
               <TableHead className="w-36 text-right">İşlem</TableHead>
             </TableRow>
           </TableHeader>

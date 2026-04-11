@@ -34,8 +34,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       job_type:job_types(id, name),
       job_sub_type:job_sub_types(id, name),
       zone:zones(id, name),
-      assigned_user:users!assigned_to(id, display_name, email),
-      assigned_by_user:users!assigned_by(id, display_name, email),
+      assigned_user:users!assigned_to(id, display_name, email, photo_url),
+      assigned_by_user:users!assigned_by(id, display_name, email, photo_url),
+      approved_by_user:users!approved_by(id, display_name, email, photo_url),
       linked_to_task:tasks!linked_to_task_id(id, drawing_no, description, admin_status)
     `)
     .eq("id", id)

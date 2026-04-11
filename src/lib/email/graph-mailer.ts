@@ -230,7 +230,6 @@ export async function sendTaskAssignedEmail(user: User, task: Task): Promise<voi
       ["İş Alt Tipi", task.job_sub_type?.name],
       ["Yapılacak İş", task.description],
       ["Öncelik", PRIORITY_LABEL[task.priority] || task.priority],
-      ["Başlama Tarihi", fmtDate(task.planned_start)],
       ["Termin", fmtDate(task.planned_end)],
       ["Admin Notu", task.admin_notes],
     ]))}

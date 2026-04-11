@@ -1,0 +1,113 @@
+SharePoint ve Teams Entegrasyon Fikirleri
+========================================
+
+Amaç
+----
+Bu doküman, dizayncıların çizimleri SharePoint'e yüklediği ve Teams üzerinden yazıştığı mevcut iş akışını Adam Takip uygulamasıyla nasıl daha entegre hale getirebileceğimize dair fikirleri toplar.
+
+1. Not gönderildiğinde Teams bildirimi
+-------------------------------------
+Kullanıcı görev notu yazdığında adminlere Teams üzerinden mesaj gönderilebilir.
+
+Mesaj içeriği mevcut mail bildirimi mantığına benzer olabilir:
+- Görev ID
+- Proje
+- Resim No
+- Yapılacak İş
+- Notu yazan kişi
+- Not içeriği
+- "Göreve Git" linki
+
+Bu geliştirme mevcut not + mail bildirim akışına çok yakın olduğu için en düşük riskli başlangıç adımıdır.
+
+2. SharePoint çizim eşleştirme
+------------------------------
+SharePoint'e yüklenen çizimler görevlerle eşleştirilebilir.
+
+Eşleştirme anahtarı olarak şu bilgiler kullanılabilir:
+- Proje
+- Resim No
+
+Görev detayında şu bilgiler gösterilebilir:
+- SharePoint çizim linki
+- Son revizyon
+- Dosyayı yükleyen kişi
+- Yüklenme tarihi
+- Dosya adı
+
+Bu sayede kullanıcı görev ekranından doğrudan ilgili çizime ulaşabilir.
+
+3. Yeni çizim veya revizyon bildirimi
+-------------------------------------
+SharePoint'te aynı Resim No için yeni dosya veya revizyon yüklendiğinde uygulamada görev üzerinde "Yeni çizim var" etiketi gösterilebilir.
+
+Aynı olay için Teams bildirimi de gönderilebilir:
+- İlgili görev
+- Yeni dosya veya revizyon bilgisi
+- SharePoint dosya linki
+- Uygulamadaki göreve git linki
+
+Bu geliştirme için Microsoft Graph change notifications veya zamanlanmış SharePoint taraması değerlendirilebilir.
+
+4. Teams içinde uygulama sekmesi
+--------------------------------
+Adam Takip uygulaması Teams içine tab olarak eklenebilir.
+
+Bu sayede kullanıcılar Teams'ten çıkmadan şu ekranlara erişebilir:
+- Kullanıcı dashboard
+- Admin genel bakış
+- İş havuzu
+- Görev detayları
+
+Bu yaklaşım özellikle dizayncıların günlük akışı Teams içinde yoğunlaşıyorsa kullanım kolaylığı sağlar.
+
+5. Görev bazlı Teams konuşma linki
+----------------------------------
+Her görev için ilgili Teams konuşma veya kanal mesajı linki tutulabilir.
+
+Görev detayında "Teams konuşmasını aç" benzeri bir buton gösterilebilir.
+
+Bu sayede kararlar Teams'te konuşulsa bile görev kayıtlarıyla ilişkilendirilebilir.
+
+6. Onay ve revize Teams kartları
+--------------------------------
+Adminlere "Onay bekliyor" görevleri için Teams kartı gönderilebilir.
+
+İlk fazda kart sadece bilgilendirici ve linkli olabilir:
+- Görev ID
+- Proje
+- Resim No
+- Yapılacak İş
+- Çalışan
+- Toplam süre
+- Termin
+- "Göreve Git" linki
+
+İleri fazda kart üzerine doğrudan "Onayla" veya "Revizeye Gönder" butonları eklenebilir. Bu seçenek için yetki kontrolü ve güvenlik dikkatli tasarlanmalıdır.
+
+Önerilen ilk faz
+----------------
+İlk geliştirme olarak "not gönderildiğinde Teams bildirimi" önerilir.
+
+Nedenleri:
+- Mevcut not ve mail bildirimi akışına çok benzer.
+- Kullanıcıya hızlı değer sağlar.
+- SharePoint dosya eşleştirme kadar kapsamlı izin ve veri modeli gerektirmez.
+- Teams entegrasyonunun kurum içinde nasıl karşılanacağını test etmek için iyi bir pilot adımdır.
+
+Teknik notlar
+-------------
+Mevcut uygulamada Microsoft Entra ID ile giriş ve Microsoft Graph üzerinden mail gönderimi zaten kullanılıyor. Bu altyapı Teams ve SharePoint entegrasyonları için başlangıç noktası olabilir.
+
+Teams bildirimi için değerlendirilebilecek yollar:
+- Teams Workflows webhook
+- Teams bot / proactive message
+- Microsoft Graph chatMessage / channel message API
+
+SharePoint entegrasyonu için değerlendirilebilecek yollar:
+- Microsoft Graph sites / drives / driveItem API
+- SharePoint document library dosya listeleme
+- Graph change notifications
+- Zamanlanmış SharePoint taraması
+
+Klasik Teams connector yaklaşımı yerine Microsoft'un güncel Workflows ve bot yaklaşımı ayrıca değerlendirilmelidir.
