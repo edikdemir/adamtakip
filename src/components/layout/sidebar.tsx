@@ -65,18 +65,18 @@ export function Sidebar() {
             href={isAdminArea ? "/admin" : "/dashboard"}
             onClick={closeMobileSidebar}
             className={cn(
-              "flex min-w-0 items-center overflow-hidden rounded-[22px] border border-zinc-200/80 bg-white px-3 py-2 shadow-sm transition-colors hover:bg-zinc-50",
-              collapsed ? "justify-center lg:h-14 lg:w-14 lg:px-2" : "w-full justify-center"
+              "flex min-w-0 items-center overflow-hidden px-1 py-2 transition-opacity hover:opacity-90",
+              collapsed ? "justify-center lg:h-14 lg:w-14 lg:px-0" : "w-full justify-center"
             )}
             title="Cemre Tersanesi"
           >
             <Image
-              src="/brand/cemre-sidebar-logo.png"
+              src="/brand/cemre-login-logo.png"
               alt="Cemre Tersanesi"
-              width={224}
-              height={68}
+              width={180}
+              height={58}
               priority
-              className={cn("h-10 w-auto max-w-full object-contain", collapsed && "lg:h-9 lg:w-auto lg:max-w-none")}
+              className={cn("h-11 w-auto max-w-full object-contain", collapsed && "lg:h-10 lg:w-auto lg:max-w-none")}
             />
           </Link>
         </div>

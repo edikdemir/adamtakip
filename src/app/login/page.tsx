@@ -88,12 +88,12 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center rounded-[28px] border border-zinc-200 bg-white px-4 py-4 shadow-md">
+          <div className="inline-flex items-center justify-center px-4 py-4">
             <Image
               src={cemreLoginLogo}
               alt="Cemre Shipyard"
               priority
-              className="h-auto w-[260px] max-w-full rounded-xl object-contain"
+              className="h-auto w-[260px] max-w-full object-contain"
             />
           </div>
           <h1 className="mt-5 text-2xl font-bold text-zinc-900">Adam Takip</h1>
