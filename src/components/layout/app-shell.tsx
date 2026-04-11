@@ -40,7 +40,7 @@ function AppShellFrame({ children }: { children: React.ReactNode }) {
         </main>
         <footer className="px-4 pb-5 text-center text-xs text-zinc-500 sm:px-6 lg:px-8">
           <div className="mx-auto w-full max-w-[1680px] rounded-full border border-white/70 bg-white/70 px-4 py-3 shadow-sm backdrop-blur">
-            © 2026 Cemre Tersanesi Bilgi İşlem Birimi.
+            © 2026 Cemre Tersanesi Bilgi İşlem Birimi
           </div>
         </footer>
       </div>
