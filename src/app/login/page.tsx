@@ -96,7 +96,7 @@ export default function LoginPage() {
               className="h-auto w-[260px] max-w-full object-contain"
             />
           </div>
-          <h1 className="mt-5 text-2xl font-bold text-zinc-900">Adam Takip</h1>
+          <h1 className="mt-5 text-2xl font-bold text-zinc-900">İş Takip</h1>
           <p className="mt-1 text-sm text-zinc-500">Cemre Tersanesi | Dizayn Departmanı İş Takip Sistemi</p>
         </div>
 
