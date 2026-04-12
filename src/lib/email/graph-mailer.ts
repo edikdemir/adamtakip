@@ -112,7 +112,7 @@ function emailTemplate(
     <div style="background:#18181b;padding:20px 32px;display:flex;align-items:center;gap:12px;">
       <div style="width:4px;height:32px;background:${accentColor};border-radius:2px;"></div>
       <div>
-        <div style="color:#fff;font-size:16px;font-weight:700;letter-spacing:-0.3px;">Adam Takip</div>
+        <div style="color:#fff;font-size:16px;font-weight:700;letter-spacing:-0.3px;">İş Takip Sistemi</div>
         <div style="color:#a1a1aa;font-size:12px;margin-top:1px;">Cemre Tersanesi | Dizayn Departmanı</div>
       </div>
     </div>
@@ -218,7 +218,7 @@ export async function sendTaskAssignedEmail(user: EmailUser, task: TaskEmailPayl
     return
   }
 
-  const subject = `[Adam Takip] Yeni Görev: ${getTaskLabel(task)}`
+  const subject = `[İş Takip] Yeni Görev: ${getTaskLabel(task)}`
   const body = `
     ${greeting(user.display_name)}
     <p style="color:#52525b;font-size:14px;margin:0 0 4px;">Size yeni bir görev atandı. Görev detayları aşağıda yer almaktadır:</p>
@@ -248,7 +248,7 @@ export async function sendTaskApprovedEmail(user: EmailUser, task: TaskEmailPayl
     return
   }
 
-  const subject = `[Adam Takip] Görev Onaylandı: ${getTaskLabel(task)}`
+  const subject = `[İş Takip] Görev Onaylandı: ${getTaskLabel(task)}`
   const body = `
     ${greeting(user.display_name)}
     <p style="color:#52525b;font-size:14px;margin:0 0 4px;">Aşağıdaki göreviniz yöneticiniz tarafından onaylandı ve <strong>Hazır</strong> olarak işaretlendi.</p>
@@ -276,7 +276,7 @@ export async function sendTaskRejectedEmail(user: EmailUser, task: TaskEmailPayl
     return
   }
 
-  const subject = `[Adam Takip] Revize İsteği: ${getTaskLabel(task)}`
+  const subject = `[İş Takip] Revize İsteği: ${getTaskLabel(task)}`
   const body = `
     ${greeting(user.display_name)}
     <p style="color:#52525b;font-size:14px;margin:0 0 4px;">Aşağıdaki göreviniz revize için size iade edildi. Gerekli düzeltmeleri yaparak tekrar tamamlayınız.</p>
@@ -310,7 +310,7 @@ export async function sendTaskCancelledEmail(user: EmailUser, task: TaskEmailPay
     return
   }
 
-  const subject = `[Adam Takip] Görev İptal Edildi: ${getTaskLabel(task)}`
+  const subject = `[İş Takip] Görev İptal Edildi: ${getTaskLabel(task)}`
   const body = `
     ${greeting(user.display_name)}
     <p style="color:#52525b;font-size:14px;margin:0 0 4px;">Aşağıdaki görev yönetici tarafından iptal edildi.</p>
@@ -362,7 +362,7 @@ export async function sendOverdueEmail(
         ? "Görev hâlâ tamamlanmadı. Çalışanı bilgilendirmeniz önerilir."
         : "Lütfen görevi en kısa sürede tamamlayın."
 
-  const subject = `[Adam Takip] Gecikmiş Görev (+${daysOverdue} gün): ${getTaskLabel(task)}`
+  const subject = `[İş Takip] Gecikmiş Görev (+${daysOverdue} gün): ${getTaskLabel(task)}`
   const body = `
     ${greeting(recipientName)}
     <p style="color:#52525b;font-size:14px;margin:0 0 4px;"><strong>${escapeHtml(getTaskLabel(task))}</strong> numaralı görevin termini <strong>${daysOverdue} gün</strong> önce geçti.</p>
@@ -402,7 +402,7 @@ export async function sendTaskNoteEmail(
     return
   }
 
-  const subject = `[Adam Takip] Yeni Not: ${getTaskLabel(task)}`
+  const subject = `[İş Takip] Yeni Not: ${getTaskLabel(task)}`
   const body = `
     ${greeting(recipientName)}
     <p style="color:#52525b;font-size:14px;margin:0 0 4px;"><strong>${escapeHtml(senderName)}</strong> tarafından aşağıdaki göreve yeni bir not eklendi:</p>
@@ -439,7 +439,7 @@ export async function sendTaskCompletedEmail(
     return
   }
 
-  const subject = `[Adam Takip] Onay Bekliyor: ${getTaskLabel(task)} | ${workerName}`
+  const subject = `[İş Takip] Onay Bekliyor: ${getTaskLabel(task)} | ${workerName}`
   const body = `
     ${greeting(adminName)}
     <p style="color:#52525b;font-size:14px;margin:0 0 4px;"><strong>${escapeHtml(workerName)}</strong> aşağıdaki görevi tamamladı ve onayınızı bekliyor:</p>
