@@ -33,13 +33,13 @@ function AppShellFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(20,118,207,0.10),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(99,201,61,0.10),_transparent_24%),#f5f8fb]">
       <Sidebar />
-      <div className={cn("flex min-h-screen flex-col transition-[padding] duration-300 ease-out", collapsed ? "lg:pl-24" : "lg:pl-72")}>
+      <div className={cn("flex min-h-screen flex-col transition-[padding] duration-300 ease-out", collapsed ? "lg:pl-20" : "lg:pl-64")}>
         <Header title={headerContent.title} subtitle={headerContent.subtitle} />
         <main className="flex-1 px-4 pb-8 pt-5 sm:px-6 lg:px-8">
           <div className="mx-auto w-full max-w-[1680px]">{children}</div>
         </main>
         <footer className="px-4 pb-5 text-center text-xs text-zinc-500 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-[1680px] rounded-full border border-white/70 bg-white/70 px-4 py-3 shadow-sm backdrop-blur">
+          <div className="mx-auto w-full max-w-[1680px] rounded-full border border-white/70 bg-white/70 px-4 py-3 shadow-sm sm:backdrop-blur">
             © 2026 Cemre Tersanesi Bilgi İşlem Birimi
           </div>
         </footer>

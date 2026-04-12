@@ -69,7 +69,7 @@ export function ProjectLocationsDialog({ project, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-3xl overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <span className="font-mono">{project.code}</span>
@@ -81,7 +81,7 @@ export function ProjectLocationsDialog({ project, open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
+        <div className="grid grid-cols-1 gap-4 py-2 md:grid-cols-2 sm:gap-6">
           {/* Zones column */}
           <section className="space-y-3">
             <div className="flex items-center justify-between">
@@ -108,7 +108,7 @@ export function ProjectLocationsDialog({ project, open, onOpenChange }: Props) {
                 <Plus className="h-4 w-4" /> Ekle
               </Button>
             </div>
-            <div className="max-h-80 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50/40 p-2 space-y-1">
+            <div className="max-h-[32dvh] overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50/40 p-2 space-y-1 sm:max-h-80">
               {zonesLoading ? (
                 <p className="text-sm text-zinc-400 text-center py-4">Yükleniyor...</p>
               ) : zones.length === 0 ? (
@@ -161,7 +161,7 @@ export function ProjectLocationsDialog({ project, open, onOpenChange }: Props) {
                 <Plus className="h-4 w-4" /> Ekle
               </Button>
             </div>
-            <div className="max-h-80 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50/40 p-2 space-y-1">
+            <div className="max-h-[32dvh] overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50/40 p-2 space-y-1 sm:max-h-80">
               {locsLoading ? (
                 <p className="text-sm text-zinc-400 text-center py-4">Yükleniyor...</p>
               ) : locations.length === 0 ? (
@@ -189,7 +189,7 @@ export function ProjectLocationsDialog({ project, open, onOpenChange }: Props) {
           </section>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="sticky bottom-0 -mx-4 -mb-4 border-t border-zinc-100 bg-white/95 px-4 py-3 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Kapat
           </Button>

@@ -31,7 +31,7 @@ export function ReportChartsGrid({
 }: ReportChartsGridProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <Card className="border-zinc-200 shadow-sm">
+      <Card className="border-zinc-200 shadow-sm [contain-intrinsic-size:320px] [content-visibility:auto]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-zinc-700">Aylık AdamxSaat</CardTitle>
         </CardHeader>
@@ -52,7 +52,7 @@ export function ReportChartsGrid({
         </CardContent>
       </Card>
 
-      <Card className="border-zinc-200 shadow-sm">
+      <Card className="border-zinc-200 shadow-sm [contain-intrinsic-size:320px] [content-visibility:auto]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-zinc-700">İşin Tipine Göre AdamxSaat Dağılımı</CardTitle>
         </CardHeader>
@@ -86,7 +86,7 @@ export function ReportChartsGrid({
         </CardContent>
       </Card>
 
-      <Card className="border-zinc-200 shadow-sm">
+      <Card className="border-zinc-200 shadow-sm [contain-intrinsic-size:360px] [content-visibility:auto]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-zinc-700">Çalışan Bazlı AdamxSaat</CardTitle>
         </CardHeader>
@@ -114,7 +114,7 @@ export function ReportChartsGrid({
         </CardContent>
       </Card>
 
-      <Card className="border-zinc-200 shadow-sm">
+      <Card className="border-zinc-200 shadow-sm [contain-intrinsic-size:360px] [content-visibility:auto]">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold text-zinc-700">İşin Alt Tipi Bazlı AdamxSaat</CardTitle>
         </CardHeader>

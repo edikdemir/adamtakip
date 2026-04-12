@@ -22,6 +22,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Oturum süresi doldu" }, { status: 401 })
   }
 
+  await supabase
+    .from("users")
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq("id", dbUser.id)
+
   return NextResponse.json({
     data: {
       id: dbUser.id,

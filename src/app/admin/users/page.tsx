@@ -48,8 +48,81 @@ const ROLE_COLORS: Record<UserRole, string> = {
   user: "bg-zinc-100 text-zinc-600 border-zinc-200",
 }
 
+const USER_PRESENCE_REFRESH_MS = 60_000
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000
+
+function parseLastSeen(lastSeenAt?: string | null) {
+  if (!lastSeenAt) {
+    return null
+  }
+
+  const date = new Date(lastSeenAt)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function isUserOnline(lastSeenAt?: string | null) {
+  const lastSeen = parseLastSeen(lastSeenAt)
+  return lastSeen ? Date.now() - lastSeen.getTime() <= ONLINE_THRESHOLD_MS : false
+}
+
+function formatLastSeen(lastSeenAt?: string | null) {
+  const lastSeen = parseLastSeen(lastSeenAt)
+  if (!lastSeen) {
+    return "Henüz görülmedi"
+  }
+
+  const diffMs = Math.max(0, Date.now() - lastSeen.getTime())
+  if (diffMs < 60_000) {
+    return "Az önce"
+  }
+
+  if (diffMs < 60 * 60_000) {
+    return `${Math.floor(diffMs / 60_000)} dk önce`
+  }
+
+  const now = new Date()
+  const isToday =
+    lastSeen.getFullYear() === now.getFullYear() &&
+    lastSeen.getMonth() === now.getMonth() &&
+    lastSeen.getDate() === now.getDate()
+
+  const time = lastSeen.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+  if (isToday) {
+    return `Bugün ${time}`
+  }
+
+  return lastSeen.toLocaleString("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function UserPresenceBadge({ lastSeenAt }: { lastSeenAt?: string | null }) {
+  const online = isUserOnline(lastSeenAt)
+  const label = online ? "Online" : lastSeenAt ? `Son görülme: ${formatLastSeen(lastSeenAt)}` : "Henüz görülmedi"
+
+  return (
+    <div className="mt-4 flex justify-center">
+      <Badge
+        variant="outline"
+        className={`rounded-full px-2.5 py-1 text-[11px] ${
+          online
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-zinc-200 bg-zinc-50 text-zinc-500"
+        }`}
+      >
+        <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-zinc-300"}`} />
+        {label}
+      </Badge>
+    </div>
+  )
+}
+
 export default function UsersPage() {
-  const { data: users = [], isLoading } = useUsers()
+  const { data: users = [], isLoading } = useUsers({ refetchInterval: USER_PRESENCE_REFRESH_MS })
   const updateUser = useUpdateUser()
 
   const filteredUsers = useMemo(
@@ -82,7 +155,7 @@ export default function UsersPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <div key={index} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm [contain-intrinsic-size:220px] [content-visibility:auto]">
               <div className="animate-pulse space-y-4">
                 <div className="h-14 w-14 rounded-full bg-zinc-200" />
                 <div className="h-4 w-28 rounded bg-zinc-200" />
@@ -102,7 +175,7 @@ export default function UsersPage() {
           {filteredUsers.map((user) => (
             <div
               key={user.id}
-              className={`rounded-2xl border bg-white p-5 shadow-sm transition-opacity ${
+              className={`rounded-2xl border bg-white p-5 shadow-sm transition-opacity [contain-intrinsic-size:220px] [content-visibility:auto] ${
                 user.is_active ? "border-zinc-200" : "border-zinc-100 opacity-70"
               }`}
             >
@@ -117,6 +190,7 @@ export default function UsersPage() {
                   avatarClassName="transition-all hover:ring-blue-200"
                 />
               </Link>
+              <UserPresenceBadge lastSeenAt={user.last_seen_at} />
 
               <div className="mt-5 flex items-center justify-between gap-2 border-t border-zinc-100 pt-4">
                 <Select
@@ -159,7 +233,7 @@ export default function UsersPage() {
           <h2 className="text-sm font-semibold text-zinc-500">Pasif Kullanıcılar ({inactiveUsers.length})</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {inactiveUsers.map((user) => (
-              <div key={user.id} className="rounded-2xl border border-zinc-100 bg-white p-5 opacity-70 shadow-sm">
+              <div key={user.id} className="rounded-2xl border border-zinc-100 bg-white p-5 opacity-70 shadow-sm [contain-intrinsic-size:220px] [content-visibility:auto]">
                 <Link href={`/admin/users/${user.id}`} className="block">
                   <UserIdentity
                     displayName={user.display_name}

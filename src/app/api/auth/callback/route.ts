@@ -87,6 +87,7 @@ export async function GET(req: NextRequest) {
 
     // Upsert user in DB
     const supabase = createServerClient()
+    const lastSeenAt = new Date().toISOString()
     const { data: existingUser } = await supabase
       .from("users")
       .select("id, role, is_active")
@@ -107,13 +108,13 @@ export async function GET(req: NextRequest) {
       // Update display name, email, job title and photo
       await supabase
         .from("users")
-        .update({ email, display_name: displayName, job_title: jobTitle, ...(photoUrl ? { photo_url: photoUrl } : {}), updated_at: new Date().toISOString() })
+        .update({ email, display_name: displayName, job_title: jobTitle, last_seen_at: lastSeenAt, ...(photoUrl ? { photo_url: photoUrl } : {}), updated_at: lastSeenAt })
         .eq("id", userId)
     } else {
       // First login: create user
       const { data: newUser, error: insertError } = await supabase
         .from("users")
-        .insert({ azure_oid: azureOid, email, display_name: displayName, job_title: jobTitle, photo_url: photoUrl, role: "user" })
+        .insert({ azure_oid: azureOid, email, display_name: displayName, job_title: jobTitle, photo_url: photoUrl, role: "user", last_seen_at: lastSeenAt })
         .select("id, role")
         .single()
 

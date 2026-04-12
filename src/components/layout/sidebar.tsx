@@ -36,7 +36,7 @@ export function Sidebar() {
   const navItems = isAdminArea ? adminNavItems : userNavItems
   const filteredItems = navItems.filter((item) => !item.roles || (user ? item.roles.includes(user.role) : false))
 
-  const widthClass = collapsed ? "lg:w-24" : "lg:w-72"
+  const widthClass = collapsed ? "lg:w-20" : "lg:w-64"
 
   return (
     <>
@@ -71,15 +71,16 @@ export function Sidebar() {
             title="Cemre Tersanesi"
           >
             <Image
-              src="/brand/cemre-login-logo.png"
+              src={collapsed ? "/logo_cemre.png" : "/brand/cemre-login-logo.png"}
               alt="Cemre Tersanesi"
               width={180}
               height={58}
               priority
-              className={cn("h-11 w-auto max-w-full object-contain", collapsed && "lg:h-10 lg:w-auto lg:max-w-none")}
+              className={cn("h-11 w-auto max-w-full object-contain", collapsed && "lg:h-10 lg:w-10")}
             />
-            <span className={cn("mt-2 text-[11px] font-medium tracking-[0.14em] text-zinc-500", collapsed && "lg:hidden")}>
-              Dizayn Departmanı İş Takip Sistemi
+            <span className={cn("mt-2 flex flex-col text-[11px] font-medium tracking-[0.14em] text-zinc-500", collapsed && "lg:hidden")}>
+              <span>Dizayn Departmanı</span>
+              <span>İş Takip Sistemi</span>
             </span>
           </Link>
         </div>

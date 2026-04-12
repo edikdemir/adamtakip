@@ -13,6 +13,7 @@ export interface ReferenceUser {
   photo_url?: string | null
   role: UserRole
   is_active: boolean
+  last_seen_at?: string | null
   created_at: string
 }
 
@@ -55,9 +56,14 @@ export function useJobTypes() {
   })
 }
 
-export function useUsers() {
+interface UseUsersOptions {
+  refetchInterval?: number | false
+}
+
+export function useUsers(options?: UseUsersOptions) {
   return useQuery<ReferenceUser[]>({
     queryKey: ["users"],
+    refetchInterval: options?.refetchInterval ?? false,
     queryFn: () => fetchReferenceData<ReferenceUser>("/api/users", "Kullanıcılar yüklenemedi"),
   })
 }

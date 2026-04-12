@@ -15,6 +15,16 @@ const AuthContext = createContext<AuthContextValue>({
   refetch: async () => {},
 })
 
+const PRESENCE_HEARTBEAT_INTERVAL_MS = 60_000
+
+async function sendPresenceHeartbeat() {
+  try {
+    await fetch("/api/auth/heartbeat", { method: "POST", cache: "no-store" })
+  } catch {
+    // Presence is best-effort and must never interrupt the user flow.
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -34,6 +44,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchUser()
   }, [])
+
+  useEffect(() => {
+    if (!user?.id) {
+      return
+    }
+
+    const heartbeat = () => {
+      if (document.visibilityState === "hidden") {
+        return
+      }
+
+      void sendPresenceHeartbeat()
+    }
+
+    heartbeat()
+    const intervalId = window.setInterval(heartbeat, PRESENCE_HEARTBEAT_INTERVAL_MS)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        heartbeat()
+      }
+    }
+
+    window.addEventListener("focus", heartbeat)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener("focus", heartbeat)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+  }, [user?.id])
 
   return (
     <AuthContext.Provider value={{ user, isLoading, refetch: fetchUser }}>

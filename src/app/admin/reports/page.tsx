@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { useJobTypes, useProjects, useUsers } from "@/hooks/use-reference-data"
 import { useReports } from "@/hooks/use-reports"
 import {
+  type NamedHoursDatum,
   ReportFilters,
   buildJobTypePieData,
   buildMonthlyData,
@@ -22,6 +23,19 @@ import {
   getReportSummary,
   resolveReportFilterLabels,
 } from "@/lib/reports/report-utils"
+
+const REPORT_CHART_LIMIT = 12
+
+function limitChartData(data: NamedHoursDatum[], limit = REPORT_CHART_LIMIT): NamedHoursDatum[] {
+  if (data.length <= limit) {
+    return data
+  }
+
+  const visible = data.slice(0, limit)
+  const otherHours = data.slice(limit).reduce((sum, item) => sum + item.hours, 0)
+
+  return otherHours > 0 ? [...visible, { name: "Diğer", hours: Number(otherHours.toFixed(2)) }] : visible
+}
 
 function getInitialFilters(): ReportFilters {
   const today = new Date().toISOString().slice(0, 10)
@@ -50,6 +64,8 @@ export default function ReportsPage() {
   const jobTypePieData = useMemo(() => buildJobTypePieData(tasks), [tasks])
   const workerData = useMemo(() => buildWorkerData(tasks), [tasks])
   const subTypeData = useMemo(() => buildSubTypeData(tasks), [tasks])
+  const workerChartData = useMemo(() => limitChartData(workerData), [workerData])
+  const subTypeChartData = useMemo(() => limitChartData(subTypeData), [subTypeData])
   const userReports = useMemo(() => buildUserReports(tasks), [tasks])
   const summary = useMemo(() => getReportSummary(tasks), [tasks])
 
@@ -114,8 +130,8 @@ export default function ReportsPage() {
           <ReportChartsGrid
             monthlyData={monthlyData}
             jobTypePieData={jobTypePieData}
-            workerData={workerData}
-            subTypeData={subTypeData}
+            workerData={workerChartData}
+            subTypeData={subTypeChartData}
           />
           <ReportUserBreakdown reports={userReports} />
         </>
