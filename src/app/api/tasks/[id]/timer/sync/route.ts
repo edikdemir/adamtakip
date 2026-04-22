@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: task } = await supabase
     .from("tasks")
-    .select("id, assigned_to, timer_started_at, total_elapsed_seconds")
+    .select("id, assigned_to, timer_started_at, total_elapsed_seconds, last_heartbeat_at")
     .eq("id", id)
     .single()
 
@@ -23,7 +23,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const startTime = new Date(task.timer_started_at).getTime()
   const now = Date.now()
-  const additionalSeconds = Math.max(0, (now - startTime) / 1000)
+  let additionalSeconds = Math.max(0, (now - startTime) / 1000)
+
+  // Uyku modu veya devasa sıçrama kontrolü (15 dakikadan fazla fark varsa)
+  if (additionalSeconds > 900) {
+    const lastHeartbeat = task.last_heartbeat_at ? new Date(task.last_heartbeat_at).getTime() : startTime;
+    additionalSeconds = Math.max(0, (lastHeartbeat - startTime) / 1000);
+  }
+
   const newTotal = task.total_elapsed_seconds + additionalSeconds
 
   await supabase

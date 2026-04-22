@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   const { data: task, error: fetchError } = await supabase
     .from("tasks")
-    .select("id, timer_started_at, total_elapsed_seconds")
+    .select("id, timer_started_at, total_elapsed_seconds, last_heartbeat_at")
     .eq("assigned_to", user.id)
     .not("timer_started_at", "is", null)
     .limit(1)
@@ -23,7 +23,14 @@ export async function POST(req: NextRequest) {
   }
 
   const startTime = new Date(task.timer_started_at!).getTime()
-  const additionalSeconds = Math.max(0, (Date.now() - startTime) / 1000)
+  let additionalSeconds = Math.max(0, (Date.now() - startTime) / 1000)
+
+  // Güvenlik kontrolü: Eğer süre 15 dakikadan uzunsa (bilgisayar uykuya geçmiş veya saat sıçramış olabilir)
+  if (additionalSeconds > 900) {
+    const lastHeartbeat = task.last_heartbeat_at ? new Date(task.last_heartbeat_at).getTime() : startTime;
+    additionalSeconds = Math.max(0, (lastHeartbeat - startTime) / 1000);
+  }
+
   const newTotal = task.total_elapsed_seconds + additionalSeconds
 
   await supabase

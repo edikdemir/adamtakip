@@ -17,7 +17,8 @@ BEGIN
       AND last_heartbeat_at IS NOT NULL
       AND last_heartbeat_at < now() - interval '30 minutes'
   LOOP
-    additional := EXTRACT(EPOCH FROM (now() - stale.timer_started_at));
+    -- Doğru hesaplama: now() yerine son yaşam belirtisi olan last_heartbeat_at'e kadar olan süreyi eklemek
+    additional := EXTRACT(EPOCH FROM (stale.last_heartbeat_at - stale.timer_started_at));
     new_total := stale.total_elapsed_seconds + GREATEST(additional, 0);
 
     UPDATE tasks SET
