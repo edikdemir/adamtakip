@@ -3,11 +3,17 @@
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { UserReport, getAdamSaat } from "@/lib/reports/report-utils"
-import { ADMIN_STATUS } from "@/lib/constants"
+import { getReportDate } from "@/lib/reports/report-date"
+import { ADMIN_STATUS, ADMIN_STATUS_LABELS } from "@/lib/constants"
 import { formatDate } from "@/lib/utils"
 
 interface ReportUserBreakdownProps {
   reports: UserReport[]
+}
+
+function formatReportDate(task: UserReport["tasks"][number], fallback: string) {
+  const reportDate = getReportDate(task)
+  return reportDate ? formatDate(reportDate) : fallback
 }
 
 function getReportStatusClass(adminStatus: string) {
@@ -19,19 +25,23 @@ function getReportStatusClass(adminStatus: string) {
     return "border-orange-200 bg-orange-50 text-orange-700"
   }
 
+  if (adminStatus === ADMIN_STATUS.DEVAM_EDIYOR) {
+    return "border-indigo-200 bg-indigo-50 text-indigo-700"
+  }
+
+  if (adminStatus === ADMIN_STATUS.ATANDI) {
+    return "border-blue-200 bg-blue-50 text-blue-700"
+  }
+
+  if (adminStatus === ADMIN_STATUS.IPTAL) {
+    return "border-red-200 bg-red-50 text-red-700"
+  }
+
   return "border-zinc-200 text-zinc-600"
 }
 
 function getReportStatusLabel(adminStatus: string) {
-  if (adminStatus === ADMIN_STATUS.ONAYLANDI) {
-    return "Onaylandı"
-  }
-
-  if (adminStatus === ADMIN_STATUS.TAMAMLANDI) {
-    return "Onay Bekliyor"
-  }
-
-  return "Devam Ediyor"
+  return ADMIN_STATUS_LABELS[adminStatus as keyof typeof ADMIN_STATUS_LABELS] ?? adminStatus
 }
 
 export function ReportUserBreakdown({ reports }: ReportUserBreakdownProps) {
@@ -63,7 +73,7 @@ export function ReportUserBreakdown({ reports }: ReportUserBreakdownProps) {
                   <TableHead>İş Tipi</TableHead>
                   <TableHead>Alt Tip</TableHead>
                   <TableHead className="w-24 text-right">AdamxSaat (sa)</TableHead>
-                  <TableHead className="w-28">Tamamlanma</TableHead>
+                  <TableHead className="w-28">Rapor Tarihi</TableHead>
                   <TableHead className="w-24">Durum</TableHead>
                 </TableRow>
               </TableHeader>
@@ -76,7 +86,7 @@ export function ReportUserBreakdown({ reports }: ReportUserBreakdownProps) {
                     <TableCell className="text-sm text-zinc-500">{task.job_sub_type?.name || "—"}</TableCell>
                     <TableCell className="text-right font-mono text-sm font-semibold">{getAdamSaat(task).toFixed(2)}</TableCell>
                     <TableCell className="text-sm text-zinc-500">
-                      {task.completion_date ? formatDate(task.completion_date) : "—"}
+                      {formatReportDate(task, "—")}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getReportStatusClass(task.admin_status)}>
@@ -102,7 +112,7 @@ export function ReportUserBreakdown({ reports }: ReportUserBreakdownProps) {
                   {task.job_type?.name || "İş tipi yok"} / {task.job_sub_type?.name || "Alt tip yok"}
                 </p>
                 <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
-                  <span>{task.completion_date ? formatDate(task.completion_date) : "Tamamlanma yok"}</span>
+                  <span>{formatReportDate(task, "Tarih yok")}</span>
                   <Badge variant="outline" className={getReportStatusClass(task.admin_status)}>
                     {getReportStatusLabel(task.admin_status)}
                   </Badge>

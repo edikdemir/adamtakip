@@ -4,6 +4,7 @@ import type { JobType, Project } from "@/types/task"
 import type { ReferenceUser } from "@/hooks/use-reference-data"
 import { ReportPdf, registerReportPdfAssets, type ReportTask } from "@/lib/pdf/report-pdf"
 import { ADMIN_STATUS } from "@/lib/constants"
+import { getReportDate } from "@/lib/reports/report-date"
 import { formatDate } from "@/lib/utils"
 
 export type { ReportTask }
@@ -63,7 +64,7 @@ export function buildMonthlyData(tasks: ReportTask[]) {
   const monthlyHours: Record<string, number> = {}
 
   for (const task of tasks) {
-    const date = task.completion_date ?? task.planned_end
+    const date = getReportDate(task)
     if (!date) continue
 
     const month = date.slice(0, 7)
@@ -158,11 +159,12 @@ export function buildUserReports(tasks: ReportTask[]): UserReport[] {
 
 export function downloadCSV(tasks: ReportTask[]) {
   const rows = [
-    ["Çalışan", "E-posta", "Proje", "Resim No", "İş Tipi", "Alt Tip", "Kronometrik (sa)", "Manuel (sa)", "Toplam AdamxSaat (sa)", "Durum", "Tamamlanma"].join(","),
+    ["Çalışan", "E-posta", "Proje", "Resim No", "İş Tipi", "Alt Tip", "Kronometrik (sa)", "Manuel (sa)", "Toplam AdamxSaat (sa)", "Durum", "Rapor Tarihi"].join(","),
   ]
 
   for (const task of tasks) {
     const user = task.assigned_user
+    const reportDate = getReportDate(task)
 
     rows.push(
       [
@@ -176,7 +178,7 @@ export function downloadCSV(tasks: ReportTask[]) {
         (task.manual_hours ?? 0).toFixed(2),
         getAdamSaat(task).toFixed(2),
         task.admin_status,
-        task.completion_date ? formatDate(task.completion_date) : "",
+        reportDate ? formatDate(reportDate) : "",
       ].join(",")
     )
   }

@@ -454,6 +454,7 @@ export interface ReportTask {
   manual_hours: number | null
   admin_status: string
   completion_date: string | null
+  approved_at?: string | null
   planned_end: string | null
   planned_start: string | null
   assigned_user: { id: string; display_name: string; email: string } | null
