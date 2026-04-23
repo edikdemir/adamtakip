@@ -41,8 +41,6 @@ export const REPORT_STATUS_OPTIONS = [
   { value: "onaylandi", label: "Hazır" },
   { value: "tamamlandi", label: "Onay Bekliyor" },
   { value: "devam_ediyor", label: "Devam Ediyor" },
-  { value: "atandi", label: "Atandı" },
-  { value: "havuzda", label: "Havuzda" },
   { value: "all", label: "Tümü" },
 ]
 
