@@ -47,7 +47,7 @@ function getInitialFilters(): ReportFilters {
     project_id: "all",
     user_id: "all",
     job_type_id: "all",
-    admin_status: "onaylandi",
+    admin_status: "all",
   }
 }
 
