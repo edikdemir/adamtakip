@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IsTakip.Client.Core</RootNamespace>
+    <AssemblyName>IsTakip.Client.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Server.Domain/Server.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

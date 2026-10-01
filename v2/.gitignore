@@ -1,0 +1,16 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+TestResults/
+node_modules/
+src/Server/wwwroot/
+src/Web/dist/
+*.db
+*.db-wal
+*.db-shm
+appsettings.*.local.json
+*.lic
+tools/LicenseTool/keys/

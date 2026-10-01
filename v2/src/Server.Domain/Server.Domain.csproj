@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IsTakip.Domain</RootNamespace>
+    <AssemblyName>IsTakip.Domain</AssemblyName>
+  </PropertyGroup>
+
+</Project>
